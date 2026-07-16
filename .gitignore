@@ -49,3 +49,9 @@ vitest.config.*.timestamp*
 .claude/settings.local.json
 .nx/polygraph
 .nx/self-healing
+
+# Next.js
+.next
+out
+
+test-output

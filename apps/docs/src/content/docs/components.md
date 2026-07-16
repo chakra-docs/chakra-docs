@@ -1,0 +1,164 @@
+---
+title: Components
+description: Compose the Chakra Docs primitives that make up documentation pages.
+order: 4
+tags: [components]
+---
+
+`@chakra-docs/chakra` does not own the whole page. It exports primitives that the host app can compose inside its own shell.
+
+## DocsProvider
+
+`DocsProvider` carries docs-level configuration. Use it in `_app.tsx` to provide labels, analytics callbacks, and the host routing link component.
+
+```tsx
+<DocsProvider
+  config={{
+    linkComponent: NextLink,
+    labels: {
+      onThisPage: 'On this page',
+      copyCode: 'Copy code',
+    },
+    layout: {
+      stickyTop: 'calc(var(--site-header-height, 0px) + 2rem)',
+    },
+  }}
+>
+  <Component {...pageProps} />
+</DocsProvider>
+```
+
+`layout.stickyTop` offsets sticky docs columns below app-owned sticky headers. It accepts any Chakra `top` value, including responsive objects. Use `sidebarStickyTop` or `tocStickyTop` when the navigation and table of contents need different offsets.
+
+The table of contents highlights the active section as the page scrolls. Heading links scroll smoothly and use `layout.scrollMarginTop` for the header-aware offset, falling back to `layout.stickyTop` when no separate scroll margin is configured.
+
+## DocsLayout
+
+`DocsLayout` arranges the docs navigation, article area, and table of contents. It accepts `nav`, `page`, `headings`, and optional sticky/slot overrides for a single page.
+
+```tsx
+<DocsLayout
+  nav={nav}
+  page={page}
+  headings={page.headings}
+  stickyTop={{ lg: 24 }}
+>
+  <DocsArticle page={page}>
+    <MarkdownContent source={page.body ?? ''} />
+  </DocsArticle>
+</DocsLayout>
+```
+
+## DocsArticle
+
+`DocsArticle` renders the page title and description from a `DocsPage`. You can pass custom children to control the body renderer.
+
+```tsx
+<DocsArticle page={page}>
+  <MdxContent code={page.body} />
+</DocsArticle>
+```
+
+## DocsSidebar
+
+`DocsLayout` renders `DocsSidebar` when `nav` is provided. Use `DocsSidebar` directly if the app needs a different layout grid but still wants the package nav behavior.
+
+```tsx
+<DocsSidebar nav={nav} page={page} stickyTop={{ lg: 24 }} />
+```
+
+## DocsTableOfContents
+
+`DocsLayout` renders `DocsTableOfContents` when headings are provided. The headings usually come from the source adapter.
+
+```tsx
+<DocsTableOfContents
+  headings={page.headings}
+  scrollMarginTop={{ lg: 24 }}
+  stickyTop={{ lg: 24 }}
+/>
+```
+
+## DocsSearch
+
+`DocsSearch` renders a command-style search dialog from local manifest records or an asynchronous provider. Pass `collectionId` or `collectionIds` to scope results to one or more collections; remote mode sends that scope to the server before results are limited.
+
+```tsx
+import { createHttpSearchProvider } from '@chakra-docs/search/client';
+
+<DocsSearch
+  collectionIds={['v2', 'v3']}
+  onNavigate={(href) => router.push(href)}
+  searchProvider={createHttpSearchProvider('/api/docs/search')}
+/>;
+```
+
+Use `records={manifest.search}` instead for small, local-only sites. When a result points to a heading record, the `route` includes the hash so the app can navigate directly to that section.
+
+## DocsVersionSelect
+
+`DocsVersionSelect` scopes by collection but is presented as a version switcher. Use collection names such as `Latest`, `v3`, or `v2` when collections represent docs versions.
+
+```tsx
+<DocsVersionSelect
+  includeAll
+  labelHidden
+  onValueChange={setCollectionId}
+  options={createDocsVersionOptions(manifest.collections)}
+  value={collectionId}
+/>
+```
+
+## DocsPagination
+
+`DocsPagination` reads the current page and flattened nav to render previous and next links.
+
+```tsx
+<DocsPagination nav={nav} page={page} />
+```
+
+## Callout and CodeBlock
+
+`Callout` and `CodeBlock` are small content primitives used by Markdown or MDX renderers.
+
+```tsx
+<Callout type="info" title="Server-only">
+  Build the filesystem manifest from getStaticProps or another server context.
+</Callout>
+
+<CodeBlock language="tsx" title="Docs route" code={source} />
+```
+
+## CodeBlock highlighting
+
+Chakra Docs uses Chakra UI's `CodeBlock` component internally. Syntax highlighting is configured once through `DocsProvider` by passing a Chakra code block adapter.
+
+```tsx
+import { createShikiAdapter } from '@chakra-ui/react'
+import { DocsProvider } from '@chakra-docs/chakra'
+
+const shikiAdapter = createShikiAdapter({
+  theme: {
+    light: 'github-light',
+    dark: 'github-dark',
+  },
+  async load() {
+    const { createHighlighter } = await import('shiki')
+
+    return createHighlighter({
+      langs: ['bash', 'tsx', 'ts', 'json', 'markdown', 'text'],
+      themes: ['github-light', 'github-dark'],
+    })
+  },
+})
+
+<DocsProvider config={{ codeBlock: { adapter: shikiAdapter } }}>
+  <Component {...pageProps} />
+</DocsProvider>
+```
+
+If no adapter is provided, Chakra UI's code block falls back to plain text rendering.
+
+## Host-owned pieces
+
+The host app still owns the page shell, theme configuration, MDX renderer, search UI, analytics wiring, and any auth or product navigation around the docs section.

@@ -1,0 +1,86 @@
+{
+  "name": "@chakra-docs/astro",
+  "version": "0.0.0",
+  "description": "Astro static path helpers for Chakra Docs manifests.",
+  "keywords": [
+    "chakra-ui",
+    "documentation",
+    "docs",
+    "astro",
+    "react",
+    "static-paths"
+  ],
+  "license": "MIT",
+  "author": "Ryan Hefner <hi@ryanhefner.com> (https://www.ryanhefner.com)",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/ryanhefner"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/ryanhefner"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/ryanhefner"
+    }
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "prepack": "npm exec nx -- run @chakra-docs/astro:build --skipNxCache --outputStyle=static"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.d.ts.map",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "@chakra-docs/core": "0.0.0",
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@astrojs/react": ">=4 <6",
+    "astro": ">=5 <8",
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20"
+  },
+  "peerDependenciesMeta": {
+    "@astrojs/react": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanhefner/chakra-docs.git",
+    "directory": "packages/astro"
+  },
+  "bugs": {
+    "url": "https://github.com/ryanhefner/chakra-docs/issues"
+  },
+  "homepage": "https://github.com/ryanhefner/chakra-docs#readme",
+  "nx": {
+    "tags": [
+      "layer:adapter",
+      "scope:astro"
+    ]
+  }
+}

@@ -4,16 +4,40 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/strings"
+      "path": "./packages/core"
     },
     {
-      "path": "./packages/colors"
+      "path": "./packages/source-filesystem"
     },
     {
-      "path": "./packages/async"
+      "path": "./packages/source-git"
     },
     {
-      "path": "./packages/utils"
+      "path": "./packages/chakra"
+    },
+    {
+      "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/next"
+    },
+    {
+      "path": "./packages/astro"
+    },
+    {
+      "path": "./packages/react-router"
+    },
+    {
+      "path": "./packages/search-pagefind"
+    },
+    {
+      "path": "./packages/feed"
+    },
+    {
+      "path": "./apps/docs"
+    },
+    {
+      "path": "./packages/search"
     }
   ]
 }

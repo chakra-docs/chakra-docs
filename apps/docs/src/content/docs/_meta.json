@@ -1,0 +1,33 @@
+{
+  "index": {
+    "title": "Overview",
+    "order": 0
+  },
+  "installation": {
+    "title": "Installation",
+    "order": 1
+  },
+  "configuration": {
+    "title": "Configuration",
+    "order": 2,
+    "badge": "Source"
+  },
+  "pages-router": {
+    "title": "Pages Router",
+    "order": 3,
+    "badge": "Next"
+  },
+  "components": {
+    "title": "Components",
+    "order": 4,
+    "badge": "Chakra"
+  },
+  "search": {
+    "title": "Search",
+    "order": 5
+  },
+  "composition": {
+    "title": "Composition",
+    "order": 6
+  }
+}

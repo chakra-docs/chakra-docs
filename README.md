@@ -1,203 +1,131 @@
-# Nx TypeScript Repository
+# Chakra Docs
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+**Add a beautiful documentation section to your existing Chakra UI app — without handing your whole site over to a docs framework.**
 
-✨ A repository showcasing key [Nx](https://nx.dev) features for TypeScript monorepos ✨
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/setup/connect-workspace/guide). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
-## 📦 Project Overview
+Most documentation tools want to own your entire site. Chakra Docs takes the opposite approach: a framework-free document model at the core, Chakra UI components on top, and small adapters for your router and content source. You compose exactly the pieces you need, and your app stays yours.
 
-This repository demonstrates a production-ready TypeScript monorepo with:
+[![CI](https://github.com/ryanhefner/chakra-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanhefner/chakra-docs/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- **3 Publishable Packages** - Ready for NPM publishing
+## Why Chakra Docs?
 
-  - `@org/strings` - String manipulation utilities
-  - `@org/async` - Async utility functions with retry logic
-  - `@org/colors` - Color conversion and manipulation utilities
+- **Composable, not monolithic** — mount docs at `/docs` (or anywhere) inside the app you already have. No site takeover, no separate build.
+- **Native Chakra UI** — layout, sidebar, table of contents, search dialog, callouts, and code blocks built from Chakra primitives, themed by your existing system.
+- **Bring your own framework** — first-class helpers for Next.js (App and Pages Router), Astro, and React Router / Remix.
+- **Content from anywhere** — local Markdown/MDX with frontmatter and `_meta.json` ordering, or content synced from remote Git repositories.
+- **Batteries optional** — server search, static Pagefind search, RSS/Atom/JSON feeds, sitemaps, and a CLI for generated manifests. Use them or don't.
+- **Typed end to end** — one `DocsManifest` document model shared by every package.
 
-- **1 Internal Library**
-  - `@org/utils` - Shared utilities (private, not published)
-
-## 🚀 Quick Start
+## Quick start (Next.js Pages Router)
 
 ```bash
-# Clone the repository
-git clone <your-fork-url>
-cd typescript-template
+npm install @chakra-docs/core @chakra-docs/source-filesystem @chakra-docs/chakra @chakra-docs/next
+```
 
-# Install dependencies
+Describe where your content lives:
+
+```ts
+// docs/manifest.ts
+import {
+  buildFilesystemManifest,
+  defineDocsDiscoveryConfig,
+} from '@chakra-docs/source-filesystem';
+
+const config = defineDocsDiscoveryConfig({
+  rootDir: process.cwd(),
+  collections: [
+    {
+      id: 'docs',
+      name: 'Docs',
+      contentPath: 'content/docs',
+      basePath: '/docs',
+    },
+  ],
+});
+
+export const getDocsManifest = () => buildFilesystemManifest({ config });
+```
+
+Render it with a catch-all route:
+
+```tsx
+// pages/docs/[[...slug]].tsx
+import { DocsArticle, DocsLayout, MarkdownContent } from '@chakra-docs/chakra';
+import {
+  createGetStaticPaths,
+  createPagesRouterDocProps,
+  serializeNextProps,
+} from '@chakra-docs/next/pages';
+import { getDocsManifest } from '../../docs/manifest';
+
+export default function DocsPage({ page, nav }) {
+  return (
+    <DocsLayout headings={page.headings} nav={nav} page={page}>
+      <DocsArticle headings={page.headings} page={page}>
+        <MarkdownContent source={page.body ?? ''} />
+      </DocsArticle>
+    </DocsLayout>
+  );
+}
+
+export const getStaticPaths = async () =>
+  createGetStaticPaths({ manifest: await getDocsManifest() })();
+
+export const getStaticProps = async ({ params }) => {
+  const manifest = await getDocsManifest();
+  const route = `/docs/${(params?.slug ?? []).join('/')}`;
+  const props = createPagesRouterDocProps({ manifest }, route);
+
+  return props ? { props: serializeNextProps(props) } : { notFound: true };
+};
+```
+
+Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [`apps/docs`](apps/docs) app in this repo is a complete working example.
+
+## Packages
+
+| Package                                                        | Description                                                                              |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`@chakra-docs/core`](packages/core)                           | Framework-free document model, manifest builders, and query helpers.                     |
+| [`@chakra-docs/chakra`](packages/chakra)                       | Chakra UI documentation components: layout, sidebar, TOC, search, callouts, code blocks. |
+| [`@chakra-docs/source-filesystem`](packages/source-filesystem) | Server-side filesystem Markdown/MDX source with frontmatter and `_meta.json`.            |
+| [`@chakra-docs/source-git`](packages/source-git)               | Sync documentation content from remote Git repositories at pinned refs.                  |
+| [`@chakra-docs/cli`](packages/cli)                             | `chakra-docs` CLI: build, dev watch, validate, inspect, and sync.                        |
+| [`@chakra-docs/next`](packages/next)                           | Next.js App Router and Pages Router helpers plus a docs-aware `Link`.                    |
+| [`@chakra-docs/astro`](packages/astro)                         | Astro `getStaticPaths` helpers.                                                          |
+| [`@chakra-docs/react-router`](packages/react-router)           | React Router / Remix route object helpers.                                               |
+| [`@chakra-docs/search`](packages/search)                       | Framework-neutral server search, HTTP handlers, and a lightweight remote client.         |
+| [`@chakra-docs/search-pagefind`](packages/search-pagefind)     | Pagefind record generation for static search.                                            |
+| [`@chakra-docs/feed`](packages/feed)                           | RSS, Atom, and JSON Feed generation.                                                     |
+
+## Development
+
+This repo uses Nx for package orchestration.
+
+The packages are ESM-only and require Node.js 22.22 or newer. Framework peer
+ranges are deliberately bounded and are exercised in CI at both the minimum
+supported versions and the workspace's current versions. Chakra consumers must
+install `@emotion/react` alongside `@chakra-ui/react`.
+
+```bash
 npm install
-
-# Build all packages
-npx nx run-many -t build
-
-# Run tests
-npx nx run-many -t test
-
-# Lint all projects
-npx nx run-many -t lint
-
-# Run everything in parallel
-npx nx run-many -t lint test build --parallel=3
-
-# Visualize the project graph
-npx nx graph
+npm run build
+npm run test
+npm run lint
+npm run release:smoke
+npm run yalc:publish
 ```
 
-## ⭐ Featured Nx Capabilities
+The project spec lives at [docs/specs/chakra-docs-package-spec.md](docs/specs/chakra-docs-package-spec.md).
 
-This repository showcases several powerful Nx features:
+## Support
 
-### 1. 🔒 Module Boundaries
+If Chakra Docs is useful to you, consider supporting its development:
 
-Enforces architectural constraints using tags. Each package has specific dependencies it can use:
+- [GitHub Sponsors](https://github.com/sponsors/ryanhefner)
+- [Patreon](https://www.patreon.com/ryanhefner)
+- [Open Collective](https://opencollective.com/ryanhefner)
 
-- `scope:shared` (utils) - Can be used by all packages
-- `scope:strings` - Can only depend on shared utilities
-- `scope:async` - Can only depend on shared utilities
-- `scope:colors` - Can only depend on shared utilities
+## License
 
-**Try it out:**
-
-```bash
-# See the current project graph and boundaries
-npx nx graph
-
-# View a specific project's details
-npx nx show project strings --web
-```
-
-[Learn more about module boundaries →](https://nx.dev/features/enforce-module-boundaries)
-
-### 2. 🛠️ Custom Run Commands
-
-Packages can define custom commands beyond standard build/test/lint:
-
-```bash
-# Run the custom build-base command for strings package
-npx nx run strings:build-base
-
-# See all available targets for a project
-npx nx show project strings
-```
-
-[Learn more about custom run commands →](https://nx.dev/concepts/executors-and-configurations)
-
-### 3. 🔧 Self-Healing CI
-
-The CI pipeline includes `nx fix-ci` which automatically identifies and suggests fixes for common issues. To test it, you can make a change to `async-retry.spec.ts` so that it fails, and create a PR.
-
-```bash
-# Run tests and see the failure
-npx nx test async
-
-# In CI, this command provides automated fixes
-npx nx fix-ci
-```
-
-[Learn more about self-healing CI →](https://nx.dev/ci/features/self-healing-ci)
-
-### 4. 📦 Package Publishing
-
-Manage releases and publishing with Nx Release:
-
-```bash
-# Dry run to see what would be published
-npx nx release --dry-run
-
-# Version and release packages
-npx nx release
-
-# Publish only specific packages
-npx nx release publish --projects=strings,colors
-```
-
-[Learn more about Nx Release →](https://nx.dev/features/manage-releases)
-
-## 📁 Project Structure
-
-```
-├── packages/
-│   ├── strings/     [scope:strings] - String utilities (publishable)
-│   ├── async/       [scope:async]   - Async utilities (publishable)
-│   ├── colors/      [scope:colors]  - Color utilities (publishable)
-│   └── utils/       [scope:shared]  - Shared utilities (private)
-├── nx.json          - Nx configuration
-├── tsconfig.json    - TypeScript configuration
-└── eslint.config.mjs - ESLint with module boundary rules
-```
-
-## 🏷️ Understanding Tags
-
-This repository uses tags to enforce module boundaries:
-
-| Package        | Tag             | Can Import From        |
-| -------------- | --------------- | ---------------------- |
-| `@org/utils`   | `scope:shared`  | Nothing (base library) |
-| `@org/strings` | `scope:strings` | `scope:shared`         |
-| `@org/async`   | `scope:async`   | `scope:shared`         |
-| `@org/colors`  | `scope:colors`  | `scope:shared`         |
-
-The ESLint configuration enforces these boundaries, preventing circular dependencies and maintaining clean architecture.
-
-## 🧪 Testing Module Boundaries
-
-To see module boundary enforcement in action:
-
-1. Try importing `@org/colors` into `@org/strings`
-2. Run `npx nx lint strings`
-3. You'll see an error about violating module boundaries
-
-## 📚 Useful Commands
-
-```bash
-# Project exploration
-npx nx graph                                    # Interactive dependency graph
-npx nx list                                     # List installed plugins
-npx nx show project strings --web              # View project details
-
-# Development
-npx nx build strings                           # Build a specific package
-npx nx test async                              # Test a specific package
-npx nx lint colors                             # Lint a specific package
-
-# Running multiple tasks
-npx nx run-many -t build                       # Build all projects
-npx nx run-many -t test --parallel=3          # Test in parallel
-npx nx run-many -t lint test build            # Run multiple targets
-
-# Affected commands (great for CI)
-npx nx affected -t build                       # Build only affected projects
-npx nx affected -t test                        # Test only affected projects
-
-# Release management
-npx nx release --dry-run                       # Preview release changes
-npx nx release                                 # Create a new release
-```
-
-## Nx Cloud
-
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## 🔗 Learn More
-
-- [Nx Documentation](https://nx.dev)
-- [Module Boundaries](https://nx.dev/features/enforce-module-boundaries)
-- [Custom Commands](https://nx.dev/concepts/executors-and-configurations)
-- [Self-Healing CI](https://nx.dev/ci/features/self-healing-ci)
-- [Releasing Packages](https://nx.dev/features/manage-releases)
-- [Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud)
-
-## 💬 Community
-
-Join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+[MIT](LICENSE) — Chakra Docs is a community project and is not affiliated with or endorsed by [Chakra UI](https://chakra-ui.com).

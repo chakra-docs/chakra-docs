@@ -1,0 +1,6 @@
+# Security-sensitive automation should always receive an explicit owner review.
+/.github/workflows/ @ryanhefner
+/SECURITY.md @ryanhefner
+/docs/RELEASING.md @ryanhefner
+/scripts/release-smoke.mjs @ryanhefner
+/nx.json @ryanhefner

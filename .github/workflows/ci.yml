@@ -2,39 +2,163 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 permissions:
   actions: read
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   main:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           filter: tree:0
           fetch-depth: 0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="typecheck"
-
       # Cache node_modules
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
           cache: 'npm'
+
+      - run: npm install --global npm@11.13.0
 
       - run: npm ci
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      - run: npx nx record -- npx nx format:check --base="remotes/origin/main"
-      - run: npx nx run-many -t lint test build typecheck
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
-        if: always()
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Audit complete dependency tree
+        run: npm audit --audit-level=high
+
+      - name: Check formatting
+        run: npm exec nx -- format:check --all
+
+      - name: Lint
+        run: npm exec nx -- run-many -t lint --parallel=3
+
+      - name: Typecheck
+        run: npm exec nx -- run-many -t typecheck --parallel=3
+
+      - name: Unit tests with coverage
+        run: npm exec nx -- run-many -t test --coverage --parallel=3
+
+      - name: Build
+        run: npm exec nx -- run-many -t build --parallel=3
+
+      - name: Browser tests
+        run: npm exec nx -- run docs:e2e --skipNxCache
+
+      - name: Package consumer smoke test
+        run: npm run release:smoke
+
+      - name: Upload diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-main-diagnostics-${{ github.run_attempt }}
+          path: |
+            coverage
+            **/coverage
+            **/test-output
+            apps/docs/.next/trace
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+  node-22-compatibility:
+    name: Node 22 package compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22.22.0'
+          cache: 'npm'
+
+      - run: npm install --global npm@11.13.0
+
+      - run: npm ci
+
+      - name: Typecheck packages
+        run: npm exec nx -- run-many -t typecheck --exclude=docs --parallel=3
+
+      - name: Test packages with coverage
+        run: npm exec nx -- run-many -t test --coverage --parallel=3
+
+      - name: Build packages
+        run: npm exec nx -- run-many -t build --exclude=docs --parallel=3
+
+      - name: Package consumer smoke test
+        run: npm run release:smoke
+
+      - name: Upload diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-node-22-diagnostics-${{ github.run_attempt }}
+          path: |
+            coverage
+            **/coverage
+            **/test-output
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+
+  minimum-peers:
+    name: Minimum supported peers
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22.22.0'
+          cache: 'npm'
+
+      - run: npm install --global npm@11.13.0
+      - run: npm ci
+
+      - name: Build packages
+        run: npm exec nx -- run-many -t build --exclude=docs --parallel=3
+
+      - name: Test packed packages against minimum peers
+        env:
+          CHAKRA_DOCS_PEER_PROFILE: minimum
+        run: npm run release:smoke
+
+      - name: Upload diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-minimum-peers-diagnostics-${{ github.run_attempt }}
+          path: |
+            coverage
+            **/coverage
+            **/test-output
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

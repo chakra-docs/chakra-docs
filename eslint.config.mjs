@@ -22,20 +22,52 @@ export default [
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
           depConstraints: [
             {
-              sourceTag: 'scope:shared',
-              onlyDependOnLibsWithTags: ['scope:shared'],
+              sourceTag: 'layer:core',
+              onlyDependOnLibsWithTags: ['layer:core'],
             },
             {
-              sourceTag: 'scope:async',
-              onlyDependOnLibsWithTags: ['scope:shared', 'scope:async'],
+              sourceTag: 'layer:source',
+              onlyDependOnLibsWithTags: ['layer:core', 'layer:source'],
             },
             {
-              sourceTag: 'scope:colors',
-              onlyDependOnLibsWithTags: ['scope:shared', 'scope:colors'],
+              sourceTag: 'layer:ui',
+              onlyDependOnLibsWithTags: ['layer:core', 'layer:ui'],
             },
             {
-              sourceTag: 'scope:strings',
-              onlyDependOnLibsWithTags: ['scope:shared', 'scope:strings'],
+              sourceTag: 'layer:cli',
+              onlyDependOnLibsWithTags: [
+                'layer:core',
+                'layer:source',
+                'layer:cli',
+              ],
+            },
+            {
+              sourceTag: 'layer:adapter',
+              onlyDependOnLibsWithTags: [
+                'layer:core',
+                'layer:ui',
+                'layer:source',
+                'layer:adapter',
+                'layer:integration',
+              ],
+            },
+            {
+              sourceTag: 'layer:integration',
+              onlyDependOnLibsWithTags: [
+                'layer:core',
+                'layer:ui',
+                'layer:integration',
+              ],
+            },
+            {
+              sourceTag: 'layer:app',
+              onlyDependOnLibsWithTags: [
+                'layer:core',
+                'layer:ui',
+                'layer:source',
+                'layer:adapter',
+                'layer:integration',
+              ],
             },
           ],
         },

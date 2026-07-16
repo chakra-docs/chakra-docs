@@ -1,0 +1,79 @@
+{
+  "name": "@chakra-docs/cli",
+  "version": "0.0.0",
+  "description": "Build and development CLI for Chakra Docs manifests.",
+  "keywords": [
+    "chakra-ui",
+    "documentation",
+    "docs",
+    "cli",
+    "manifest",
+    "build-tool"
+  ],
+  "license": "MIT",
+  "author": "Ryan Hefner <hi@ryanhefner.com> (https://www.ryanhefner.com)",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/ryanhefner"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/ryanhefner"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/ryanhefner"
+    }
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "prepack": "npm exec nx -- run @chakra-docs/cli:build --skipNxCache --outputStyle=static"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "chakra-docs": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.d.ts.map",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "@chakra-docs/core": "0.0.0",
+    "@chakra-docs/source-filesystem": "0.0.0",
+    "@chakra-docs/source-git": "0.0.0",
+    "tslib": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanhefner/chakra-docs.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/ryanhefner/chakra-docs/issues"
+  },
+  "homepage": "https://github.com/ryanhefner/chakra-docs#readme",
+  "nx": {
+    "tags": [
+      "layer:cli",
+      "scope:cli"
+    ]
+  }
+}

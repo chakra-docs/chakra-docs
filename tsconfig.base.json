@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "composite": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "emitDeclarationOnly": true,
     "importHelpers": true,
     "isolatedModules": true,
@@ -16,6 +16,23 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@org/source"]
+    "baseUrl": ".",
+    "customConditions": ["@chakra-docs/source"],
+    "paths": {
+      "@chakra-docs/astro": ["packages/astro/src/index.ts"],
+      "@chakra-docs/chakra": ["packages/chakra/src/index.ts"],
+      "@chakra-docs/cli": ["packages/cli/src/index.ts"],
+      "@chakra-docs/core": ["packages/core/src/index.ts"],
+      "@chakra-docs/feed": ["packages/feed/src/index.ts"],
+      "@chakra-docs/next": ["packages/next/src/index.ts"],
+      "@chakra-docs/next/app": ["packages/next/src/app.ts"],
+      "@chakra-docs/next/pages": ["packages/next/src/pages.ts"],
+      "@chakra-docs/react-router": ["packages/react-router/src/index.ts"],
+      "@chakra-docs/search-pagefind": ["packages/search-pagefind/src/index.ts"],
+      "@chakra-docs/source-filesystem": [
+        "packages/source-filesystem/src/index.ts"
+      ],
+      "@chakra-docs/source-git": ["packages/source-git/src/index.ts"]
+    }
   }
 }

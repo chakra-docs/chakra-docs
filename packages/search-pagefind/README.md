@@ -1,0 +1,48 @@
+# @chakra-docs/search-pagefind
+
+Pagefind document record helpers for Chakra Docs search manifests.
+
+This package maps generated `DocsSearchRecord` data (from a Chakra Docs manifest's `search` array) into Pagefind-friendly document records with `url`, `title`, `content`, and `meta` fields.
+
+## Install
+
+```bash
+npm install @chakra-docs/search-pagefind pagefind
+```
+
+Optional peer dependency: `pagefind` (>=1 <2) — only needed if you index the
+records with Pagefind's Node API.
+
+## Usage
+
+```ts
+import { createPagefindDocumentRecords } from '@chakra-docs/search-pagefind';
+import * as pagefind from 'pagefind';
+import { docsManifest } from './.chakra-docs/generated';
+
+const records = createPagefindDocumentRecords(docsManifest.search);
+
+const { index } = await pagefind.createIndex();
+
+for (const record of records) {
+  await index.addCustomRecord({
+    url: record.url,
+    content: record.content,
+    language: 'en',
+    meta: { title: record.title, ...record.meta },
+  });
+}
+
+await index.writeFiles({ outputPath: 'public/pagefind' });
+```
+
+Page-level records map to the page route and heading-level records map to `route#heading-id`, so results can deep-link into sections. Canonically encoded route segments are preserved as-is in Pagefind URLs. Each record's `meta` carries `id`, `kind` (`page` or `heading`), `pageId`, `pageTitle`, `sectionTitle`, `headingId`, and `collectionId` as strings (empty when absent).
+
+## API
+
+- `createPagefindDocumentRecords(records)` — map `DocsSearchRecord[]` to `PagefindDocumentRecord[]` (`url`, `title`, `content`, `meta`).
+- `PagefindDocumentRecord` — result type.
+
+## License
+
+MIT
