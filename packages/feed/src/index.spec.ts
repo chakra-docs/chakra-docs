@@ -324,6 +324,62 @@ describe('createFeedArtifacts json', () => {
       'https://example.com/docs/gamma',
     ]);
   });
+
+  it('provides required content_text for every item', () => {
+    const { json } = createFeedArtifacts(entries, options);
+    const parsed = JSON.parse(json) as {
+      items: Array<{
+        id: string;
+        content_text: string;
+        summary?: string;
+      }>;
+    };
+
+    expect(parsed.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'docs:alpha',
+          content_text: 'Covers <angle> "quoted" & \'apostrophe\' cases.',
+          summary: 'Covers <angle> "quoted" & \'apostrophe\' cases.',
+        }),
+        expect.objectContaining({
+          id: 'docs:beta',
+          content_text: 'Beta',
+        }),
+        expect.objectContaining({
+          id: 'docs:gamma',
+          content_text: 'Gamma',
+        }),
+      ]),
+    );
+
+    for (const item of parsed.items) {
+      expect(Object.hasOwn(item, 'content_text')).toBe(true);
+      expect(item.content_text).toEqual(expect.any(String));
+    }
+
+    expect(
+      parsed.items.find((item) => item.id === 'docs:gamma'),
+    ).not.toHaveProperty('summary');
+  });
+
+  it('uses the 1.1 authors array and retains the legacy author field', () => {
+    const { json } = createFeedArtifacts(entries, options);
+    const parsed = JSON.parse(json) as {
+      items: Array<{
+        id: string;
+        authors?: Array<{ name: string }>;
+        author?: { name: string };
+      }>;
+    };
+    const alpha = parsed.items.find((item) => item.id === 'docs:alpha');
+    const gamma = parsed.items.find((item) => item.id === 'docs:gamma');
+
+    expect(alpha?.authors).toEqual([{ name: 'Ada Lovelace' }]);
+    expect(alpha?.author).toEqual({ name: 'Ada Lovelace' });
+    expect(gamma).not.toHaveProperty('authors');
+    expect(gamma).not.toHaveProperty('author');
+  });
 });
 
 describe('url resolution', () => {

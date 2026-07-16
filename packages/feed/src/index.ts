@@ -141,15 +141,23 @@ function createJsonFeed(
       feed_url: options.feedUrl,
       description: options.description,
       language: options.language,
-      items: entries.map((entry) => ({
-        id: entry.id,
-        url: resolveUrl(entry.url, options.siteUrl),
-        title: entry.title,
-        summary: entry.description,
-        date_published: entry.date ? formatIso(entry.date) : undefined,
-        author: entry.author ? { name: entry.author } : undefined,
-        tags: entry.tags,
-      })),
+      items: entries.map((entry) => {
+        const author = entry.author ? { name: entry.author } : undefined;
+
+        return {
+          id: entry.id,
+          url: resolveUrl(entry.url, options.siteUrl),
+          title: entry.title,
+          content_text: entry.description ?? entry.title,
+          summary: entry.description,
+          date_published: entry.date ? formatIso(entry.date) : undefined,
+          authors: author ? [author] : undefined,
+          // Retain JSON Feed 1.0 compatibility while consumers migrate to
+          // the 1.1 `authors` field.
+          author,
+          tags: entry.tags,
+        };
+      }),
     },
     null,
     2,
