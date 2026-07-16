@@ -1,3 +1,4 @@
+import { isSafeDocsRoute } from '@chakra-docs/core';
 import type { DocsSearchResponse, DocsSearchResult } from './search.js';
 
 export function isDocsSearchResponse(
@@ -17,6 +18,7 @@ function isDocsSearchResult(value: unknown): value is DocsSearchResult {
     !isRecord(value) ||
     typeof value.id !== 'string' ||
     typeof value.route !== 'string' ||
+    !isSafeDocsRoute(value.route) ||
     typeof value.title !== 'string' ||
     'text' in value ||
     'headings' in value

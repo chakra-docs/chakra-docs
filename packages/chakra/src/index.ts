@@ -15,6 +15,8 @@ import * as ChakraRuntime from '@chakra-ui/react';
 import {
   createCollectionOptions,
   createHeadingIdGenerator,
+  isSafeDocsRoute,
+  isSafeLinkHref,
   stripMarkdown,
 } from '@chakra-docs/core';
 import type {
@@ -752,6 +754,10 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   }
 
   function navigateToLocation(href: string) {
+    if (!isSafeDocsRoute(href)) {
+      return;
+    }
+
     const location = globalThis as unknown as {
       location?: { assign?: (href: string) => void; href?: string };
     };
@@ -1549,6 +1555,10 @@ function getCodeText(children: ReactNode): string {
 function DocsLink(props: DocsLinkProps): ReactNode {
   const config = useDocsConfig();
   const LinkComponent = config.linkComponent;
+
+  if (!isSafeLinkHref(props.href)) {
+    return createElement('span', null, props.children);
+  }
 
   if (LinkComponent && isInternalHref(props.href)) {
     return createElement(

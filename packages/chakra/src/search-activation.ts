@@ -1,4 +1,5 @@
 import type { DocsSearchResult } from '@chakra-docs/search';
+import { isSafeDocsRoute } from '@chakra-docs/core';
 
 export type DocsAnchorClickEvent = {
   altKey?: boolean;
@@ -21,6 +22,11 @@ export function activateSearchResult(
   record: DocsSearchResult,
   options: ActivateSearchResultOptions,
 ): void {
+  if (!isSafeDocsRoute(record.route)) {
+    options.event?.preventDefault();
+    return;
+  }
+
   if (options.event && !shouldHandleNavigationClick(options.event)) {
     return;
   }

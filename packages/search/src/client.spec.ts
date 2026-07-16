@@ -192,6 +192,31 @@ describe('createHttpSearchProvider', () => {
     );
   });
 
+  it.each([
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    ' javascript:alert(1)',
+    'java\tscript:alert(1)',
+    'java\nscript:alert(1)',
+    `java${String.fromCharCode(0)}script:alert(1)`,
+    'data:text/html,unsafe',
+    '//attacker.example/docs',
+    'https://attacker.example/docs',
+    'docs/install',
+  ])('rejects unsafe search result route %s', async (route) => {
+    const provider = createHttpSearchProvider('/search', {
+      fetch: async () =>
+        jsonResponse({
+          query: '',
+          results: [{ id: 'unsafe', route, title: 'Unsafe' }],
+        }),
+    });
+
+    await expect(provider({ query: '' })).rejects.toThrow(
+      'Search endpoint returned an invalid response.',
+    );
+  });
+
   it('accepts all compact optional result fields', async () => {
     const body = {
       query: 'install',

@@ -306,6 +306,42 @@ describe('MarkdownContent', () => {
       /<a href="https:\/\/example\.com"[^>]*>external<\/a>/,
     );
   });
+
+  it.each([
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    ' javascript:alert(1)',
+    'java\tscript:alert(1)',
+    `java${String.fromCharCode(0)}script:alert(1)`,
+    'data:text/html,unsafe',
+    '//attacker.example/docs',
+  ])('renders unsafe Markdown href %s as inert text', (href) => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: `[unsafe](${href})`,
+      }),
+    );
+
+    expect(markup).toContain('>unsafe</span>');
+    expect(markup).not.toContain('href=');
+  });
+
+  it.each([
+    ['bare relative', 'guides/install'],
+    ['query only', '?version=3'],
+    ['fragment only', '#usage'],
+    ['HTTP', 'https://example.com/docs'],
+    ['email', 'mailto:docs@example.com'],
+    ['phone', 'tel:+12125550100'],
+  ])('preserves safe %s Markdown hrefs', (_description, href) => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: `[safe](${href})`,
+      }),
+    );
+
+    expect(markup).toContain(`href="${href}"`);
+  });
 });
 
 describe('DocsLayout', () => {
@@ -556,6 +592,50 @@ describe('activateSearchResult', () => {
 
     expect(onSelect).toHaveBeenCalledWith(record);
     expect(navigate).toHaveBeenCalledWith(record.route);
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    ' javascript:alert(1)',
+    'java\tscript:alert(1)',
+    'java\nscript:alert(1)',
+    `java${String.fromCharCode(0)}script:alert(1)`,
+    'data:text/html,unsafe',
+    '//attacker.example/docs',
+    'https://attacker.example/docs',
+    'docs/install',
+  ])('blocks unsafe keyboard search route %s', (route) => {
+    const unsafeRecord = { ...record, route };
+    const navigate = vi.fn();
+    const onNavigate = vi.fn();
+    const onSelect = vi.fn();
+
+    activateSearchResult(unsafeRecord, { navigate, onNavigate, onSelect });
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('prevents pointer navigation for an unsafe search route', () => {
+    const event = createClickEvent();
+    const unsafeRecord = { ...record, route: 'javascript:alert(1)' };
+    const navigate = vi.fn();
+    const onNavigate = vi.fn();
+    const onSelect = vi.fn();
+
+    activateSearchResult(unsafeRecord, {
+      event,
+      navigate,
+      onNavigate,
+      onSelect,
+    });
+
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it.each([

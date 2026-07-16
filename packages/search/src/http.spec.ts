@@ -207,6 +207,27 @@ describe('createFetchSearchHandler', () => {
     }
   });
 
+  it('does not serialize an unsafe provider result route', async () => {
+    const response = await createFetchSearchHandler(async () => ({
+      query: '',
+      results: [
+        {
+          id: 'unsafe',
+          route: '//attacker.example/docs',
+          title: 'Unsafe',
+        },
+      ],
+    }))(request());
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'search_failed',
+        message: 'Search is temporarily unavailable.',
+      },
+    });
+  });
+
   it.each([
     [{ maxQueryLength: -1 }, 'maxQueryLength'],
     [{ maxCollectionIds: 1.2 }, 'maxCollectionIds'],
