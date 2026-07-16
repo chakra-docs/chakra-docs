@@ -48,7 +48,7 @@
     },
     "start": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": [],
       "continuous": true,
       "options": {
         "cwd": "apps/docs",
@@ -57,6 +57,9 @@
           "NODE_ENV": "production"
         }
       }
+    },
+    "e2e": {
+      "dependsOn": ["build"]
     },
     "serve-static": {
       "executor": "nx:run-commands",

@@ -6,7 +6,8 @@ export default defineConfig({
     ...nxE2EPreset(__filename, {
       cypressDir: 'cypress',
       webServerCommands: {
-        default: 'nx run docs:serve-static',
+        // `docs:e2e` builds first, so this timeout covers server startup only.
+        default: 'nx run docs:start',
       },
       webServerConfig: {
         reuseExistingServer: false,
