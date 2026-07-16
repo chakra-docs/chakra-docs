@@ -394,7 +394,7 @@ async function smokePackedConsumer() {
         // 4.1 is the first 4.x release whose React type peers can coexist with
         // the type surface used by Next 15.5 in this combined consumer.
         '@astrojs/react': '4.1.0',
-        '@chakra-ui/react': '3.0.0',
+        '@chakra-ui/react': '3.36.0',
         '@emotion/react': '11.0.0',
         astro: '5.0.0',
         next: '15.5.18',
@@ -465,7 +465,7 @@ for (const entryPoint of entryPoints) {
 const { createElement } = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { ChakraProvider, defaultSystem } = await import('@chakra-ui/react');
-const { Callout, DocsProvider } = await import('@chakra-docs/chakra');
+const { Callout, CodeBlock, DocsProvider } = await import('@chakra-docs/chakra');
 const markup = renderToStaticMarkup(
   createElement(
     ChakraProvider,
@@ -474,10 +474,19 @@ const markup = renderToStaticMarkup(
       DocsProvider,
       null,
       createElement(Callout, { title: 'Packed' }, 'Rendered'),
+      createElement(CodeBlock, {
+        code: 'const packed = true;',
+        language: 'ts',
+        title: 'Packed code',
+      }),
     ),
   ),
 );
-if (!markup.includes('Packed') || !markup.includes('Rendered')) {
+if (
+  !markup.includes('Packed') ||
+  !markup.includes('Rendered') ||
+  !markup.includes('const packed = true;')
+) {
   throw new Error('Packed Chakra peer combination did not render correctly.');
 }
 `,

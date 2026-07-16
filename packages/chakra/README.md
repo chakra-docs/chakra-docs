@@ -10,7 +10,7 @@ Chakra-based building blocks for composing documentation pages inside existing C
 npm install @chakra-docs/chakra @chakra-ui/react @emotion/react react react-dom
 ```
 
-Peer dependencies: `@chakra-ui/react` (>=3 <4), `@emotion/react` (>=11 <12),
+Peer dependencies: `@chakra-ui/react` (>=3.36 <4), `@emotion/react` (>=11 <12),
 `react` (>=18 <20), and `react-dom` (>=18 <20). Emotion is a direct peer
 because Chakra UI requires the host application to provide it.
 
