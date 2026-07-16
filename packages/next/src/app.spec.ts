@@ -87,6 +87,49 @@ const multiCollectionManifest = createDocsManifest({
   ],
 });
 
+const specialCharacterPages: DocsPage[] = [
+  {
+    ...publishedPage,
+    id: 'docs:space-name',
+    slug: ['space name'],
+    route: '/docs/space%20name',
+  },
+  {
+    ...publishedPage,
+    id: 'docs:reserved',
+    slug: ['hash#query?'],
+    route: '/docs/hash%23query%3F',
+  },
+  {
+    ...publishedPage,
+    id: 'docs:literal-percent',
+    slug: ['literal%20text'],
+    route: '/docs/literal%2520text',
+  },
+  {
+    ...publishedPage,
+    id: 'docs:unicode',
+    slug: ['café'],
+    route: '/docs/caf%C3%A9',
+  },
+  {
+    ...publishedPage,
+    id: 'docs:malformed-percent',
+    slug: ['invalid%ZZ'],
+    route: '/docs/invalid%ZZ',
+  },
+];
+const specialCharacterManifest = createDocsManifest({
+  collections: [
+    {
+      id: 'docs',
+      basePath: '/docs',
+      pages: specialCharacterPages,
+      nav: [],
+    },
+  ],
+});
+
 describe('createGenerateStaticParams', () => {
   it('returns slug params for published pages only by default', () => {
     const generateStaticParams = createGenerateStaticParams({ manifest });
@@ -154,6 +197,20 @@ describe('createGenerateStaticParams', () => {
       { slug: ['docs', 'v2', 'intro'] },
     ]);
   });
+
+  it('returns decoded special-character params without double-decoding percent text', () => {
+    const generateStaticParams = createGenerateStaticParams({
+      manifest: specialCharacterManifest,
+    });
+
+    expect(generateStaticParams()).toEqual([
+      { slug: ['space name'] },
+      { slug: ['hash#query?'] },
+      { slug: ['literal%20text'] },
+      { slug: ['café'] },
+      { slug: ['invalid%ZZ'] },
+    ]);
+  });
 });
 
 describe('getAppRouterDoc', () => {
@@ -185,5 +242,26 @@ describe('getAppRouterDoc', () => {
 
   it('returns null for an unknown route', () => {
     expect(getAppRouterDoc({ manifest }, '/docs/does-not-exist')).toBeNull();
+  });
+
+  it.each([
+    ['/docs/space name', specialCharacterPages[0]],
+    ['/docs/hash#query?', specialCharacterPages[1]],
+    ['/docs/literal%20text', specialCharacterPages[2]],
+    ['/docs/café', specialCharacterPages[3]],
+    ['/docs/invalid%ZZ', specialCharacterPages[4]],
+  ])('looks up the decoded Next route %s', (route, page) => {
+    expect(getAppRouterDoc({ manifest: specialCharacterManifest }, route)).toBe(
+      page,
+    );
+  });
+
+  it('continues to accept a canonical encoded route', () => {
+    expect(
+      getAppRouterDoc(
+        { manifest: specialCharacterManifest },
+        '/docs/space%20name',
+      ),
+    ).toBe(specialCharacterPages[0]);
   });
 });

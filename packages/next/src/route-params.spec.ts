@@ -84,6 +84,52 @@ describe('createRouteSlug', () => {
     ]);
   });
 
+  it('decodes canonical manifest route segments for Next static params', () => {
+    const page = createPage(
+      'docs',
+      '/docs/space%20name/hash%23query%3F/100%25/caf%C3%A9',
+      ['space name', 'hash#query?', '100%', 'café'],
+    );
+    const manifest = createDocsManifest({
+      collections: [createCollection('docs', '/docs', [page])],
+    });
+
+    expect(createRouteSlug(page, { manifest })).toEqual([
+      'space name',
+      'hash#query?',
+      '100%',
+      'café',
+    ]);
+  });
+
+  it('decodes a literal percent sequence exactly once', () => {
+    const page = createPage('docs', '/docs/literal%2520text', [
+      'literal%20text',
+    ]);
+    const manifest = createDocsManifest({
+      collections: [createCollection('docs', '/docs', [page])],
+    });
+
+    expect(createRouteSlug(page, { manifest })).toEqual(['literal%20text']);
+  });
+
+  it('preserves malformed percent encodings instead of throwing', () => {
+    const page = createPage(
+      'docs',
+      '/docs/incomplete%2/invalid%ZZ/truncated%E0%A4%A',
+      ['incomplete%2', 'invalid%ZZ', 'truncated%E0%A4%A'],
+    );
+    const manifest = createDocsManifest({
+      collections: [createCollection('docs', '/docs', [page])],
+    });
+
+    expect(createRouteSlug(page, { manifest })).toEqual([
+      'incomplete%2',
+      'invalid%ZZ',
+      'truncated%E0%A4%A',
+    ]);
+  });
+
   it('rejects a route outside the configured base path', () => {
     const page = createPage('v2', '/docs/v2/intro', ['intro']);
     const manifest = createDocsManifest({

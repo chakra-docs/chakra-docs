@@ -1,3 +1,4 @@
+import { encodeRouteSegment, getPageByRoute } from '@chakra-docs/core';
 import type { DocsManifest, DocsPage } from '@chakra-docs/core';
 
 interface RouteParamOptions {
@@ -9,10 +10,10 @@ export function createRouteSlug(
   page: DocsPage,
   options: RouteParamOptions,
 ): string[] {
-  const route = splitRoute(page.route);
+  const route = splitRoute(page.route).map(decodeRouteSegment);
   const basePath = splitRoute(
     options.basePath ?? getCommonCollectionBasePath(options.manifest),
-  );
+  ).map(decodeRouteSegment);
 
   if (!basePath.every((segment, index) => route[index] === segment)) {
     throw new Error(
@@ -21,6 +22,19 @@ export function createRouteSlug(
   }
 
   return route.slice(basePath.length);
+}
+
+export function getPageByNextRoute(
+  manifest: DocsManifest,
+  route: string,
+): DocsPage | null {
+  const encodedRoute = formatRoute(
+    splitRoute(route).map(encodeNextRouteSegment),
+  );
+
+  return (
+    getPageByRoute(manifest, encodedRoute) ?? getPageByRoute(manifest, route)
+  );
 }
 
 function getCommonCollectionBasePath(manifest: DocsManifest): string {
@@ -47,6 +61,22 @@ function getCommonCollectionBasePath(manifest: DocsManifest): string {
 
 function splitRoute(route: string): string[] {
   return route.split('/').filter(Boolean);
+}
+
+function decodeRouteSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+function encodeNextRouteSegment(segment: string): string {
+  try {
+    return encodeRouteSegment(segment);
+  } catch {
+    return segment;
+  }
 }
 
 function formatRoute(segments: string[]): string {

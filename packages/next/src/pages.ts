@@ -5,12 +5,8 @@ import type {
   DocsPage,
   DocsSearchRecord,
 } from '@chakra-docs/core';
-import {
-  createCollectionOptions,
-  getPageByRoute,
-  getPublishedPages,
-} from '@chakra-docs/core';
-import { createRouteSlug } from './route-params.js';
+import { createCollectionOptions, getPublishedPages } from '@chakra-docs/core';
+import { createRouteSlug, getPageByNextRoute } from './route-params.js';
 
 export interface NextPagesDocsOptions {
   manifest: DocsManifest;
@@ -57,7 +53,7 @@ export function getPagesRouterDoc(
   options: NextPagesDocsOptions,
   route: string,
 ): DocsPage | null {
-  const page = getPageByRoute(options.manifest, route);
+  const page = getPageByNextRoute(options.manifest, route);
 
   if (!page || getPublishedPages([page], options).length === 0) {
     return null;

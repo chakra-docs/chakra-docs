@@ -1,6 +1,6 @@
-import { getPageByRoute, getPublishedPages } from '@chakra-docs/core';
+import { getPublishedPages } from '@chakra-docs/core';
 import type { DocsManifest, DocsPage } from '@chakra-docs/core';
-import { createRouteSlug } from './route-params.js';
+import { createRouteSlug, getPageByNextRoute } from './route-params.js';
 
 export interface NextAppDocsOptions {
   manifest: DocsManifest;
@@ -21,7 +21,7 @@ export function getAppRouterDoc(
   options: NextAppDocsOptions,
   route: string,
 ): DocsPage | null {
-  const page = getPageByRoute(options.manifest, route);
+  const page = getPageByNextRoute(options.manifest, route);
 
   if (!page || getPublishedPages([page], options).length === 0) {
     return null;
