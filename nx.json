@@ -101,8 +101,7 @@
     },
     "version": {
       "preVersionCommand": "npm exec nx -- run-many -t build",
-      "conventionalCommits": true,
-      "currentVersionResolver": "git-tag"
+      "conventionalCommits": true
     },
     "changelog": {
       "workspaceChangelog": {
