@@ -34,7 +34,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "cypress": "^15.8.0",
     "eslint": "^9.39.4",
-    "eslint-plugin-cypress": "^3.5.0",
+    "eslint-plugin-cypress": "^6.4.3",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "7.35.0",
