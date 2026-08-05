@@ -4,7 +4,7 @@
 
 Most documentation tools want to own your entire site. Chakra Docs takes the opposite approach: a framework-free document model at the core, Chakra UI components on top, and small adapters for your router and content source. You compose exactly the pieces you need, and your app stays yours.
 
-[![CI](https://github.com/ryanhefner/chakra-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanhefner/chakra-docs/actions/workflows/ci.yml)
+[![CI](https://github.com/chakra-docs/chakra-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/chakra-docs/chakra-docs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Why Chakra Docs?

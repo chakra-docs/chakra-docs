@@ -59,13 +59,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ryanhefner/chakra-docs.git",
+    "url": "https://github.com/chakra-docs/chakra-docs.git",
     "directory": "packages/source-git"
   },
   "bugs": {
-    "url": "https://github.com/ryanhefner/chakra-docs/issues"
+    "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/ryanhefner/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
   "nx": {
     "tags": [
       "layer:source",

@@ -8,10 +8,10 @@ before publishing with npm trusted publishing and provenance.
 
 ## One-time repository setup
 
-1. Create and push the public GitHub repository declared by each package's
-   `repository.url`, and configure it as this checkout's `origin`. If the final
-   repository location differs, update every package manifest before publishing.
-   The repository must be public for npm provenance.
+1. Confirm the public repository is available at
+   `https://github.com/chakra-docs/chakra-docs`, every package's
+   `repository.url` points to it, and this checkout uses it as `origin`. The
+   repository must remain public for npm provenance.
 2. Create a GitHub Actions environment named `npm-publish`.
 3. Create a GitHub App dedicated to releases. Give it repository **Contents:
    read and write** permission only, install it only on this repository, and add
@@ -42,9 +42,9 @@ For the first registry release only:
    enabled, and `dry-run` disabled. The workflow exposes the bootstrap token
    only to this first-release publish step.
 4. Verify that every package listed in `nx.json` exists and is public on npm.
-5. For every package, configure the trusted publisher for this GitHub
-   organization/repository, workflow file `release.yml`, environment
-   `npm-publish`, and the `npm publish` permission.
+5. For every package, configure the trusted publisher with GitHub organization
+   `chakra-docs`, repository `chakra-docs`, workflow file `release.yml`,
+   environment `npm-publish`, and the `npm publish` permission.
 6. Delete the `NPM_BOOTSTRAP_TOKEN` environment secret and revoke the token on
    npm immediately. Then set each package's publishing access to require 2FA
    and disallow tokens.
