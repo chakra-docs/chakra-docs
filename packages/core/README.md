@@ -2,6 +2,8 @@
 
 Framework-free document model and manifest helpers for Chakra Docs.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package owns the document model, collection manifest shape, repository/source interfaces, and query helpers used by UI packages, framework adapters, and discovery tooling. It does not import React, Chakra, filesystem APIs, framework packages, search indexers, or Git helpers, so it is safe to use anywhere — server, client, or build scripts.
 
 ## Install

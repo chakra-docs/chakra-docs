@@ -2,6 +2,8 @@
 
 Build and development CLI for Chakra Docs manifests.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 The `chakra-docs` CLI loads a Chakra Docs discovery config, syncs configured Git repositories, builds typed generated manifest files, validates collections, inspects manifests, and runs an interval-based dev rebuild loop.
 
 ## Install

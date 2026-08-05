@@ -134,6 +134,22 @@ export function SiteShell(props: SiteShellProps) {
       >
         {props.children}
       </Container>
+
+      <Box as="footer" borderTopColor="gray.200" borderTopWidth="1px">
+        <Container maxW={siteMaxW} px={{ base: 4, md: 8 }} py={6}>
+          <Text color="gray.600" fontSize="sm">
+            Created by{' '}
+            <ChakraLink href="https://www.ryanhefner.com">
+              Ryan Hefner
+            </ChakraLink>{' '}
+            and{' '}
+            <ChakraLink href="https://commune.software">
+              Commune Software
+            </ChakraLink>
+            .
+          </Text>
+        </Container>
+      </Box>
     </Box>
   );
 }

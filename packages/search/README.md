@@ -4,6 +4,8 @@ Reusable server-side search for Chakra Docs manifests. It keeps the full search
 corpus in a warm Next or Nest process and returns only compact display and
 navigation fields to the browser.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 ## Install
 
 ```sh

@@ -2,6 +2,8 @@
 
 Pagefind document record helpers for Chakra Docs search manifests.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package maps generated `DocsSearchRecord` data (from a Chakra Docs manifest's `search` array) into Pagefind-friendly document records with `url`, `title`, `content`, and `meta` fields.
 
 ## Install

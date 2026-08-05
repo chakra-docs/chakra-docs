@@ -2,6 +2,8 @@
 
 Filesystem Markdown and MDX content source for Chakra Docs.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package owns file discovery, frontmatter extraction, `_meta.json` ordering, heading extraction, and generated manifest inputs. It is server-only: it depends on `@chakra-docs/core` for contracts and stays out of browser-facing bundles.
 
 ## Install

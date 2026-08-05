@@ -2,6 +2,8 @@
 
 React Router route helpers for Chakra Docs manifests.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package exposes `createDocsRoutes` for turning a Chakra Docs manifest into route objects with stable `handle.docsPageId` values, suited to React Router and Remix-style apps.
 
 ## Install

@@ -2,6 +2,8 @@
 
 **Add a beautiful documentation section to your existing Chakra UI app — without handing your whole site over to a docs framework.**
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 Most documentation tools want to own your entire site. Chakra Docs takes the opposite approach: a framework-free document model at the core, Chakra UI components on top, and small adapters for your router and content source. You compose exactly the pieces you need, and your app stays yours.
 
 [![CI](https://github.com/chakra-docs/chakra-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/chakra-docs/chakra-docs/actions/workflows/ci.yml)

@@ -2,6 +2,8 @@
 
 Astro static path helpers for Chakra Docs manifests.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package exposes `createAstroStaticPaths` for turning a Chakra Docs manifest into Astro static paths.
 
 ## Install

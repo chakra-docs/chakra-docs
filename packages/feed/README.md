@@ -2,6 +2,8 @@
 
 RSS, Atom, and JSON Feed artifact helpers for Chakra Docs.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 This package converts normalized `DocsFeedEntry` records (from a Chakra Docs manifest's `feeds` array) into RSS 2.0, Atom, and JSON Feed 1.1 artifacts while keeping feed serialization out of core runtime packages.
 
 ## Install

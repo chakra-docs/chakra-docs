@@ -2,6 +2,8 @@
 
 Remote Git content source for Chakra Docs.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 An optional build-time source that syncs pinned Git refs into deterministic cache directories and exposes the resolved checkout location to the filesystem source or CLI. Requires a `git` binary on the `PATH`.
 
 ## Install

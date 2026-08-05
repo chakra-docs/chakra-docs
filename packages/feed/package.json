@@ -12,7 +12,17 @@
     "feed"
   ],
   "license": "MIT",
-  "author": "Ryan Hefner <hi@ryanhefner.com> (https://www.ryanhefner.com)",
+  "author": {
+    "name": "Ryan Hefner",
+    "email": "hi@ryanhefner.com",
+    "url": "https://www.ryanhefner.com"
+  },
+  "contributors": [
+    {
+      "name": "Commune Software",
+      "url": "https://commune.software"
+    }
+  ],
   "funding": [
     {
       "type": "github",

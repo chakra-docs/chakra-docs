@@ -2,6 +2,17 @@
   "name": "chakra-docs-workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "author": {
+    "name": "Ryan Hefner",
+    "email": "hi@ryanhefner.com",
+    "url": "https://www.ryanhefner.com"
+  },
+  "contributors": [
+    {
+      "name": "Commune Software",
+      "url": "https://commune.software"
+    }
+  ],
   "scripts": {
     "build": "nx run-many -t build",
     "lint": "nx run-many -t lint",

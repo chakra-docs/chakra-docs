@@ -2,6 +2,8 @@
 
 Next.js static route helpers for Chakra Docs manifests.
 
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
 Static params/path helpers, manifest lookups, and a docs-aware link component for both the App Router and the Pages Router. The package does not own your Chakra provider or rendering layer — pair it with `@chakra-docs/chakra` (or your own components) for the UI.
 
 Entry points:
