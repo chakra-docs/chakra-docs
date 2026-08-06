@@ -2,6 +2,15 @@
   "name": "docs",
   "version": "0.0.1",
   "private": true,
+  "nx": {
+    "targets": {
+      "typecheck": {
+        "dependsOn": [
+          "^build"
+        ]
+      }
+    }
+  },
   "dependencies": {
     "@chakra-docs/chakra": "*",
     "@chakra-docs/core": "*",
