@@ -37,6 +37,10 @@ Before opening a pull request, run the checks relevant to your change. Public AP
 
 Favor examples that can be copied into a real host application without hidden setup. When changing a public package, update its README, any affected content under `apps/docs/src/content/docs`, and the root package table or quick-start guidance when appropriate.
 
+## Releases
+
+Package versions and changelog entries are prepared in a pull request. The protected Release workflow only publishes the exact version already committed on the default branch; it never versions, commits, tags, or pushes code. See [Releasing Chakra Docs](docs/RELEASING.md) for preparation, bootstrap, publication, and recovery instructions.
+
 ## Security
 
 Do not open public issues for suspected vulnerabilities. Follow the [security policy](SECURITY.md) to report them privately.

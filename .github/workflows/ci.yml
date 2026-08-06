@@ -41,6 +41,9 @@ jobs:
       - name: Check formatting
         run: npm exec nx -- format:check --all
 
+      - name: Release workflow tests
+        run: npm run test:release
+
       - name: Lint
         run: npm exec nx -- run-many -t lint --parallel=3
 

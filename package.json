@@ -18,6 +18,7 @@
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test",
     "test:coverage": "nx run-many -t test --coverage",
+    "test:release": "nx run chakra-docs-workspace:release-validation",
     "typecheck": "nx run-many -t typecheck",
     "release:smoke": "node scripts/release-smoke.mjs",
     "yalc:publish": "nx yalc-publish"
@@ -75,6 +76,12 @@
           "port": 4873,
           "config": ".verdaccio/config.yml",
           "storage": "tmp/local-registry/storage"
+        }
+      },
+      "release-validation": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node --test scripts/release-workflow.spec.mjs"
         }
       },
       "yalc-publish": {

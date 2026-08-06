@@ -4,389 +4,201 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version specifier (patch, minor, major, or an exact stable version like 0.1.0). Leave empty to derive from conventional commits.'
-        required: false
+        description: 'Exact package version already committed on the default branch, such as 0.1.0'
+        required: true
         type: string
-      first-release:
-        description: 'First/bootstrap release, including recovery while the bootstrap token is still required.'
+      dry_run:
+        description: 'Preview package publication without publishing'
+        required: true
+        default: true
+        type: boolean
+      first_release:
+        description: 'Use only when the packages have never been published'
         required: false
         default: false
         type: boolean
-      dry-run:
-        description: 'Dry run (no publish, no git changes)'
-        required: false
-        default: false
-        type: boolean
-      resume-version:
-        description: 'Recovery only: exact latest fixed-group version whose tag is reachable from the default branch.'
-        required: false
-        type: string
 
 permissions:
+  actions: read
   contents: read
-  id-token: write
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
-  release:
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    environment: npm-publish
+  require-source:
+    name: Require public default branch
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     steps:
-      - name: Validate release input
-        shell: bash
+      - name: Reject an invalid release source
         env:
-          VERSION: ${{ inputs.version }}
-          FIRST_RELEASE: ${{ inputs.first-release }}
-          DRY_RUN: ${{ inputs.dry-run }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
-          RESUME_VERSION: ${{ inputs.resume-version }}
         run: |
-          set -euo pipefail
-
-          if [[ "$REPOSITORY_PRIVATE" == "true" ]]; then
-            echo "::error::Provenance-enabled releases require this open-source repository to be public."
+          if [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            echo "Releases must be dispatched from $DEFAULT_BRANCH." >&2
             exit 1
           fi
-
-          semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
-          if [[ -n "$VERSION" && "$VERSION" != "patch" && "$VERSION" != "minor" && "$VERSION" != "major" && ! "$VERSION" =~ $semver_pattern ]]; then
-            echo "::error::Version must be patch, minor, major, or an exact stable X.Y.Z version."
+          if [ "$REPOSITORY_PRIVATE" = 'true' ]; then
+            echo 'Provenance-enabled releases require this repository to be public.' >&2
             exit 1
           fi
+          echo "Release is pinned to $DEFAULT_BRANCH at $GITHUB_SHA."
 
-          if [[ "$FIRST_RELEASE" == "true" && -z "$RESUME_VERSION" && ! "$VERSION" =~ $semver_pattern ]]; then
-            echo "::error::The first release requires an explicit stable X.Y.Z version."
+  require-ci:
+    name: Require successful CI for release commit
+    needs: require-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful CI for the exact default-branch commit
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.sha }}
+        run: |
+          ci_run_id="$(
+            gh api \
+              --method GET \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f branch="$DEFAULT_BRANCH" \
+              -f event=push \
+              -f head_sha="$VERIFIED_SHA" \
+              -f status=success \
+              -f per_page=1 \
+              --jq '.workflow_runs[0].id // empty'
+          )"
+          if [ -z "$ci_run_id" ]; then
+            echo "No successful CI push run exists for $VERIFIED_SHA." >&2
+            echo 'Wait for CI to complete successfully, then dispatch Release again.' >&2
             exit 1
           fi
+          echo "CI run $ci_run_id successfully verified $VERIFIED_SHA."
 
-          if [[ "$VERSION" == "0.0.0" ]]; then
-            echo "::error::0.0.0 is a development placeholder and cannot be published."
-            exit 1
-          fi
-
-          if [[ -n "$RESUME_VERSION" ]]; then
-            if [[ ! "$RESUME_VERSION" =~ $semver_pattern ]]; then
-              echo "::error::resume-version must be an exact stable X.Y.Z version."
-              exit 1
-            fi
-            if [[ -n "$VERSION" || "$DRY_RUN" == "true" ]]; then
-              echo "::error::Recovery mode cannot be combined with version or dry-run."
-              exit 1
-            fi
-            if [[ "$RESUME_VERSION" == "0.0.0" ]]; then
-              echo "::error::0.0.0 is a development placeholder and cannot be recovered."
-              exit 1
-            fi
-          fi
-
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  dry-run:
+    name: Preview release
+    if: inputs.dry_run
+    needs: require-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out verified release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: '.nvmrc'
-          registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false
+          cache: npm
 
-      - name: Validate release baseline
-        if: ${{ inputs.resume-version == '' }}
-        id: baseline
+      - run: npm install --global npm@11.13.0
+
+      - run: npm ci
+
+      - name: Validate committed release version
         env:
-          FIRST_RELEASE: ${{ inputs.first-release }}
-        run: |
-          current_version="$(node scripts/assert-release-baseline.mjs "$FIRST_RELEASE")"
-          echo "version=$current_version" >> "$GITHUB_OUTPUT"
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node scripts/assert-release-version.mjs "$RELEASE_VERSION"
 
-      - name: Validate recovery tag
-        if: ${{ inputs.resume-version != '' }}
-        id: recovery
-        shell: bash
+      - name: Build packages
+        run: npm exec nx -- run-many -t build --parallel=3
+
+      - name: Preview package publication
         env:
-          RESUME_VERSION: ${{ inputs.resume-version }}
+          FIRST_RELEASE: ${{ inputs.first_release }}
         run: |
-          set -euo pipefail
-
-          default_branch_head="$(git rev-parse HEAD)"
-          default_version="$(node scripts/assert-release-baseline.mjs false)"
-          if [[ "$default_version" != "$RESUME_VERSION" ]]; then
-            echo "::error::Recovery is allowed only for the latest fixed release ($default_version)."
-            exit 1
+          publish_args=(--dry-run)
+          if [ "$FIRST_RELEASE" = 'true' ]; then
+            publish_args+=(--first-release)
           fi
-          git fetch --force origin \
-            "refs/tags/v$RESUME_VERSION:refs/tags/v$RESUME_VERSION"
-          tag_commit="$(git rev-parse "refs/tags/v$RESUME_VERSION^{commit}")"
-          if ! git merge-base --is-ancestor "$tag_commit" "$default_branch_head"; then
-            echo "::error::Recovery tag v$RESUME_VERSION must be an ancestor of the default branch."
-            exit 1
-          fi
+          npm exec nx -- release publish "${publish_args[@]}"
 
-          git checkout --detach "refs/tags/v$RESUME_VERSION"
+  publish:
+    name: Publish release
+    if: ${{ !inputs.dry_run }}
+    needs: require-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out verified release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.sha }}
 
-      - name: Set up recovery Node.js version
-        if: ${{ inputs.resume-version != '' }}
+      - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: '.nvmrc'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - name: Validate checked-out recovery version
-        if: ${{ inputs.resume-version != '' }}
-        env:
-          RESUME_VERSION: ${{ inputs.resume-version }}
-        run: node scripts/assert-release-version.mjs "$RESUME_VERSION"
-
       - run: npm install --global npm@11.13.0
 
       - run: npm ci
 
-      - name: Verify previous fixed release is complete
-        if: ${{ !inputs.first-release && inputs.resume-version == '' }}
+      - name: Require the verified default-branch commit
         env:
-          BASELINE_VERSION: ${{ steps.baseline.outputs.version }}
-        run: node scripts/verify-published-version.mjs "$BASELINE_VERSION"
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.sha }}
+        run: |
+          current_sha="$(git rev-parse HEAD)"
+          default_branch_sha="$(
+            gh api \
+              --method GET \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/git/ref/heads/$DEFAULT_BRANCH" \
+              --jq '.object.sha'
+          )"
+          if [ "$current_sha" != "$VERIFIED_SHA" ]; then
+            echo "Expected verified commit $VERIFIED_SHA, checked out $current_sha." >&2
+            exit 1
+          fi
+          if [ "$default_branch_sha" != "$VERIFIED_SHA" ]; then
+            echo "$DEFAULT_BRANCH advanced after release verification; dispatch a new release." >&2
+            exit 1
+          fi
 
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+      - name: Validate committed release version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node scripts/assert-release-version.mjs "$RELEASE_VERSION"
 
-      - name: Audit complete dependency tree
-        run: npm audit --audit-level=high
-
-      - name: Check formatting
-        run: npm exec nx -- format:check --all
-
-      - name: Lint
-        run: npm exec nx -- run-many -t lint --parallel=3
-
-      - name: Typecheck
-        run: npm exec nx -- run-many -t typecheck --parallel=3
-
-      - name: Unit tests with coverage
-        run: npm exec nx -- run-many -t test --coverage --parallel=3
-
-      - name: Build
+      - name: Build packages
         run: npm exec nx -- run-many -t build --parallel=3
 
-      - name: Browser tests
-        run: npm exec nx -- run docs:e2e --skipNxCache
-
-      - name: Package consumer smoke test
-        run: npm run release:smoke
-
-      - name: Verify release tree is unchanged
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git diff --exit-code
-          git diff --cached --exit-code
-          status="$(git status --porcelain=v1 --untracked-files=all)"
-          if [[ -n "$status" ]]; then
-            echo "::error::Verification generated untracked files that are not part of the release commit."
-            printf '%s\n' "$status"
-            exit 1
-          fi
-
-      - name: Verify first-release authentication
-        if: ${{ inputs.first-release && !inputs.dry-run }}
-        shell: bash
+      - name: Validate the one-time bootstrap token
+        if: inputs.first_release
         env:
-          NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
         run: |
-          if [[ -z "$NPM_BOOTSTRAP_TOKEN" ]]; then
-            echo "::error::The first registry release requires the protected npm-publish environment secret NPM_BOOTSTRAP_TOKEN. See docs/RELEASING.md."
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo 'NPM_BOOTSTRAP_TOKEN is required for the first publish.' >&2
             exit 1
           fi
+          npm whoami --registry=https://registry.npmjs.org >/dev/null
 
-          npm whoami --registry=https://registry.npmjs.org
-
-      - name: Create release app token
-        if: ${{ !inputs.dry-run }}
-        id: release-app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
-
-      - name: Configure release authentication
-        if: ${{ !inputs.dry-run }}
+      - name: Publish packages
         env:
-          GH_TOKEN: ${{ steps.release-app.outputs.token }}
-        run: gh auth setup-git
-
-      - name: Configure git user
-        if: ${{ !inputs.dry-run }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Verify default branch has not advanced
-        if: ${{ inputs.resume-version == '' }}
-        shell: bash
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GH_TOKEN: ${{ steps.release-app.outputs.token }}
-        run: |
-          set -euo pipefail
-          git fetch origin "$DEFAULT_BRANCH"
-
-          local_head="$(git rev-parse HEAD)"
-          remote_head="$(git rev-parse "origin/$DEFAULT_BRANCH")"
-          if [[ "$local_head" != "$remote_head" ]]; then
-            echo "::error::The default branch advanced during release verification. Rerun the workflow against the new tip."
-            exit 1
-          fi
-
-      - name: Preview release
-        if: ${{ inputs.dry-run }}
-        shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
-          FIRST_RELEASE: ${{ inputs.first-release }}
-        run: |
-          set -euo pipefail
-
-          release_args=()
-          if [[ -n "$VERSION" ]]; then
-            release_args+=("$VERSION")
-          fi
-          if [[ "$FIRST_RELEASE" == "true" ]]; then
-            release_args+=(--first-release)
-          fi
-
-          npm exec nx -- release "${release_args[@]}" --dry-run --yes
-
-      - name: Version packages
-        if: ${{ !inputs.dry-run && inputs.resume-version == '' }}
-        id: version
-        shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
-          FIRST_RELEASE: ${{ inputs.first-release }}
-        run: |
-          set -euo pipefail
-
-          previous_version="${{ steps.baseline.outputs.version }}"
-
-          version_args=()
-          if [[ -n "$VERSION" ]]; then
-            version_args+=("$VERSION")
-          fi
-          if [[ "$FIRST_RELEASE" == "true" ]]; then
-            version_args+=(--first-release)
-          fi
-
-          npm exec nx -- release version "${version_args[@]}" \
-            --stage-changes \
-            --git-commit=false \
-            --git-tag=false \
-            --git-push=false
-
-          resolved_version="$(node scripts/assert-release-version.mjs "$VERSION" "$previous_version")"
-          echo "version=$resolved_version" >> "$GITHUB_OUTPUT"
-
-      - name: Smoke test versioned packages
-        if: ${{ !inputs.dry-run && inputs.resume-version == '' }}
-        run: npm run release:smoke
-
-      - name: Create release commit and tag
-        if: ${{ !inputs.dry-run && inputs.resume-version == '' }}
-        shell: bash
-        env:
-          FIRST_RELEASE: ${{ inputs.first-release }}
-          RESOLVED_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          changelog_args=("$RESOLVED_VERSION")
-          if [[ "$FIRST_RELEASE" == "true" ]]; then
-            changelog_args+=(--first-release)
-          fi
-
-          npm exec nx -- release changelog "${changelog_args[@]}" \
-            --git-commit \
-            --git-tag \
-            --git-push=false
-
-      - name: Push release commit and tag atomically
-        if: ${{ !inputs.dry-run && inputs.resume-version == '' }}
-        shell: bash
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GH_TOKEN: ${{ steps.release-app.outputs.token }}
-          RESOLVED_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          git push --atomic origin \
-            "HEAD:refs/heads/$DEFAULT_BRANCH" \
-            "refs/tags/v$RESOLVED_VERSION"
-
-      - name: Publish versioned packages
-        if: ${{ !inputs.dry-run }}
-        env:
-          FIRST_RELEASE: ${{ inputs.first-release }}
+          NODE_AUTH_TOKEN: ${{ inputs.first_release && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
           NPM_CONFIG_PROVENANCE: 'true'
-          NODE_AUTH_TOKEN: ${{ inputs.first-release && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
-          RESUME_VERSION: ${{ inputs.resume-version }}
-        shell: bash
         run: |
-          set -euo pipefail
-
-          publish_args=()
-          if [[ "$FIRST_RELEASE" == "true" && -z "$RESUME_VERSION" ]]; then
-            publish_args+=(--first-release)
-          fi
-
-          npm exec nx -- release publish "${publish_args[@]}"
+          # Keep the registry existence check enabled, including during bootstrap,
+          # so retrying this exact release skips packages that already published.
+          npm exec nx -- release publish
 
       - name: Verify all packages are public
-        if: ${{ !inputs.dry-run }}
         env:
-          RESOLVED_VERSION: ${{ steps.version.outputs.version || inputs.resume-version }}
-        run: node scripts/verify-published-version.mjs "$RESOLVED_VERSION"
-
-      - name: Create GitHub release
-        if: ${{ !inputs.dry-run }}
-        env:
-          GH_TOKEN: ${{ steps.release-app.outputs.token }}
-          RESOLVED_VERSION: ${{ steps.version.outputs.version || inputs.resume-version }}
-        run: |
-          if gh release view "v$RESOLVED_VERSION" >/dev/null 2>&1; then
-            gh release edit "v$RESOLVED_VERSION" \
-              --draft=false \
-              --latest \
-              --prerelease=false \
-              --title "v$RESOLVED_VERSION"
-          else
-            gh release create "v$RESOLVED_VERSION" \
-              --latest \
-              --verify-tag \
-              --generate-notes \
-              --title "v$RESOLVED_VERSION"
-          fi
-
-      - name: Upload release diagnostics
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: release-diagnostics-${{ github.run_attempt }}
-          path: |
-            coverage
-            **/coverage
-            **/test-output
-            apps/docs/.next/trace
-          include-hidden-files: true
-          if-no-files-found: ignore
-          retention-days: 14
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node scripts/verify-published-version.mjs "$RELEASE_VERSION"

@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/react-router",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React Router route helpers for Chakra Docs manifests.",
   "keywords": [
     "chakra-ui",
@@ -61,7 +61,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.0.0",
+    "@chakra-docs/core": "0.1.0",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

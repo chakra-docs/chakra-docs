@@ -108,6 +108,11 @@
         "file": "CHANGELOG.md",
         "createRelease": false
       }
+    },
+    "git": {
+      "commit": false,
+      "tag": false,
+      "push": false
     }
   },
   "targetDefaults": {

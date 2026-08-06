@@ -3,8 +3,13 @@ import path from 'node:path';
 import process from 'node:process';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
-const requestedVersion = process.argv[2] || undefined;
-const previousVersion = process.argv[3] || undefined;
+const requestedVersion = process.argv[2];
+
+if (!isStableVersion(requestedVersion)) {
+  throw new Error(
+    'The requested release version must be an exact stable semantic version.',
+  );
+}
 const nxConfig = JSON.parse(
   await readFile(path.join(workspaceRoot, 'nx.json'), 'utf8'),
 );
@@ -62,7 +67,7 @@ if (uniqueVersions.size !== 1) {
 }
 
 const [version] = uniqueVersions;
-if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+if (!isStableVersion(version)) {
   throw new Error(`Release version must be stable semver; found ${version}.`);
 }
 
@@ -70,45 +75,16 @@ if (version === '0.0.0') {
   throw new Error('0.0.0 is a development placeholder and cannot be released.');
 }
 
-if (previousVersion) {
-  if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(previousVersion)) {
-    throw new Error(
-      `Previous package version must be stable semver; found ${previousVersion}.`,
-    );
-  }
-
-  if (compareStableVersions(version, previousVersion) <= 0) {
-    throw new Error(
-      `Release version ${version} must be greater than the current version ${previousVersion}.`,
-    );
-  }
-}
-
-if (
-  requestedVersion &&
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(requestedVersion) &&
-  version !== requestedVersion
-) {
+if (version !== requestedVersion) {
   throw new Error(
-    `Nx Release resolved ${version}, but the workflow requested ${requestedVersion}.`,
+    `The workflow requested ${requestedVersion}, but the committed package version is ${version}.`,
   );
 }
 
-process.stdout.write(`${version}\n`);
+process.stdout.write(
+  `Validated ${releaseProjects.size} committed packages at ${version}.\n`,
+);
 
-function compareStableVersions(left, right) {
-  const leftParts = left.split('.').map(BigInt);
-  const rightParts = right.split('.').map(BigInt);
-
-  for (let index = 0; index < leftParts.length; index += 1) {
-    if (leftParts[index] > rightParts[index]) {
-      return 1;
-    }
-
-    if (leftParts[index] < rightParts[index]) {
-      return -1;
-    }
-  }
-
-  return 0;
+function isStableVersion(value) {
+  return /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value ?? '');
 }
