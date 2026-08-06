@@ -103,3 +103,11 @@ export class DocsSearchService {
 
 Validate HTTP input in the Nest controller or adapt the service with
 `createFetchSearchHandler` when the server exposes Fetch-standard routes.
+
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
+
+## License
+
+MIT

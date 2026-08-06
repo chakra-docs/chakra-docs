@@ -18,7 +18,23 @@ Most documentation tools want to own your entire site. Chakra Docs takes the opp
 - **Batteries optional** — server search, static Pagefind search, RSS/Atom/JSON feeds, sitemaps, and a CLI for generated manifests. Use them or don't.
 - **Typed end to end** — one `DocsManifest` document model shared by every package.
 
-## Quick start (Next.js Pages Router)
+## Choose your stack
+
+The document model and content sources are framework-independent. Add the UI and router adapter that match the application you already have:
+
+| Stack                 | Start here                                                                     |
+| --------------------- | ------------------------------------------------------------------------------ |
+| Next.js App Router    | [`@chakra-docs/next` App Router guide](packages/next#app-router)               |
+| Next.js Pages Router  | [`@chakra-docs/next` Pages Router guide](packages/next#pages-router)           |
+| Astro                 | [`@chakra-docs/astro`](packages/astro#usage)                                   |
+| React Router or Remix | [`@chakra-docs/react-router`](packages/react-router#usage)                     |
+| Custom framework      | [`@chakra-docs/core`](packages/core#usage) with your own routing and rendering |
+
+Use [`@chakra-docs/chakra`](packages/chakra) when you want the ready-made Chakra UI documentation experience, or render the framework-free manifest with your own components.
+
+## Quick start: Next.js Pages Router
+
+This example assumes an existing Chakra UI application with `@chakra-ui/react`, `@emotion/react`, React, and Next.js already installed. The repository's [`apps/docs`](apps/docs) project is a complete working implementation; App Router users can follow the package's [App Router guide](packages/next#app-router) with the same manifest and UI packages.
 
 ```bash
 npm install @chakra-docs/core @chakra-docs/source-filesystem @chakra-docs/chakra @chakra-docs/next
@@ -88,12 +104,12 @@ Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [
 
 | Package                                                        | Description                                                                              |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`@chakra-docs/core`](packages/core)                           | Framework-free document model, manifest builders, and query helpers.                     |
+| [`@chakra-docs/core`](packages/core)                           | Framework-agnostic Markdown/MDX document model, manifest builders, and query helpers.    |
 | [`@chakra-docs/chakra`](packages/chakra)                       | Chakra UI documentation components: layout, sidebar, TOC, search, callouts, code blocks. |
 | [`@chakra-docs/source-filesystem`](packages/source-filesystem) | Server-side filesystem Markdown/MDX source with frontmatter and `_meta.json`.            |
 | [`@chakra-docs/source-git`](packages/source-git)               | Sync documentation content from remote Git repositories at pinned refs.                  |
-| [`@chakra-docs/cli`](packages/cli)                             | `chakra-docs` CLI: build, dev watch, validate, inspect, and sync.                        |
-| [`@chakra-docs/next`](packages/next)                           | Next.js App Router and Pages Router helpers plus a docs-aware `Link`.                    |
+| [`@chakra-docs/cli`](packages/cli)                             | Generate, validate, inspect, sync, and watch Markdown/MDX documentation manifests.       |
+| [`@chakra-docs/next`](packages/next)                           | Next.js App and Pages Router integration plus a docs-aware `Link`.                       |
 | [`@chakra-docs/astro`](packages/astro)                         | Astro `getStaticPaths` helpers.                                                          |
 | [`@chakra-docs/react-router`](packages/react-router)           | React Router / Remix route object helpers.                                               |
 | [`@chakra-docs/search`](packages/search)                       | Framework-neutral server search, HTTP handlers, and a lightweight remote client.         |
@@ -120,7 +136,14 @@ npm run yalc:publish
 
 The project spec lives at [docs/specs/chakra-docs-package-spec.md](docs/specs/chakra-docs-package-spec.md).
 
-## Support
+## Help and contributing
+
+- [Report a bug or request a feature](https://github.com/chakra-docs/chakra-docs/issues)
+- [Read the contribution guidelines](CONTRIBUTING.md)
+- [Report a vulnerability privately](SECURITY.md)
+- [Review release notes](CHANGELOG.md)
+
+## Support development
 
 If Chakra Docs is useful to you, consider supporting its development:
 

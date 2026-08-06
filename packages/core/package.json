@@ -1,16 +1,18 @@
 {
   "name": "@chakra-docs/core",
   "version": "0.0.0",
-  "description": "Framework-free document model and manifest helpers for Chakra Docs.",
+  "description": "Framework-agnostic Markdown and MDX document models and manifest utilities for documentation sites.",
   "keywords": [
     "chakra-ui",
     "documentation",
+    "documentation-site",
     "docs",
     "manifest",
     "mdx",
     "markdown",
     "content",
-    "document-model"
+    "document-model",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -76,7 +78,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/core#readme",
   "nx": {
     "tags": [
       "layer:core",

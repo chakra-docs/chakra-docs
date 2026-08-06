@@ -1,6 +1,6 @@
 # @chakra-docs/next
 
-Next.js static route helpers for Chakra Docs manifests.
+Next.js App and Pages Router integration for Chakra Docs documentation sites.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
 
@@ -173,6 +173,10 @@ Static params are relative to the common segment-level base path shared by all c
 - `createAppRouterSearchHandler(search, options?)` — create a Fetch-compatible App Router route handler.
 - `createPagesRouterSearchHandler(search, options?)` — create a Pages Router API handler with the same validation, result shape, and cache policy.
 - `NextSearch`, `NextSearchHandlerOptions` — accepted engine/provider and handler option types.
+
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
 
 ## License
 

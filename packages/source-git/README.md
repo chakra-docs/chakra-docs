@@ -81,6 +81,10 @@ Initialization uses a unique staging directory followed by an atomic rename, and
 - `syncGitRepositories(config, { timeoutMs? })` — sync every `type: 'git'` repository in a `DocsDiscoveryConfig`; resolves to `SyncedGitRepository[]` (empty array when none are configured).
 - `SyncGitRepositoryOptions`, `SyncedGitRepository` — option and result types.
 
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
+
 ## License
 
 MIT

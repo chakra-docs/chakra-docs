@@ -6,11 +6,13 @@
     "chakra-ui",
     "react",
     "documentation",
+    "documentation-site",
     "docs",
     "components",
     "docs-theme",
     "ui",
-    "mdx"
+    "mdx",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -84,7 +86,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/chakra#readme",
   "nx": {
     "tags": [
       "layer:ui",

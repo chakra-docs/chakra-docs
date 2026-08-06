@@ -5,10 +5,12 @@
   "keywords": [
     "chakra-ui",
     "documentation",
+    "documentation-site",
     "docs",
     "astro",
     "react",
-    "static-paths"
+    "static-paths",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -86,7 +88,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/astro#readme",
   "nx": {
     "tags": [
       "layer:adapter",

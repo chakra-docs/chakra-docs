@@ -1,6 +1,6 @@
 # @chakra-docs/core
 
-Framework-free document model and manifest helpers for Chakra Docs.
+Framework-agnostic Markdown and MDX document models and manifest utilities for documentation sites.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
 
@@ -83,6 +83,10 @@ const published = getPublishedPages(manifest.pages, { includeDrafts: false });
 ### Types
 
 `DocsPage`, `DocsFrontmatter`, `DocsHeading`, `DocsNavItem`, `DocsCollection`, `DocsManifest`, `DocsSearchRecord`, `DocsSitemapEntry`, `DocsFeedEntry`, `DocsSource`, `DocsConfig`, `DocsRepository`, `DocsDiscoveryConfig`, `DocsCollectionConfig`, `DocsRepositoryConfig` (local, workspace, git, and custom variants), `CreateDocsManifestOptions`, and more.
+
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
 
 ## License
 

@@ -43,6 +43,10 @@ By default, slugs are relative to the segment-level base path shared by every co
 - `createAstroStaticPaths(manifest | { manifest, basePath?, includeDrafts?, includeHidden? })` — map published pages to `AstroDocsPath[]` for `getStaticPaths`. Draft and hidden pages are excluded by default.
 - `AstroDocsPath`, `AstroDocsPathOptions` — result and option types.
 
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
+
 ## License
 
 MIT

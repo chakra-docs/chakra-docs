@@ -5,11 +5,13 @@
   "keywords": [
     "chakra-ui",
     "documentation",
+    "documentation-site",
     "docs",
     "react-router",
     "remix",
     "react",
-    "routes"
+    "routes",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -81,7 +83,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/react-router#readme",
   "nx": {
     "tags": [
       "layer:adapter",

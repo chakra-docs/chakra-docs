@@ -1,14 +1,15 @@
 {
   "name": "@chakra-docs/cli",
   "version": "0.0.0",
-  "description": "Build and development CLI for Chakra Docs manifests.",
+  "description": "CLI for generating, validating, and watching Markdown and MDX documentation manifests.",
   "keywords": [
     "chakra-ui",
     "documentation",
     "docs",
     "cli",
     "manifest",
-    "build-tool"
+    "build-tool",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -79,7 +80,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme",
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/cli#readme",
   "nx": {
     "tags": [
       "layer:cli",

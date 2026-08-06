@@ -112,6 +112,10 @@ Set a collection's `schema` to a [Standard Schema v1](https://standardschema.dev
 - `DEFAULT_FILESYSTEM_CONTENT_LIMITS` — frozen default values for all three content budgets.
 - `FilesystemContentLimits`, `FilesystemSourceOptions`, `BuildFilesystemManifestOptions` — option types.
 
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
+
 ## License
 
 MIT

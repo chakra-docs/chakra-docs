@@ -1,6 +1,6 @@
 # @chakra-docs/cli
 
-Build and development CLI for Chakra Docs manifests.
+CLI for generating, validating, and watching Markdown and MDX documentation manifests.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
 
@@ -102,6 +102,10 @@ await runCli({
 - `loadDocsConfig(cwd, configPath?)` — load and normalize a `DocsDiscoveryConfig` from JSON or a JS/TS module.
 - `writeGeneratedManifest(config, manifest, pretty?)` — write `manifest.json`, `manifest.d.ts`, and `index.ts`; resolves to the output directory.
 - `ChakraDocsCommand`, `RunCliOptions`, `BuildDocsManifestOptions` — command and option types.
+
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
 
 ## License
 

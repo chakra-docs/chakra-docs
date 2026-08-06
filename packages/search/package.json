@@ -9,7 +9,8 @@
     "search",
     "nextjs",
     "nest",
-    "server-search"
+    "server-search",
+    "typescript"
   ],
   "license": "MIT",
   "author": {
@@ -93,5 +94,5 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs#readme"
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/search#readme"
 }

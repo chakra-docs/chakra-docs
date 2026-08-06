@@ -43,6 +43,10 @@ Entries are sorted newest-first by date. Atom requires an `<updated>` value for 
 - `createFeedArtifacts(entries, options)` — build a `FeedArtifacts` object from `DocsFeedEntry[]`: the normalized (sorted) `entries` plus `rss`, `atom`, and `json` strings ready to write to disk or serve.
 - `FeedArtifacts`, `CreateFeedArtifactsOptions` — result and option types.
 
+## Help and contributing
+
+See the [project README](https://github.com/chakra-docs/chakra-docs#readme), [open an issue](https://github.com/chakra-docs/chakra-docs/issues), or read the [contribution guidelines](https://github.com/chakra-docs/chakra-docs/blob/main/CONTRIBUTING.md). Report vulnerabilities privately through the [security policy](https://github.com/chakra-docs/chakra-docs/security/policy).
+
 ## License
 
 MIT
