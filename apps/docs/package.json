@@ -19,7 +19,7 @@
     "@chakra-docs/source-filesystem": "*",
     "@chakra-ui/react": "^3.36.0",
     "next": "~16.2.10",
-    "react": "^19.0.0",
+    "react": "^19.2.8",
     "react-dom": "^19.0.0",
     "react-structured": "^0.1.0",
     "shiki": "^4.3.1"
