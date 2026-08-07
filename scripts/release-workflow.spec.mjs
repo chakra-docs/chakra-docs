@@ -6,6 +6,9 @@ import test from 'node:test';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
 const releaseWorkflow = await read('.github/workflows/release.yml');
+const publishedVersionVerifier = await read(
+  'scripts/verify-published-version.mjs',
+);
 const nxConfig = JSON.parse(await read('nx.json'));
 const releaseProjects = new Set(nxConfig.release?.projects ?? []);
 const packageDirectories = await readdir(path.join(workspaceRoot, 'packages'), {
@@ -123,6 +126,19 @@ test('first release uses only the protected bootstrap credential', () => {
   assert.doesNotMatch(releaseWorkflow, /secrets\.NPM_TOKEN/);
   assert.doesNotMatch(publishStep, /--first-release/);
   assert.match(publishStep, /registry existence check enabled/);
+});
+
+test('public registry verification does not require an npm token', () => {
+  const verificationStep = releaseWorkflow.slice(
+    releaseWorkflow.indexOf('- name: Verify all packages are public'),
+  );
+
+  assert.match(verificationStep, /NODE_AUTH_TOKEN: ''/);
+  assert.match(
+    publishedVersionVerifier,
+    /NODE_AUTH_TOKEN: process\.env\.NODE_AUTH_TOKEN \?\? ''/,
+  );
+  assert.match(publishedVersionVerifier, /String\(error\.stderr\)\.trim\(\)/);
 });
 
 function runVersionAssertion(version) {

@@ -12,6 +12,12 @@ if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(expectedVersion ?? '')) {
 }
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
+const npmEnvironment = {
+  ...process.env,
+  // setup-node writes an npmrc that references this variable. Keep public
+  // verification tokenless while ensuring npm can resolve that placeholder.
+  NODE_AUTH_TOKEN: process.env.NODE_AUTH_TOKEN ?? '',
+};
 const nxConfig = JSON.parse(
   await readFile(path.join(workspaceRoot, 'nx.json'), 'utf8'),
 );
@@ -50,10 +56,15 @@ async function verifyProject(project) {
         execFileAsync(
           'npm',
           ['view', `${project}@${expectedVersion}`, 'version', '--json'],
-          { cwd: workspaceRoot, maxBuffer: 1024 * 1024 },
+          {
+            cwd: workspaceRoot,
+            env: npmEnvironment,
+            maxBuffer: 1024 * 1024,
+          },
         ),
         execFileAsync('npm', ['view', project, 'dist-tags.latest', '--json'], {
           cwd: workspaceRoot,
+          env: npmEnvironment,
           maxBuffer: 1024 * 1024,
         }),
       ]);
@@ -68,8 +79,12 @@ async function verifyProject(project) {
     }
     return undefined;
   } catch (error) {
+    const stderr =
+      error && typeof error === 'object' && 'stderr' in error
+        ? String(error.stderr).trim()
+        : '';
     const message =
-      error instanceof Error ? error.message.split('\n')[0] : String(error);
+      stderr || (error instanceof Error ? error.message : String(error));
     return `${project}: ${message}`;
   }
 }
