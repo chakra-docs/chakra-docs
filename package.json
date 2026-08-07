@@ -41,7 +41,7 @@
     "@swc/core": "1.15.43",
     "@swc/helpers": "0.5.23",
     "@types/node": "^22.20.1",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "4.1.10",
     "cypress": "^15.8.0",
@@ -105,7 +105,7 @@
   },
   "dependencies": {
     "next": "~16.2.12",
-    "react": "^19.2.7",
+    "react": "^19.2.8",
     "react-dom": "^19.2.7"
   },
   "engines": {
