@@ -140,6 +140,8 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-search',
   slots: [
     'trigger',
+    'triggerLabel',
+    'shortcut',
     'backdrop',
     'positioner',
     'root',
@@ -164,6 +166,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       justifyContent: 'space-between',
       minW: { base: 'full', md: '13rem' },
     },
+    triggerLabel: { color: 'fg.muted', fontWeight: 'medium' },
     positioner: { px: 4, pt: { base: 12, md: 20 } },
     root: { maxW: '2xl', overflow: 'hidden', p: 0 },
     header: { borderBottomWidth: '1px', p: 4 },

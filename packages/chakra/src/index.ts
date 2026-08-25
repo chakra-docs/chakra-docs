@@ -56,6 +56,7 @@ import {
   chakraDocsLayoutSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
+  chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
   chakraDocsTableOfContentsSlotRecipe,
   chakraDocsVersionSelectSlotRecipe,
@@ -257,10 +258,28 @@ export interface DocsSearchProps {
   placeholder?: string;
   onNavigate?: (href: string, result: DocsSearchResult) => void;
   onResultSelect?: (result: DocsSearchResult) => void;
+  backdropSlotProps?: Record<string, unknown>;
+  bodySlotProps?: Record<string, unknown>;
+  contentSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
+  positionerSlotProps?: Record<string, unknown>;
+  resultBadgeSlotProps?: Record<string, unknown>;
+  resultContentSlotProps?: Record<string, unknown>;
+  resultDescriptionSlotProps?: Record<string, unknown>;
+  resultLinkSlotProps?: Record<string, unknown>;
+  resultListSlotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
+  triggerLabelSlotProps?: Record<string, unknown>;
+  shortcutSlotProps?: Record<string, unknown>;
   inputSlotProps?: Record<string, unknown>;
   resultSlotProps?: Record<string, unknown>;
+  resultRowSlotProps?: Record<string, unknown>;
+  resultTitleSlotProps?: Record<string, unknown>;
+  resultsSlotProps?: Record<string, unknown>;
+  sectionLabelSlotProps?: Record<string, unknown>;
+  statusSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export type DocsVersionOption = DocsCollectionOption;
@@ -755,6 +774,11 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     [searchEngine, searchQuery],
   );
   const results = isRemote ? remoteSearch.results : localResults;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.search,
+    chakraDocsSearchSlotRecipe,
+  );
+  const styles = recipe();
 
   if (!remoteRequesterRef.current) {
     remoteRequesterRef.current = createRemoteSearchRequester(setRemoteSearch);
@@ -919,81 +943,92 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
         Button,
         {
           disabled: !searchAvailable,
-          justifyContent: 'space-between',
-          minW: { base: 'full', md: '13rem' },
           size: 'sm',
           variant: 'outline',
-          ...props.triggerSlotProps,
+          ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
         },
         createElement(
           Text,
-          { color: 'fg.muted', fontWeight: 'medium' },
+          mergeSlotStyleProps(
+            styles.triggerLabel,
+            props.triggerLabelSlotProps,
+          ),
           labels.search,
         ),
-        createElement(Kbd, null, '⌘K'),
+        createElement(
+          Kbd,
+          mergeSlotStyleProps(styles.shortcut, props.shortcutSlotProps),
+          '⌘K',
+        ),
       ),
     ),
     createElement(
       Portal,
       null,
-      createElement(Dialog.Backdrop),
+      createElement(
+        Dialog.Backdrop,
+        mergeSlotStyleProps(styles.backdrop, props.backdropSlotProps),
+      ),
       createElement(
         Dialog.Positioner,
-        { px: 4, pt: { base: 12, md: 20 } },
+        mergeSlotStyleProps(styles.positioner, props.positionerSlotProps),
         createElement(
           Dialog.Content,
-          { maxW: '2xl', overflow: 'hidden', p: 0 },
+          mergeSlotStyleProps(styles.root, props.contentSlotProps),
           createElement(
             Dialog.Header,
-            { borderBottomWidth: '1px', p: 4 },
-            createElement(Dialog.Title, { fontSize: 'sm' }, labels.search),
+            mergeSlotStyleProps(styles.header, props.headerSlotProps),
+            createElement(
+              Dialog.Title,
+              mergeSlotStyleProps(styles.title, props.titleSlotProps),
+              labels.search,
+            ),
           ),
           createElement(
             Dialog.Body,
-            { p: 0 },
+            mergeSlotStyleProps(styles.body, props.bodySlotProps),
             createElement(Input, {
               ref: inputRef,
               'aria-label': labels.search,
-              borderRadius: 0,
-              borderWidth: 0,
-              fontSize: 'lg',
-              h: 14,
               onChange: (event: DocsInputChangeEvent) =>
                 setQuery(event.currentTarget.value),
               onKeyDown: onInputKeyDown,
               placeholder: props.placeholder ?? labels.searchPlaceholder,
               value: query,
-              _focus: { boxShadow: 'none' },
-              ...props.inputSlotProps,
+              ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
             }),
             createElement(
               Box,
-              { borderTopWidth: '1px', maxH: '420px', overflowY: 'auto', p: 3 },
+              mergeSlotStyleProps(styles.results, props.resultsSlotProps),
               createElement(
                 Text,
-                {
-                  color: 'fg.muted',
-                  fontSize: 'xs',
-                  fontWeight: 'semibold',
-                  px: 2,
-                  py: 1,
-                },
+                mergeSlotStyleProps(
+                  styles.sectionLabel,
+                  props.sectionLabelSlotProps,
+                ),
                 normalizedQuery
                   ? (labels.searchResults ?? defaultLabels.searchResults)
                   : (labels.searchPopular ?? defaultLabels.searchPopular),
               ),
               createElement(
                 Stack,
-                { gap: 1 },
+                mergeSlotStyleProps(
+                  styles.resultList,
+                  props.resultListSlotProps,
+                ),
                 isRemote && remoteSearch.status === 'loading'
                   ? createSearchStatus(
                       labels.searchLoading ?? defaultLabels.searchLoading,
                       'status',
+                      styles.status,
+                      props.statusSlotProps,
                     )
                   : isRemote && remoteSearch.status === 'error'
                     ? createSearchStatus(
                         labels.searchError ?? defaultLabels.searchError,
                         'alert',
+                        styles.status,
+                        props.statusSlotProps,
                       )
                     : results.length > 0
                       ? results.map((record, index) =>
@@ -1002,14 +1037,25 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
                             key: record.id,
                             onSelect: (event: DocsAnchorClickEvent) =>
                               activateResult(record, event),
+                            recipe,
                             record,
+                            resultBadgeSlotProps: props.resultBadgeSlotProps,
+                            resultContentSlotProps:
+                              props.resultContentSlotProps,
+                            resultDescriptionSlotProps:
+                              props.resultDescriptionSlotProps,
+                            resultLinkSlotProps: props.resultLinkSlotProps,
+                            resultRowSlotProps: props.resultRowSlotProps,
                             slotProps: props.resultSlotProps,
+                            resultTitleSlotProps: props.resultTitleSlotProps,
                           }),
                         )
                       : createSearchStatus(
                           labels.searchNoResults ??
                             defaultLabels.searchNoResults,
                           'status',
+                          styles.status,
+                          props.statusSlotProps,
                         ),
               ),
             ),
@@ -1315,7 +1361,16 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
 interface SearchResultProps {
   active: boolean;
   onSelect: (event: DocsAnchorClickEvent) => void;
+  recipe: (
+    props?: Record<string, unknown>,
+  ) => Record<string, unknown>;
   record: DocsSearchResult;
+  resultBadgeSlotProps?: Record<string, unknown>;
+  resultContentSlotProps?: Record<string, unknown>;
+  resultDescriptionSlotProps?: Record<string, unknown>;
+  resultLinkSlotProps?: Record<string, unknown>;
+  resultRowSlotProps?: Record<string, unknown>;
+  resultTitleSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
 }
 
@@ -1323,33 +1378,45 @@ function SearchResult(props: SearchResultProps): ReactNode {
   const description = props.record.sectionTitle
     ? (props.record.pageTitle ?? props.record.description)
     : props.record.description;
+  const styles = props.recipe({ active: props.active });
 
   return createElement(
     Box,
-    {
-      bg: props.active ? 'colorPalette.subtle' : 'transparent',
-      borderColor: props.active ? 'colorPalette.muted' : 'transparent',
-      borderRadius: 'md',
-      borderWidth: '1px',
-      display: 'block',
-      p: 3,
-      _hover: { bg: 'bg.subtle', textDecoration: 'none' },
-      ...props.slotProps,
-    },
+    mergeSlotStyleProps(styles.result, props.slotProps),
     createElement(
       DocsLink,
-      { href: props.record.route, onClick: props.onSelect },
+      {
+        href: props.record.route,
+        onClick: props.onSelect,
+        ...mergeSlotStyleProps(
+          styles.resultLink,
+          props.resultLinkSlotProps,
+        ),
+      },
       createElement(
         HStack,
-        { align: 'flex-start', justify: 'space-between' },
+        mergeSlotStyleProps(styles.resultRow, props.resultRowSlotProps),
         createElement(
           Stack,
-          { gap: 1 },
-          createElement(Text, { fontWeight: 'semibold' }, props.record.title),
+          mergeSlotStyleProps(
+            styles.resultContent,
+            props.resultContentSlotProps,
+          ),
+          createElement(
+            Text,
+            mergeSlotStyleProps(
+              styles.resultTitle,
+              props.resultTitleSlotProps,
+            ),
+            props.record.title,
+          ),
           description
             ? createElement(
                 Text,
-                { color: 'fg.muted', fontSize: 'sm' },
+                mergeSlotStyleProps(
+                  styles.resultDescription,
+                  props.resultDescriptionSlotProps,
+                ),
                 description,
               )
             : null,
@@ -1357,7 +1424,13 @@ function SearchResult(props: SearchResultProps): ReactNode {
         props.record.tags?.length
           ? createElement(
               Badge,
-              { flexShrink: 0, variant: 'subtle' },
+              {
+                variant: 'subtle',
+                ...mergeSlotStyleProps(
+                  styles.resultBadge,
+                  props.resultBadgeSlotProps,
+                ),
+              },
               props.record.tags[0],
             )
           : null,
@@ -1369,16 +1442,14 @@ function SearchResult(props: SearchResultProps): ReactNode {
 function createSearchStatus(
   message: string,
   role: 'alert' | 'status',
+  styles: unknown,
+  slotProps: Record<string, unknown> | undefined,
 ): ReactNode {
   return createElement(
     Text,
     {
-      color: 'fg.muted',
-      fontSize: 'sm',
-      px: 2,
-      py: 6,
       role,
-      textAlign: 'center',
+      ...mergeSlotStyleProps(styles, slotProps),
     },
     message,
   );
