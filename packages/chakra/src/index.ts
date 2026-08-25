@@ -53,7 +53,10 @@ import {
 import type { RemoteSearchState } from './remote-search.js';
 import {
   chakraDocsArticleSlotRecipe,
+  chakraDocsCalloutSlotRecipe,
+  chakraDocsCodeBlockSlotRecipe,
   chakraDocsLayoutSlotRecipe,
+  chakraDocsMarkdownContentSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
@@ -316,6 +319,14 @@ type MarkdownBlock =
 export interface MarkdownContentProps {
   source: string;
   slotProps?: Record<string, unknown>;
+  codeBlockSlotProps?: Record<string, unknown>;
+  headingSlotProps?: Record<string, unknown>;
+  inlineCodeSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listItemSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  paragraphSlotProps?: Record<string, unknown>;
+  quoteSlotProps?: Record<string, unknown>;
 }
 
 type DocsInputChangeEvent = {
@@ -1170,12 +1181,24 @@ export function MarkdownContent(props: MarkdownContentProps): ReactNode {
   const createNextHeadingId = createHeadingIdGenerator();
   const scrollMarginTop =
     config.layout?.scrollMarginTop ?? config.layout?.stickyTop ?? 8;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.markdownContent,
+    chakraDocsMarkdownContentSlotRecipe,
+  );
+  const styles = recipe();
 
   return createElement(
     Stack,
-    { gap: 4, ...props.slotProps },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     blocks.map((block, index) =>
-      renderMarkdownBlock(block, index, createNextHeadingId, scrollMarginTop),
+      renderMarkdownBlock(
+        block,
+        index,
+        createNextHeadingId,
+        scrollMarginTop,
+        recipe,
+        props,
+      ),
     ),
   );
 }
@@ -1259,31 +1282,32 @@ export function DocsPagination(props: DocsPaginationProps): ReactNode {
 export interface CalloutProps extends DocsComponentProps {
   type?: 'info' | 'warning' | 'success' | 'danger';
   title?: string;
+  contentSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export function Callout(props: CalloutProps): ReactNode {
-  const status = {
-    info: 'info',
-    warning: 'warning',
-    success: 'success',
-    danger: 'error',
-  }[props.type ?? 'info'];
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.callout,
+    chakraDocsCalloutSlotRecipe,
+  );
+  const styles = recipe({ status: props.type ?? 'info' });
 
   return createElement(
     Box,
-    {
-      borderWidth: '1px',
-      borderColor: `border.${status}`,
-      bg: `bg.${status}`,
-      color: `fg.${status}`,
-      rounded: 'md',
-      p: 4,
-      ...props.slotProps,
-    },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     props.title
-      ? createElement(Text, { fontWeight: 'semibold', mb: 2 }, props.title)
+      ? createElement(
+          Text,
+          mergeSlotStyleProps(styles.title, props.titleSlotProps),
+          props.title,
+        )
       : null,
-    props.children,
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      props.children,
+    ),
   );
 }
 
@@ -1291,6 +1315,15 @@ export interface CodeBlockProps extends DocsComponentProps {
   code?: string;
   language?: string;
   title?: string;
+  codeSlotProps?: Record<string, unknown>;
+  codeTextSlotProps?: Record<string, unknown>;
+  contentSlotProps?: Record<string, unknown>;
+  controlSlotProps?: Record<string, unknown>;
+  copyIndicatorSlotProps?: Record<string, unknown>;
+  copyTriggerSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  languageSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export function CodeBlock(props: CodeBlockProps): ReactNode {
@@ -1299,6 +1332,11 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
   const copyLabel = config.labels?.copyCode ?? defaultLabels.copyCode;
   const copiedLabel = config.labels?.copiedCode ?? defaultLabels.copiedCode;
   const hasHeader = Boolean(props.title || props.language || code);
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.codeBlock,
+    chakraDocsCodeBlockSlotRecipe,
+  );
+  const styles = recipe();
 
   return createElement(
     ChakraCodeBlock.Root,
@@ -1313,32 +1351,52 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
               title: props.title,
             })
         : undefined,
-      ...props.slotProps,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     hasHeader
       ? createElement(
           ChakraCodeBlock.Header,
-          null,
+          mergeSlotStyleProps(styles.header, props.headerSlotProps),
           props.title || props.language
             ? createElement(
                 ChakraCodeBlock.Title,
-                null,
+                mergeSlotStyleProps(styles.title, props.titleSlotProps),
                 props.title ?? props.language,
               )
             : null,
           createElement(
             ChakraCodeBlock.Control,
-            null,
+            mergeSlotStyleProps(styles.control, props.controlSlotProps),
             props.title && props.language
-              ? createElement(Badge, null, props.language)
+              ? createElement(
+                  Badge,
+                  mergeSlotStyleProps(
+                    styles.language,
+                    props.languageSlotProps,
+                  ),
+                  props.language,
+                )
               : null,
             code
               ? createElement(
                   ChakraCodeBlock.CopyTrigger,
-                  { type: 'button', 'aria-label': copyLabel },
+                  {
+                    type: 'button',
+                    'aria-label': copyLabel,
+                    ...mergeSlotStyleProps(
+                      styles.copyTrigger,
+                      props.copyTriggerSlotProps,
+                    ),
+                  },
                   createElement(
                     ChakraCodeBlock.CopyIndicator,
-                    { copied: copiedLabel },
+                    {
+                      copied: copiedLabel,
+                      ...mergeSlotStyleProps(
+                        styles.copyIndicator,
+                        props.copyIndicatorSlotProps,
+                      ),
+                    },
                     copyLabel,
                   ),
                 )
@@ -1348,11 +1406,14 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
       : null,
     createElement(
       ChakraCodeBlock.Content,
-      null,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
       createElement(
         ChakraCodeBlock.Code,
-        null,
-        createElement(ChakraCodeBlock.CodeText),
+        mergeSlotStyleProps(styles.code, props.codeSlotProps),
+        createElement(
+          ChakraCodeBlock.CodeText,
+          mergeSlotStyleProps(styles.codeText, props.codeTextSlotProps),
+        ),
       ),
     ),
   );
@@ -1493,7 +1554,18 @@ function renderMarkdownBlock(
   index: number,
   createNextHeadingId: (title: string) => string,
   scrollMarginTop: ChakraDocsStickyTop,
+  recipe: (
+    props?: Record<string, unknown>,
+  ) => Record<string, unknown>,
+  slotProps: MarkdownContentProps,
 ): ReactNode {
+  const styles = recipe({
+    headingLevel:
+      block.type === 'heading' && block.level === 2
+        ? 'section'
+        : 'subsection',
+  });
+
   if (block.type === 'heading') {
     return createElement(
       Heading,
@@ -1502,30 +1574,47 @@ function renderMarkdownBlock(
         id: createNextHeadingId(stripMarkdown(block.text)),
         key: `${block.type}-${index}`,
         size: block.level === 2 ? '2xl' : 'xl',
-        mt: block.level === 2 ? 8 : 3,
         scrollMarginTop,
+        ...mergeSlotStyleProps(styles.heading, slotProps.headingSlotProps),
       },
-      renderInlineMarkdown(block.text),
+      renderInlineMarkdown(block.text, recipe, slotProps),
     );
   }
 
   if (block.type === 'paragraph') {
     return createElement(
       Text,
-      { color: 'fg.muted', fontSize: 'md', key: `${block.type}-${index}` },
-      renderInlineMarkdown(block.text),
+      {
+        key: `${block.type}-${index}`,
+        ...mergeSlotStyleProps(
+          styles.paragraph,
+          slotProps.paragraphSlotProps,
+        ),
+      },
+      renderInlineMarkdown(block.text, recipe, slotProps),
     );
   }
 
   if (block.type === 'list') {
     return createElement(
       Box,
-      { as: 'ul', color: 'fg.muted', key: `${block.type}-${index}`, ps: 6 },
+      {
+        as: 'ul',
+        key: `${block.type}-${index}`,
+        ...mergeSlotStyleProps(styles.list, slotProps.listSlotProps),
+      },
       block.items.map((item) =>
         createElement(
           Box,
-          { as: 'li', key: item, mt: 1 },
-          renderInlineMarkdown(item),
+          {
+            as: 'li',
+            key: item,
+            ...mergeSlotStyleProps(
+              styles.listItem,
+              slotProps.listItemSlotProps,
+            ),
+          },
+          renderInlineMarkdown(item, recipe, slotProps),
         ),
       ),
     );
@@ -1534,8 +1623,15 @@ function renderMarkdownBlock(
   if (block.type === 'quote') {
     return createElement(
       Callout,
-      { key: `${block.type}-${index}`, title: 'Note' },
-      renderInlineMarkdown(block.text),
+      {
+        key: `${block.type}-${index}`,
+        slotProps: mergeSlotStyleProps(
+          styles.quote,
+          slotProps.quoteSlotProps,
+        ),
+        title: 'Note',
+      },
+      renderInlineMarkdown(block.text, recipe, slotProps),
     );
   }
 
@@ -1543,6 +1639,10 @@ function renderMarkdownBlock(
     code: block.code,
     key: `${block.type}-${index}`,
     language: normalizeCodeLanguage(block.language),
+    slotProps: mergeSlotStyleProps(
+      styles.codeBlock,
+      slotProps.codeBlockSlotProps,
+    ),
   });
 }
 
@@ -1647,20 +1747,43 @@ function isParagraphLine(line: string): boolean {
   );
 }
 
-function renderInlineMarkdown(text: string): ReactNode[] {
+function renderInlineMarkdown(
+  text: string,
+  recipe: (
+    props?: Record<string, unknown>,
+  ) => Record<string, unknown>,
+  slotProps: MarkdownContentProps,
+): ReactNode[] {
   return text
     .split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g)
     .filter(Boolean)
-    .map((part, index) => renderInlineMarkdownPart(part, index));
+    .map((part, index) =>
+      renderInlineMarkdownPart(part, index, recipe, slotProps),
+    );
 }
 
-function renderInlineMarkdownPart(part: string, index: number): ReactNode {
+function renderInlineMarkdownPart(
+  part: string,
+  index: number,
+  recipe: (
+    props?: Record<string, unknown>,
+  ) => Record<string, unknown>,
+  slotProps: MarkdownContentProps,
+): ReactNode {
   const key = `${part}-${index}`;
+  const styles = recipe();
 
   if (part.startsWith('`') && part.endsWith('`')) {
     return createElement(
       Code,
-      { key, variant: 'subtle' },
+      {
+        key,
+        variant: 'subtle',
+        ...mergeSlotStyleProps(
+          styles.inlineCode,
+          slotProps.inlineCodeSlotProps,
+        ),
+      },
       part.slice(1, -1),
     );
   }
@@ -1675,12 +1798,9 @@ function renderInlineMarkdownPart(part: string, index: number): ReactNode {
     return createElement(
       DocsLink,
       {
-        color: 'colorPalette.fg',
-        fontWeight: 'semibold',
         href: linkMatch[2],
         key,
-        textDecoration: 'underline',
-        textUnderlineOffset: '3px',
+        ...mergeSlotStyleProps(styles.link, slotProps.linkSlotProps),
       },
       linkMatch[1],
     );

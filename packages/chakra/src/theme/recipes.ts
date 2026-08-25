@@ -273,6 +273,8 @@ export const chakraDocsMarkdownContentSlotRecipe = defineSlotRecipe({
     'listItem',
     'inlineCode',
     'link',
+    'quote',
+    'codeBlock',
   ],
   base: {
     root: { gap: 4 },
