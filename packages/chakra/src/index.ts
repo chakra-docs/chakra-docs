@@ -52,8 +52,13 @@ import {
 } from './remote-search.js';
 import type { RemoteSearchState } from './remote-search.js';
 import {
+  chakraDocsArticleSlotRecipe,
+  chakraDocsLayoutSlotRecipe,
+  chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
+  chakraDocsSidebarSlotRecipe,
   chakraDocsTableOfContentsSlotRecipe,
+  chakraDocsVersionSelectSlotRecipe,
 } from './theme/recipes.js';
 import {
   mergeSlotStyleProps,
@@ -208,12 +213,28 @@ export interface DocsLayoutProps extends DocsComponentProps {
   stickyTop?: ChakraDocsStickyTop;
   scrollMarginTop?: ChakraDocsStickyTop;
   contentSlotProps?: Record<string, unknown>;
+  innerSlotProps?: Record<string, unknown>;
   sidebarSlotProps?: Record<string, unknown>;
   tocSlotProps?: Record<string, unknown>;
 }
 
+export interface DocsArticleProps extends DocsComponentProps {
+  descriptionSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
+}
+
 export interface DocsStickyComponentProps extends DocsComponentProps {
   stickyTop?: ChakraDocsStickyTop;
+}
+
+export interface DocsSidebarProps extends DocsStickyComponentProps {
+  badgeSlotProps?: Record<string, unknown>;
+  childrenSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  sectionTitleSlotProps?: Record<string, unknown>;
 }
 
 export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
@@ -258,6 +279,12 @@ export interface DocsVersionSelectProps {
   slotProps?: Record<string, unknown>;
   labelSlotProps?: Record<string, unknown>;
   selectSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPaginationProps extends DocsComponentProps {
+  itemSlotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
 }
 
 type MarkdownBlock =
@@ -336,16 +363,18 @@ export function useDocsConfig(): ChakraDocsConfig {
 }
 
 export function DocsLayout(props: DocsLayoutProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.layout,
+    chakraDocsLayoutSlotRecipe,
+  );
+  const styles = recipe();
+
   return createElement(
     Container,
-    { maxW: '7xl', px: { base: 4, md: 8 }, py: 8, ...props.slotProps },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     createElement(
       Flex,
-      {
-        align: 'flex-start',
-        gap: { base: 8, lg: 12 },
-        direction: { base: 'column', lg: 'row' },
-      },
+      mergeSlotStyleProps(styles.inner, props.innerSlotProps),
       props.nav
         ? createElement(DocsSidebar, {
             nav: props.nav,
@@ -356,7 +385,10 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
         : null,
       createElement(
         Box,
-        { flex: '1', minW: 0, as: 'div', ...props.contentSlotProps },
+        {
+          as: 'div',
+          ...mergeSlotStyleProps(styles.content, props.contentSlotProps),
+        },
         props.children ??
           createElement(DocsArticle, {
             page: props.page,
@@ -375,23 +407,39 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
   );
 }
 
-export function DocsArticle(props: DocsComponentProps): ReactNode {
+export function DocsArticle(props: DocsArticleProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.article,
+    chakraDocsArticleSlotRecipe,
+  );
+  const styles = recipe();
+
   return createElement(
     Box,
-    { as: 'article', maxW: '3xl', ...props.slotProps },
+    {
+      as: 'article',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
     props.page
       ? createElement(
           Box,
-          { mb: 8 },
+          mergeSlotStyleProps(styles.header, props.headerSlotProps),
           createElement(
             Heading,
-            { as: 'h1', size: '3xl', mb: 3 },
+            {
+              as: 'h1',
+              size: '3xl',
+              ...mergeSlotStyleProps(styles.title, props.titleSlotProps),
+            },
             props.page.title,
           ),
           props.page.description
             ? createElement(
                 Text,
-                { color: 'fg.muted', fontSize: 'lg' },
+                mergeSlotStyleProps(
+                  styles.description,
+                  props.descriptionSlotProps,
+                ),
                 props.page.description,
               )
             : null,
@@ -401,25 +449,34 @@ export function DocsArticle(props: DocsComponentProps): ReactNode {
   );
 }
 
-export function DocsSidebar(props: DocsStickyComponentProps): ReactNode {
+export function DocsSidebar(props: DocsSidebarProps): ReactNode {
   const config = useDocsConfig();
   const stickyTop = props.stickyTop ??
     config.layout?.sidebarStickyTop ??
     config.layout?.stickyTop ?? { lg: 8 };
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.sidebar,
+    chakraDocsSidebarSlotRecipe,
+  );
+  const styles = recipe();
 
   return createElement(
     Box,
     {
       as: 'nav',
-      flex: '0 0 16rem',
-      position: { lg: 'sticky' },
       top: stickyTop,
-      w: { base: '100%', lg: '16rem' },
-      ...props.slotProps,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     createElement(NavList, {
       items: props.nav ?? [],
       activeRoute: props.page?.route,
+      badgeSlotProps: props.badgeSlotProps,
+      childrenSlotProps: props.childrenSlotProps,
+      itemSlotProps: props.itemSlotProps,
+      linkSlotProps: props.linkSlotProps,
+      listSlotProps: props.listSlotProps,
+      recipe,
+      sectionTitleSlotProps: props.sectionTitleSlotProps,
     }),
   );
 }
@@ -986,6 +1043,11 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
       label: collection.name ?? collection.id,
     })) ??
     [];
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.versionSelect,
+    chakraDocsVersionSelectSlotRecipe,
+  );
+  const styles = recipe();
   const hiddenLabelProps = props.labelHidden
     ? {
         border: 0,
@@ -1002,20 +1064,10 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
   const selectProps: Record<string, unknown> = {
     as: 'select',
     id: selectId,
-    bg: 'bg',
-    borderColor: 'border',
-    borderRadius: 'md',
-    borderWidth: '1px',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    h: 8,
-    lineHeight: 1,
-    minW: '7.5rem',
-    px: 2,
     value: props.value,
     onChange: (event: DocsInputChangeEvent) =>
       props.onValueChange?.(event.currentTarget.value),
-    ...props.selectSlotProps,
+    ...mergeSlotStyleProps(styles.select, props.selectSlotProps),
   };
 
   if (props.value === undefined) {
@@ -1028,24 +1080,14 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
 
   return createElement(
     Box,
-    {
-      alignItems: 'center',
-      display: 'inline-flex',
-      gap: 2,
-      minW: 0,
-      ...props.slotProps,
-    },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     createElement(
       Text,
       {
         as: 'label',
-        color: 'fg.muted',
-        fontSize: 'xs',
-        fontWeight: 'semibold',
         htmlFor: selectId,
-        lineHeight: 1,
         ...hiddenLabelProps,
-        ...props.labelSlotProps,
+        ...mergeSlotStyleProps(styles.label, props.labelSlotProps),
       },
       labelText,
     ),
@@ -1092,13 +1134,18 @@ export function MarkdownContent(props: MarkdownContentProps): ReactNode {
   );
 }
 
-export function DocsPagination(props: DocsComponentProps): ReactNode {
+export function DocsPagination(props: DocsPaginationProps): ReactNode {
   const labels = useDocsConfig().labels ?? defaultLabels;
   const pages = flattenNav(props.nav ?? []).filter((item) => item.href);
   const index = pages.findIndex((item) => item.href === props.page?.route);
   const previous = index > 0 ? pages[index - 1] : undefined;
   const next =
     index >= 0 && index < pages.length - 1 ? pages[index + 1] : undefined;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.pagination,
+    chakraDocsPaginationSlotRecipe,
+  );
+  const styles = recipe();
 
   if (!previous && !next) {
     return null;
@@ -1108,24 +1155,29 @@ export function DocsPagination(props: DocsComponentProps): ReactNode {
     Flex,
     {
       as: 'nav',
-      justify: 'space-between',
-      gap: 4,
-      mt: 12,
-      pt: 6,
-      borderTopWidth: '1px',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     previous
       ? createElement(
           Box,
-          null,
+          {
+            'data-direction': 'previous',
+            ...mergeSlotStyleProps(
+              recipe({ direction: 'previous' }).item,
+              props.itemSlotProps,
+            ),
+          },
           createElement(
             Text,
-            { color: 'fg.muted', fontSize: 'sm' },
+            mergeSlotStyleProps(styles.label, props.labelSlotProps),
             labels.previousPage,
           ),
           createElement(
             DocsLink,
-            { href: previous.href ?? '#' },
+            {
+              href: previous.href ?? '#',
+              ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+            },
             previous.title,
           ),
         )
@@ -1133,13 +1185,26 @@ export function DocsPagination(props: DocsComponentProps): ReactNode {
     next
       ? createElement(
           Box,
-          { textAlign: 'right' },
+          {
+            'data-direction': 'next',
+            ...mergeSlotStyleProps(
+              recipe({ direction: 'next' }).item,
+              props.itemSlotProps,
+            ),
+          },
           createElement(
             Text,
-            { color: 'fg.muted', fontSize: 'sm' },
+            mergeSlotStyleProps(styles.label, props.labelSlotProps),
             labels.nextPage,
           ),
-          createElement(DocsLink, { href: next.href ?? '#' }, next.title),
+          createElement(
+            DocsLink,
+            {
+              href: next.href ?? '#',
+              ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+            },
+            next.title,
+          ),
         )
       : createElement(Box),
   );
@@ -1614,16 +1679,34 @@ function isInternalHref(href: string): boolean {
 function NavList(props: {
   items: DocsNavItem[];
   activeRoute?: string;
+  badgeSlotProps?: Record<string, unknown>;
+  childrenSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  recipe: (
+    props?: Record<string, unknown>,
+  ) => Record<string, unknown>;
+  sectionTitleSlotProps?: Record<string, unknown>;
 }): ReactNode {
+  const styles = props.recipe();
+
   return createElement(
     Box,
-    { as: 'ol', listStyleType: 'none', ps: 0, m: 0 },
+    {
+      as: 'ol',
+      ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+    },
     props.items
       .filter((item) => !item.hidden)
       .map((item) =>
         createElement(
           Box,
-          { as: 'li', key: item.id, py: 1 },
+          {
+            as: 'li',
+            key: item.id,
+            ...mergeSlotStyleProps(styles.item, props.itemSlotProps),
+          },
           item.href
             ? createElement(
                 DocsLink,
@@ -1631,18 +1714,46 @@ function NavList(props: {
                   href: item.href,
                   'aria-current':
                     item.href === props.activeRoute ? 'page' : undefined,
+                  ...mergeSlotStyleProps(
+                    props.recipe({ active: item.href === props.activeRoute })
+                      .link,
+                    props.linkSlotProps,
+                  ),
                 },
                 item.title,
               )
-            : createElement(Text, { fontWeight: 'semibold' }, item.title),
-          item.badge ? createElement(Badge, { ms: 2 }, item.badge) : null,
+            : createElement(
+                Text,
+                mergeSlotStyleProps(
+                  styles.sectionTitle,
+                  props.sectionTitleSlotProps,
+                ),
+                item.title,
+              ),
+          item.badge
+            ? createElement(
+                Badge,
+                mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+                item.badge,
+              )
+            : null,
           item.children
             ? createElement(
                 Box,
-                { ps: 4, mt: 1 },
+                mergeSlotStyleProps(
+                  styles.children,
+                  props.childrenSlotProps,
+                ),
                 createElement(NavList, {
-                  items: item.children,
                   activeRoute: props.activeRoute,
+                  badgeSlotProps: props.badgeSlotProps,
+                  childrenSlotProps: props.childrenSlotProps,
+                  itemSlotProps: props.itemSlotProps,
+                  items: item.children,
+                  linkSlotProps: props.linkSlotProps,
+                  listSlotProps: props.listSlotProps,
+                  recipe: props.recipe,
+                  sectionTitleSlotProps: props.sectionTitleSlotProps,
                 }),
               )
             : null,
