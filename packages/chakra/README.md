@@ -112,15 +112,75 @@ search endpoint.
 - `codeBlock.adapter` — a `ChakraDocsCodeBlockAdapter` for syntax highlighting, passed to Chakra's `CodeBlock.AdapterProvider`.
 - `layout` — `ChakraDocsLayoutConfig` sticky offsets (`stickyTop`, `sidebarStickyTop`, `tocStickyTop`, `scrollMarginTop`), each accepting responsive Chakra values.
 
+### Theming and recipes
+
+Every visual Chakra Docs component uses a package-owned Chakra slot recipe. The
+components include those recipes as runtime fallbacks, so they continue to work
+with Chakra's `defaultSystem` and do not require a custom provider. To override
+recipes in a host theme, compose `chakraDocsThemeConfig` before the app's
+overrides:
+
+```tsx
+import {
+  ChakraProvider,
+  createSystem,
+  defaultConfig,
+  defineConfig,
+} from '@chakra-ui/react';
+import {
+  chakraDocsRecipeKeys,
+  chakraDocsThemeConfig,
+} from '@chakra-docs/chakra';
+
+const appTheme = defineConfig({
+  theme: {
+    slotRecipes: {
+      [chakraDocsRecipeKeys.tableOfContents]: {
+        base: {
+          activeIndicator: {
+            w: '3px',
+          },
+        },
+      },
+    },
+  },
+});
+
+const system = createSystem(defaultConfig, chakraDocsThemeConfig, appTheme);
+
+<ChakraProvider value={system}>{/* app */}</ChakraProvider>;
+```
+
+Recipe defaults use Chakra semantic colors (`bg`, `fg`, and `border`) and
+inherited `colorPalette.*` values. Setting `colorPalette` on a containing Chakra
+element therefore changes accent styling without replacing the recipes.
+
+| Recipe key | Slots |
+| --- | --- |
+| `chakraDocsLayout` | `root`, `inner`, `content` |
+| `chakraDocsArticle` | `root`, `header`, `title`, `description` |
+| `chakraDocsSidebar` | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children` |
+| `chakraDocsTableOfContents` | `root`, `label`, `list`, `item`, `link`, `activeIndicator` |
+| `chakraDocsSearch` | `trigger`, `triggerLabel`, `shortcut`, `backdrop`, `positioner`, `root`, `header`, `title`, `body`, `input`, `results`, `sectionLabel`, `resultList`, `result`, `resultLink`, `resultRow`, `resultContent`, `resultTitle`, `resultDescription`, `resultBadge`, `status` |
+| `chakraDocsVersionSelect` | `root`, `label`, `select` |
+| `chakraDocsMarkdownContent` | `root`, `heading`, `paragraph`, `list`, `listItem`, `inlineCode`, `link`, `quote`, `codeBlock` |
+| `chakraDocsPagination` | `root`, `item`, `label`, `link` |
+| `chakraDocsCallout` | `root`, `title`, `content` |
+| `chakraDocsCodeBlock` | `root`, `header`, `title`, `control`, `language`, `copyTrigger`, `copyIndicator`, `content`, `code`, `codeText` |
+
+The individual recipe definitions, `chakraDocsSlotRecipes`,
+`chakraDocsThemeConfig`, and `chakraDocsRecipeKeys` are public exports. Named
+`*SlotProps` props provide per-instance overrides for the same component parts.
+
 ## API
 
 ### Components
 
 - `DocsProvider` — merges and provides `ChakraDocsConfig` (labels, link component, analytics, code block adapter, layout offsets) to descendants.
 - `DocsLayout` — responsive shell that renders `DocsSidebar` (when `nav` is passed), a content area, and `DocsTableOfContents` (when `headings` is passed). Its content wrapper is a `div` by default so it can safely sit inside an application's existing `main`; standalone pages can opt in with `contentSlotProps={{ as: 'main' }}`. Props: `page`, `nav`, `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`, `contentSlotProps`, `sidebarSlotProps`, `tocSlotProps`, `children`.
-- `DocsArticle` — article wrapper that renders the page title and description header. Props: `page`, `slotProps`, `children`.
-- `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Props: `nav`, `page`, `stickyTop`, `slotProps`.
-- `DocsTableOfContents` — sticky "On this page" list that tracks the active heading on scroll and smooth-scrolls on click. Props: `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`.
+- `DocsArticle` — article wrapper that renders the page title and description header. Its `root`, `header`, `title`, and `description` parts can be styled through its slot recipe or matching slot props.
+- `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Its navigation hierarchy exposes `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, and `children` slots.
+- `DocsTableOfContents` — sticky "On this page" list that tracks the active heading on scroll and smooth-scrolls on click. The active section uses a square `activeIndicator` slot, which can be overridden in the theme or with `activeIndicatorSlotProps`.
 - `DocsSearch` — Cmd/Ctrl+K search dialog with keyboard navigation, popular/default results, and collection scoping. Pass `records` for synchronous local search or `searchProvider` for remote search; the provider takes precedence when both are present. Remote mode sends `collectionId`/`collectionIds`, `limit`, and `popularLimit` to the server, loads popular results on open, debounces typed queries (`debounceMs`, default 150 ms), and aborts superseded requests. `onNavigate` handles both unmodified pointer selection and Enter-key activation; modified clicks retain normal browser behavior. Props: `records`, `searchProvider`, `debounceMs`, `collectionId`, `collectionIds`, `limit`, `popularLimit`, `placeholder`, `onNavigate`, `onResultSelect`, plus `slotProps`/`triggerSlotProps`/`inputSlotProps`/`resultSlotProps`.
 - `DocsVersionSelect` — labeled native select for switching collections/versions. Props: `collections` or `options`, `value`/`defaultValue`, `onValueChange`, `includeAll`, `allValue`, `allLabel`, `label`, `labelHidden`, plus slot props.
 - `DocsPagination` — previous/next links derived from the flattened nav and the current `page.route`. Props: `nav`, `page`.

@@ -18,6 +18,7 @@ import {
   DocsTableOfContents,
   MarkdownContent,
   chakraDocsRecipeKeys,
+  chakraDocsSlotRecipes,
   chakraDocsThemeConfig,
   filterSearchRecordsByCollections,
   useDocsConfig,
@@ -725,6 +726,46 @@ describe('DocsTableOfContents (SSR)', () => {
     const markup = render(createElement(DocsTableOfContents, { headings: [] }));
 
     expect(markup).toBe('');
+  });
+});
+
+describe('Chakra Docs slot recipes', () => {
+  it('exports one configured slot recipe for every public recipe key', () => {
+    expect(Object.keys(chakraDocsSlotRecipes).sort()).toEqual(
+      Object.values(chakraDocsRecipeKeys).sort(),
+    );
+    expect(chakraDocsThemeConfig).toMatchObject({
+      theme: { slotRecipes: chakraDocsSlotRecipes },
+    });
+  });
+
+  it.each([
+    [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
+    [
+      chakraDocsRecipeKeys.tableOfContents,
+      ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],
+    ],
+    [
+      chakraDocsRecipeKeys.callout,
+      ['root', 'title', 'content'],
+    ],
+    [
+      chakraDocsRecipeKeys.codeBlock,
+      [
+        'root',
+        'header',
+        'title',
+        'control',
+        'language',
+        'copyTrigger',
+        'copyIndicator',
+        'content',
+        'code',
+        'codeText',
+      ],
+    ],
+  ])('keeps the %s public slot inventory stable', (key, slots) => {
+    expect(chakraDocsSlotRecipes[key].slots).toEqual(slots);
   });
 });
 
