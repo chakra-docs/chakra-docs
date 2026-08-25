@@ -17,6 +17,8 @@ import {
   DocsSearch,
   DocsTableOfContents,
   MarkdownContent,
+  chakraDocsRecipeKeys,
+  chakraDocsThemeConfig,
   filterSearchRecordsByCollections,
   useDocsConfig,
 } from './index.js';
@@ -36,15 +38,22 @@ import type { DocsAnchorClickEvent } from './search-activation.js';
 // The workspace resolves modules with `nodenext`, which cannot follow the
 // extensionless re-export chain in @chakra-ui/react's type declarations, so
 // mirror src/index.ts and access the runtime through a namespace cast.
-const { ChakraProvider, defaultSystem } = ChakraRuntime as unknown as {
+const { ChakraProvider, createSystem, defaultConfig, defaultSystem } =
+  ChakraRuntime as unknown as {
   ChakraProvider: ComponentType<{ value: unknown; children?: ReactNode }>;
+  createSystem: (...configs: unknown[]) => unknown;
+  defaultConfig: unknown;
   defaultSystem: unknown;
 };
 
-function render(node: ReactNode): string {
-  const markup = renderToStaticMarkup(
-    createElement(ChakraProvider, { value: defaultSystem }, node),
+function renderWithStyles(node: ReactNode, system = defaultSystem): string {
+  return renderToStaticMarkup(
+    createElement(ChakraProvider, { value: system }, node),
   );
+}
+
+function render(node: ReactNode): string {
+  const markup = renderWithStyles(node);
 
   // Drop the emotion <style> tags so assertions target actual markup.
   return markup.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
@@ -678,8 +687,38 @@ describe('DocsTableOfContents (SSR)', () => {
     const markup = render(createElement(DocsTableOfContents, { headings }));
 
     expect(markup).toContain('>On this page</p>');
-    expect(markup).toMatch(/<a href="#intro"[^>]*>Intro<\/a>/);
-    expect(markup).toMatch(/<a href="#deep-dive"[^>]*>Deep Dive<\/a>/);
+    expect(markup).toMatch(/<a href="#intro"[^>]*>.*Intro<\/a>/);
+    expect(markup).toMatch(/<a href="#deep-dive"[^>]*>.*Deep Dive<\/a>/);
+    expect(markup.match(/aria-hidden="true"/g)).toHaveLength(2);
+  });
+
+  it('exposes the active indicator slot for instance customization', () => {
+    const markup = render(
+      createElement(DocsTableOfContents, {
+        activeIndicatorSlotProps: { 'data-indicator': 'custom' },
+        headings,
+      }),
+    );
+
+    expect(markup.match(/data-indicator="custom"/g)).toHaveLength(2);
+  });
+
+  it('supports theme-level active indicator recipe overrides', () => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        slotRecipes: {
+          [chakraDocsRecipeKeys.tableOfContents]: {
+            base: { activeIndicator: { w: '4px' } },
+          },
+        },
+      },
+    });
+    const markup = renderWithStyles(
+      createElement(DocsTableOfContents, { headings }),
+      system,
+    );
+
+    expect(markup).toContain('width:4px');
   });
 
   it('renders nothing when there are no headings', () => {

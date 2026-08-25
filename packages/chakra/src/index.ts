@@ -51,8 +51,31 @@ import {
   getRemoteSearchDelayMs,
 } from './remote-search.js';
 import type { RemoteSearchState } from './remote-search.js';
+import {
+  chakraDocsRecipeKeys,
+  chakraDocsTableOfContentsSlotRecipe,
+} from './theme/recipes.js';
+import {
+  mergeSlotStyleProps,
+  useChakraDocsSlotRecipe,
+} from './theme/use-slot-recipe.js';
 
 export type { ChakraDocsStickyTop } from './heading-scroll.js';
+export {
+  chakraDocsArticleSlotRecipe,
+  chakraDocsCalloutSlotRecipe,
+  chakraDocsCodeBlockSlotRecipe,
+  chakraDocsLayoutSlotRecipe,
+  chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsPaginationSlotRecipe,
+  chakraDocsRecipeKeys,
+  chakraDocsSearchSlotRecipe,
+  chakraDocsSidebarSlotRecipe,
+  chakraDocsSlotRecipes,
+  chakraDocsTableOfContentsSlotRecipe,
+  chakraDocsThemeConfig,
+  chakraDocsVersionSelectSlotRecipe,
+} from './theme/recipes.js';
 
 const Chakra = ChakraRuntime as unknown as Record<string, ElementType>;
 const Badge = Chakra.Badge;
@@ -195,6 +218,11 @@ export interface DocsStickyComponentProps extends DocsComponentProps {
 
 export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
+  activeIndicatorSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
 }
 
 export interface DocsSearchProps {
@@ -418,6 +446,11 @@ export function DocsTableOfContents(
     config.layout?.stickyTop ??
     8;
   const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.tableOfContents,
+    chakraDocsTableOfContentsSlotRecipe,
+  );
+  const styles = recipe();
 
   useEffect(() => {
     return observeActiveHeading({
@@ -435,18 +468,23 @@ export function DocsTableOfContents(
     Box,
     {
       as: 'aside',
-      flex: '0 0 14rem',
-      display: { base: 'none', xl: 'block' },
-      position: 'sticky',
       top: stickyTop,
-      ...props.slotProps,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
-    createElement(Text, { fontWeight: 'semibold', mb: 3 }, labels.onThisPage),
+    createElement(
+      Text,
+      mergeSlotStyleProps(styles.label, props.labelSlotProps),
+      labels.onThisPage,
+    ),
     createElement(
       Box,
-      { as: 'ol', listStyleType: 'none', ps: 0, m: 0 },
+      {
+        as: 'ol',
+        ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+      },
       headings.map((heading) => {
         const active = activeHeadingId === heading.id;
+        const itemStyles = recipe({ active });
 
         return createElement(
           Box,
@@ -454,21 +492,12 @@ export function DocsTableOfContents(
             as: 'li',
             key: heading.id,
             ps: Math.max(0, heading.level - 2) * 3,
-            py: 1,
+            ...mergeSlotStyleProps(itemStyles.item, props.itemSlotProps),
           },
           createElement(
             Link,
             {
               'aria-current': active ? 'location' : undefined,
-              borderInlineStartWidth: '2px',
-              borderInlineStartColor: active
-                ? 'colorPalette.solid'
-                : 'transparent',
-              borderRadius: 'sm',
-              color: active ? 'colorPalette.fg' : 'fg.muted',
-              display: 'block',
-              fontSize: 'sm',
-              fontWeight: 'medium',
               href: `#${heading.id}`,
               onClick: (event: DocsAnchorClickEvent) => {
                 if (!shouldHandleTocClick(event)) {
@@ -479,13 +508,16 @@ export function DocsTableOfContents(
                 setActiveHeadingId(heading.id);
                 scrollToHeading(heading.id, scrollMarginTop);
               },
-              px: 2,
-              py: 1,
-              _hover: {
-                color: active ? 'colorPalette.solid' : 'fg',
-                textDecoration: 'none',
-              },
+              ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
             },
+            createElement(Box, {
+              as: 'span',
+              'aria-hidden': 'true',
+              ...mergeSlotStyleProps(
+                itemStyles.activeIndicator,
+                props.activeIndicatorSlotProps,
+              ),
+            }),
             heading.title,
           ),
         );
