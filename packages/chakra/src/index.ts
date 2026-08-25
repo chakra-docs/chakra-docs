@@ -461,9 +461,11 @@ export function DocsTableOfContents(
             {
               'aria-current': active ? 'location' : undefined,
               borderInlineStartWidth: '2px',
-              borderInlineStartColor: active ? 'teal.500' : 'transparent',
+              borderInlineStartColor: active
+                ? 'colorPalette.solid'
+                : 'transparent',
               borderRadius: 'sm',
-              color: active ? 'teal.700' : 'fg.muted',
+              color: active ? 'colorPalette.fg' : 'fg.muted',
               display: 'block',
               fontSize: 'sm',
               fontWeight: 'medium',
@@ -480,7 +482,7 @@ export function DocsTableOfContents(
               px: 2,
               py: 1,
               _hover: {
-                color: active ? 'teal.800' : 'fg',
+                color: active ? 'colorPalette.solid' : 'fg',
                 textDecoration: 'none',
               },
             },
@@ -969,7 +971,7 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
     as: 'select',
     id: selectId,
     bg: 'bg',
-    borderColor: 'gray.200',
+    borderColor: 'border',
     borderRadius: 'md',
     borderWidth: '1px',
     fontSize: 'sm',
@@ -1117,20 +1119,20 @@ export interface CalloutProps extends DocsComponentProps {
 }
 
 export function Callout(props: CalloutProps): ReactNode {
-  const palette = {
-    info: 'blue',
-    warning: 'orange',
-    success: 'green',
-    danger: 'red',
+  const status = {
+    info: 'info',
+    warning: 'warning',
+    success: 'success',
+    danger: 'error',
   }[props.type ?? 'info'];
 
   return createElement(
     Box,
     {
       borderWidth: '1px',
-      borderColor: `${palette}.300`,
-      bg: `${palette}.50`,
-      color: `${palette}.950`,
+      borderColor: `border.${status}`,
+      bg: `bg.${status}`,
+      color: `fg.${status}`,
       rounded: 'md',
       p: 4,
       ...props.slotProps,
@@ -1228,13 +1230,13 @@ function SearchResult(props: SearchResultProps): ReactNode {
   return createElement(
     Box,
     {
-      bg: props.active ? 'teal.50' : 'transparent',
-      borderColor: props.active ? 'teal.200' : 'transparent',
+      bg: props.active ? 'colorPalette.subtle' : 'transparent',
+      borderColor: props.active ? 'colorPalette.muted' : 'transparent',
       borderRadius: 'md',
       borderWidth: '1px',
       display: 'block',
       p: 3,
-      _hover: { bg: 'gray.50', textDecoration: 'none' },
+      _hover: { bg: 'bg.subtle', textDecoration: 'none' },
       ...props.slotProps,
     },
     createElement(
@@ -1258,7 +1260,7 @@ function SearchResult(props: SearchResultProps): ReactNode {
         props.record.tags?.length
           ? createElement(
               Badge,
-              { colorPalette: 'teal', flexShrink: 0, variant: 'subtle' },
+              { flexShrink: 0, variant: 'subtle' },
               props.record.tags[0],
             )
           : null,
@@ -1490,7 +1492,7 @@ function renderInlineMarkdownPart(part: string, index: number): ReactNode {
   if (part.startsWith('`') && part.endsWith('`')) {
     return createElement(
       Code,
-      { colorPalette: 'teal', key, variant: 'subtle' },
+      { key, variant: 'subtle' },
       part.slice(1, -1),
     );
   }
@@ -1505,7 +1507,7 @@ function renderInlineMarkdownPart(part: string, index: number): ReactNode {
     return createElement(
       DocsLink,
       {
-        color: 'blue.700',
+        color: 'colorPalette.fg',
         fontWeight: 'semibold',
         href: linkMatch[2],
         key,
