@@ -750,6 +750,30 @@ describe('Chakra Docs slot recipes', () => {
     });
   });
 
+  it('uses portable semantic colors without requiring a color palette', () => {
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants.active.true,
+    ).toMatchObject({ link: { color: 'fg' } });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.tableOfContents].variants
+        .active.true,
+    ).toMatchObject({
+      activeIndicator: { bg: 'currentColor' },
+      link: { color: 'fg', _hover: { color: 'fg' } },
+    });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.search].variants.active.true,
+    ).toMatchObject({
+      result: { bg: 'bg.subtle', borderColor: 'border.emphasized' },
+    });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base.link,
+    ).toMatchObject({ color: 'fg' });
+    expect(JSON.stringify(chakraDocsSlotRecipes)).not.toContain(
+      'colorPalette.',
+    );
+  });
+
   it.each([
     [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
     [

@@ -79,7 +79,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     active: {
       true: {
         link: {
-          color: 'colorPalette.fg',
+          color: 'fg',
           fontWeight: 'semibold',
         },
       },
@@ -126,10 +126,10 @@ export const chakraDocsTableOfContentsSlotRecipe = defineSlotRecipe({
     active: {
       true: {
         link: {
-          color: 'colorPalette.fg',
-          _hover: { color: 'colorPalette.solid' },
+          color: 'fg',
+          _hover: { color: 'fg' },
         },
-        activeIndicator: { bg: 'colorPalette.solid' },
+        activeIndicator: { bg: 'currentColor' },
       },
       false: {},
     },
@@ -223,8 +223,8 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
     active: {
       true: {
         result: {
-          bg: 'colorPalette.subtle',
-          borderColor: 'colorPalette.muted',
+          bg: 'bg.subtle',
+          borderColor: 'border.emphasized',
         },
       },
       false: {},
@@ -283,7 +283,7 @@ export const chakraDocsMarkdownContentSlotRecipe = defineSlotRecipe({
     list: { color: 'fg.muted', ps: 6 },
     listItem: { mt: 1 },
     link: {
-      color: 'colorPalette.fg',
+      color: 'fg',
       fontWeight: 'semibold',
       textDecoration: 'underline',
       textUnderlineOffset: '3px',
