@@ -1,0 +1,32 @@
+task = []
+
+[workspace]
+name = "chakra-docs"
+
+[derive]
+
+[worktree]
+copy = []
+link = []
+setup = []
+
+[tasks]
+
+[[unit]]
+name = "docs"
+working_dir = "apps/docs"
+command = 'NX_DAEMON=false npx nx run docs:dev -- --port "$PORT"'
+package_manager = "npm"
+port = 4361
+hostnames = ["docs.chakra-docs.test"]
+mode = "lazy"
+subtype = "app"
+role = "site"
+source = "byo"
+enabled = true
+id = "unt_wks_workspace_users_ryanhefner_code_open_source_chakra_docs_docs"
+
+[unit.runtime]
+kind = "node"
+version = "24.18.0"
+manager = "nvm"
