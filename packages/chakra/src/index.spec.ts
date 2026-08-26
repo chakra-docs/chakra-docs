@@ -355,6 +355,26 @@ describe('MarkdownContent', () => {
 });
 
 describe('DocsLayout', () => {
+  const nestedNav: DocsNavItem[] = [
+    {
+      id: 'guides',
+      title: 'Guides',
+      children: [
+        {
+          id: 'start',
+          title: 'Start',
+          children: [
+            {
+              id: 'install',
+              title: 'Install',
+              href: '/docs/install',
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
   it('renders valid flex layout recipe declarations', () => {
     const markup = renderWithStyles(
       createElement(DocsLayout, null, createElement('p', null, 'Content')),
@@ -411,6 +431,83 @@ describe('DocsLayout', () => {
     expect(markup).toContain('data-badge="Free plan"');
     expect(markup).toContain('data-indicator="plan"');
     expect(markup).toContain('title="Free plan"');
+  });
+
+  it('keeps sidebar navigation non-collapsible by default', () => {
+    const markup = render(
+      createElement(DocsLayout, {
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+
+    expect(markup).toContain('Install');
+    expect(markup).not.toContain('aria-expanded');
+    expect(markup).not.toContain('<button');
+  });
+
+  it('expands every active ancestor with accessible nested disclosures', () => {
+    const markup = render(
+      createElement(DocsLayout, {
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+        sidebarCollapsible: true,
+        sidebarDefaultExpanded: 'active',
+        sidebarContentSlotProps: { 'data-sidebar-content': 'custom' },
+        sidebarIndicatorSlotProps: { 'data-sidebar-indicator': 'custom' },
+        sidebarTriggerSlotProps: { 'data-sidebar-trigger': 'custom' },
+      }),
+    );
+
+    expect(markup.match(/aria-expanded="true"/g)).toHaveLength(2);
+    expect(markup.match(/aria-controls="[^"]+"/g)).toHaveLength(2);
+    expect(markup.match(/data-sidebar-trigger="custom"/g)).toHaveLength(2);
+    expect(markup.match(/data-sidebar-indicator="custom"/g)).toHaveLength(2);
+    expect(markup.match(/data-sidebar-content="custom"/g)).toHaveLength(2);
+  });
+
+  it('supports explicit and controlled expansion state', () => {
+    const collapsed = render(
+      createElement(DocsLayout, {
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+        sidebarCollapsible: true,
+        sidebarDefaultExpanded: 'none',
+      }),
+    );
+    const controlled = render(
+      createElement(DocsLayout, {
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+        sidebarCollapsible: true,
+        sidebarExpandedIds: ['guides'],
+      }),
+    );
+
+    expect(collapsed.match(/aria-expanded="false"/g)).toHaveLength(2);
+    expect(controlled.match(/aria-expanded="true"/g)).toHaveLength(1);
+    expect(controlled.match(/aria-expanded="false"/g)).toHaveLength(1);
+  });
+
+  it('preserves linked branch navigation with a separate disclosure trigger', () => {
+    const markup = render(
+      createElement(DocsLayout, {
+        nav: [
+          {
+            id: 'guides',
+            title: 'Guides',
+            href: '/docs/guides',
+            children: [
+              { id: 'install', title: 'Install', href: '/docs/install' },
+            ],
+          },
+        ],
+        sidebarCollapsible: true,
+      }),
+    );
+
+    expect(markup).toContain('href="/docs/guides"');
+    expect(markup).toContain('aria-label="Expand Guides"');
   });
 });
 
@@ -781,6 +878,13 @@ describe('Chakra Docs slot recipes', () => {
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants.active.true,
     ).toMatchObject({ link: { color: 'fg' } });
     expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants.expanded
+        .true,
+    ).toMatchObject({
+      content: { display: 'block' },
+      indicator: { transform: 'rotate(90deg)' },
+    });
+    expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.tableOfContents].variants
         .active.true,
     ).toMatchObject({
@@ -803,13 +907,25 @@ describe('Chakra Docs slot recipes', () => {
   it.each([
     [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
     [
+      chakraDocsRecipeKeys.sidebar,
+      [
+        'root',
+        'list',
+        'item',
+        'link',
+        'sectionTitle',
+        'badge',
+        'children',
+        'trigger',
+        'indicator',
+        'content',
+      ],
+    ],
+    [
       chakraDocsRecipeKeys.tableOfContents,
       ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],
     ],
-    [
-      chakraDocsRecipeKeys.callout,
-      ['root', 'title', 'content'],
-    ],
+    [chakraDocsRecipeKeys.callout, ['root', 'title', 'content']],
     [
       chakraDocsRecipeKeys.codeBlock,
       [

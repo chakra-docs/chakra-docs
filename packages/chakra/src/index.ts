@@ -52,6 +52,16 @@ import {
 } from './remote-search.js';
 import type { RemoteSearchState } from './remote-search.js';
 import {
+  getActiveSidebarBranchIds,
+  getSidebarBranchIds,
+  mergeActiveSidebarBranchIds,
+  normalizeSidebarExpandedIds,
+  resolveSidebarDefaultExpandedIds,
+  sidebarExpandedIdsEqual,
+  toggleSidebarExpandedId,
+} from './sidebar-expansion.js';
+import type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
+import {
   chakraDocsArticleSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
@@ -70,6 +80,7 @@ import {
 } from './theme/use-slot-recipe.js';
 
 export type { ChakraDocsStickyTop } from './heading-scroll.js';
+export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 export {
   chakraDocsArticleSlotRecipe,
   chakraDocsCalloutSlotRecipe,
@@ -218,8 +229,15 @@ export interface DocsLayoutProps extends DocsComponentProps {
   contentSlotProps?: Record<string, unknown>;
   innerSlotProps?: Record<string, unknown>;
   sidebarBadgeSlotProps?: Record<string, unknown>;
+  sidebarCollapsible?: boolean;
+  sidebarContentSlotProps?: Record<string, unknown>;
   sidebarContent?: ReactNode;
+  sidebarDefaultExpanded?: DocsSidebarDefaultExpanded;
+  sidebarExpandedIds?: readonly string[];
+  sidebarIndicatorSlotProps?: Record<string, unknown>;
+  onSidebarExpandedChange?: (expandedIds: readonly string[]) => void;
   sidebarSlotProps?: Record<string, unknown>;
+  sidebarTriggerSlotProps?: Record<string, unknown>;
   tocSlotProps?: Record<string, unknown>;
 }
 
@@ -235,6 +253,13 @@ export interface DocsStickyComponentProps extends DocsComponentProps {
 
 export interface DocsSidebarProps extends DocsStickyComponentProps {
   badgeSlotProps?: Record<string, unknown>;
+  collapsible?: boolean;
+  contentSlotProps?: Record<string, unknown>;
+  defaultExpanded?: DocsSidebarDefaultExpanded;
+  expandedIds?: readonly string[];
+  indicatorSlotProps?: Record<string, unknown>;
+  onExpandedChange?: (expandedIds: readonly string[]) => void;
+  triggerSlotProps?: Record<string, unknown>;
   childrenSlotProps?: Record<string, unknown>;
   itemSlotProps?: Record<string, unknown>;
   linkSlotProps?: Record<string, unknown>;
@@ -413,6 +438,13 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               nav: props.nav,
               page: props.page,
               badgeSlotProps: props.sidebarBadgeSlotProps,
+              collapsible: props.sidebarCollapsible,
+              contentSlotProps: props.sidebarContentSlotProps,
+              defaultExpanded: props.sidebarDefaultExpanded,
+              expandedIds: props.sidebarExpandedIds,
+              indicatorSlotProps: props.sidebarIndicatorSlotProps,
+              onExpandedChange: props.onSidebarExpandedChange,
+              triggerSlotProps: props.sidebarTriggerSlotProps,
               stickyTop: props.stickyTop,
               slotProps: props.sidebarSlotProps,
             },
@@ -495,6 +527,67 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
     chakraDocsSidebarSlotRecipe,
   );
   const styles = recipe();
+  const nav = props.nav ?? [];
+  const activeRoute = props.page?.route;
+  const controlled = props.expandedIds !== undefined;
+  const [uncontrolledExpandedIds, setUncontrolledExpandedIds] = useState(() =>
+    resolveSidebarDefaultExpandedIds(nav, activeRoute, props.defaultExpanded),
+  );
+  const expandedIds = normalizeSidebarExpandedIds(
+    nav,
+    props.expandedIds ?? uncontrolledExpandedIds,
+  );
+  const expandedIdsRef = useRef(expandedIds);
+  const navRef = useRef(nav);
+  const onExpandedChangeRef = useRef(props.onExpandedChange);
+  const mountedRef = useRef(false);
+  expandedIdsRef.current = expandedIds;
+  navRef.current = nav;
+  onExpandedChangeRef.current = props.onExpandedChange;
+  const activeBranchKey = getActiveSidebarBranchIds(nav, activeRoute).join(
+    '\0',
+  );
+  const branchKey = getSidebarBranchIds(nav).join('\0');
+
+  useEffect(() => {
+    if (!props.collapsible) {
+      return;
+    }
+
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+
+    const nextExpandedIds = mergeActiveSidebarBranchIds(
+      navRef.current,
+      activeRoute,
+      expandedIdsRef.current,
+    );
+
+    if (sidebarExpandedIdsEqual(expandedIdsRef.current, nextExpandedIds)) {
+      return;
+    }
+
+    if (!controlled) {
+      setUncontrolledExpandedIds(nextExpandedIds);
+    }
+    onExpandedChangeRef.current?.(nextExpandedIds);
+  }, [activeBranchKey, activeRoute, branchKey, controlled, props.collapsible]);
+
+  const toggleExpanded = (id: string) => {
+    const nextExpandedIds = toggleSidebarExpandedId(
+      nav,
+      expandedIdsRef.current,
+      id,
+    );
+
+    if (!controlled) {
+      setUncontrolledExpandedIds(nextExpandedIds);
+    }
+    props.onExpandedChange?.(nextExpandedIds);
+  };
+  const contentIdPrefix = useId();
 
   return createElement(
     Box,
@@ -505,15 +598,22 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
     },
     props.children,
     createElement(NavList, {
-      items: props.nav ?? [],
-      activeRoute: props.page?.route,
+      items: nav,
+      activeRoute,
       badgeSlotProps: props.badgeSlotProps,
+      collapsible: props.collapsible ?? false,
+      contentIdPrefix,
+      contentSlotProps: props.contentSlotProps,
       childrenSlotProps: props.childrenSlotProps,
+      expandedIds: new Set(expandedIds),
+      indicatorSlotProps: props.indicatorSlotProps,
       itemSlotProps: props.itemSlotProps,
       linkSlotProps: props.linkSlotProps,
       listSlotProps: props.listSlotProps,
       recipe,
       sectionTitleSlotProps: props.sectionTitleSlotProps,
+      toggleExpanded,
+      triggerSlotProps: props.triggerSlotProps,
     }),
   );
 }
@@ -1878,16 +1978,25 @@ function NavList(props: {
   items: DocsNavItem[];
   activeRoute?: string;
   badgeSlotProps?: Record<string, unknown>;
+  collapsible: boolean;
+  contentIdPrefix: string;
+  contentSlotProps?: Record<string, unknown>;
   childrenSlotProps?: Record<string, unknown>;
+  expandedIds: ReadonlySet<string>;
+  indicatorSlotProps?: Record<string, unknown>;
   itemSlotProps?: Record<string, unknown>;
   linkSlotProps?: Record<string, unknown>;
   listSlotProps?: Record<string, unknown>;
+  path?: readonly number[];
   recipe: (
     props?: Record<string, unknown>,
   ) => Record<string, unknown>;
   sectionTitleSlotProps?: Record<string, unknown>;
+  toggleExpanded: (id: string) => void;
+  triggerSlotProps?: Record<string, unknown>;
 }): ReactNode {
   const styles = props.recipe();
+  const path = props.path ?? [];
 
   return createElement(
     Box,
@@ -1897,8 +2006,67 @@ function NavList(props: {
     },
     props.items
       .filter((item) => !item.hidden)
-      .map((item) =>
-        createElement(
+      .map((item, index) => {
+        const children = (item.children ?? []).filter((child) => !child.hidden);
+        const hasChildren = children.length > 0;
+        const expanded = !props.collapsible || props.expandedIds.has(item.id);
+        const active = item.href === props.activeRoute;
+        const itemStyles = props.recipe({
+          active,
+          expanded,
+          linked: Boolean(item.href),
+        });
+        const contentId = `${props.contentIdPrefix}-section-${[
+          ...path,
+          index,
+        ].join('-')}`;
+        const indicator =
+          hasChildren && props.collapsible
+            ? createElement(
+                Box,
+                {
+                  ...mergeSlotStyleProps(
+                    itemStyles.indicator,
+                    props.indicatorSlotProps,
+                  ),
+                  as: 'span',
+                  'aria-hidden': 'true',
+                  'data-state': expanded ? 'open' : 'closed',
+                },
+                '›',
+              )
+            : null;
+        const disclosureTrigger =
+          hasChildren && props.collapsible
+            ? createElement(
+                Box,
+                {
+                  ...(item.href
+                    ? mergeSlotStyleProps(
+                        itemStyles.trigger,
+                        props.triggerSlotProps,
+                      )
+                    : mergeSidebarSlotProps(
+                        [styles.sectionTitle, itemStyles.trigger],
+                        props.sectionTitleSlotProps,
+                        props.triggerSlotProps,
+                      )),
+                  as: 'button',
+                  type: 'button',
+                  'aria-controls': contentId,
+                  'aria-expanded': expanded,
+                  'aria-label': item.href
+                    ? `${expanded ? 'Collapse' : 'Expand'} ${item.title}`
+                    : undefined,
+                  'data-state': expanded ? 'open' : 'closed',
+                  onClick: () => props.toggleExpanded(item.id),
+                },
+                item.href ? null : item.title,
+                indicator,
+              )
+            : null;
+
+        return createElement(
           Box,
           {
             as: 'li',
@@ -1910,24 +2078,21 @@ function NavList(props: {
                 DocsLink,
                 {
                   href: item.href,
-                  'aria-current':
-                    item.href === props.activeRoute ? 'page' : undefined,
-                  ...mergeSlotStyleProps(
-                    props.recipe({ active: item.href === props.activeRoute })
-                      .link,
-                    props.linkSlotProps,
-                  ),
+                  'aria-current': active ? 'page' : undefined,
+                  ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
                 },
                 item.title,
               )
-            : createElement(
-                Text,
-                mergeSlotStyleProps(
-                  styles.sectionTitle,
-                  props.sectionTitleSlotProps,
-                ),
-                item.title,
-              ),
+            : (disclosureTrigger ??
+                createElement(
+                  Text,
+                  mergeSlotStyleProps(
+                    styles.sectionTitle,
+                    props.sectionTitleSlotProps,
+                  ),
+                  item.title,
+                )),
+          item.href ? disclosureTrigger : null,
           item.badge
             ? createElement(
                 Badge,
@@ -1939,29 +2104,57 @@ function NavList(props: {
                 item.badge,
               )
             : null,
-          item.children
+          hasChildren
             ? createElement(
                 Box,
-                mergeSlotStyleProps(
-                  styles.children,
-                  props.childrenSlotProps,
-                ),
+                {
+                  ...mergeSidebarSlotProps(
+                    [styles.children, itemStyles.content],
+                    props.childrenSlotProps,
+                    props.contentSlotProps,
+                  ),
+                  id: contentId,
+                  'data-state': expanded ? 'open' : 'closed',
+                },
                 createElement(NavList, {
                   activeRoute: props.activeRoute,
                   badgeSlotProps: props.badgeSlotProps,
+                  collapsible: props.collapsible,
+                  contentIdPrefix: props.contentIdPrefix,
+                  contentSlotProps: props.contentSlotProps,
                   childrenSlotProps: props.childrenSlotProps,
+                  expandedIds: props.expandedIds,
+                  indicatorSlotProps: props.indicatorSlotProps,
                   itemSlotProps: props.itemSlotProps,
-                  items: item.children,
+                  items: children,
                   linkSlotProps: props.linkSlotProps,
                   listSlotProps: props.listSlotProps,
+                  path: [...path, index],
                   recipe: props.recipe,
                   sectionTitleSlotProps: props.sectionTitleSlotProps,
+                  toggleExpanded: props.toggleExpanded,
+                  triggerSlotProps: props.triggerSlotProps,
                 }),
               )
             : null,
-        ),
-      ),
+        );
+      }),
   );
+}
+
+function mergeSidebarSlotProps(
+  styles: unknown,
+  legacySlotProps: Record<string, unknown> | undefined,
+  slotProps: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const { css: legacyCss, ...legacyProps } = legacySlotProps ?? {};
+  const { css, ...props } = slotProps ?? {};
+
+  return {
+    css: [styles, legacyCss, css],
+    ...legacyProps,
+    ...props,
+  };
 }
 
 function flattenNav(items: DocsNavItem[]): DocsNavItem[] {

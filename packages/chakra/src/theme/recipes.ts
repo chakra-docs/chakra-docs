@@ -62,6 +62,9 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     'sectionTitle',
     'badge',
     'children',
+    'trigger',
+    'indicator',
+    'content',
   ],
   base: {
     root: {
@@ -74,6 +77,28 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     sectionTitle: { fontWeight: 'semibold' },
     badge: { ms: 2 },
     children: { mt: 1, ps: 4 },
+    trigger: {
+      alignItems: 'center',
+      appearance: 'none',
+      bg: 'transparent',
+      borderWidth: 0,
+      color: 'inherit',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      font: 'inherit',
+      fontWeight: 'semibold',
+      gap: 2,
+      justifyContent: 'space-between',
+      p: 0,
+      textAlign: 'start',
+      w: 'full',
+    },
+    indicator: {
+      display: 'inline-flex',
+      flex: '0 0 auto',
+      transition: 'transform 150ms ease',
+    },
+    content: {},
   },
   variants: {
     active: {
@@ -85,8 +110,22 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       },
       false: {},
     },
+    expanded: {
+      true: {
+        indicator: { transform: 'rotate(90deg)' },
+        content: { display: 'block' },
+      },
+      false: {
+        indicator: { transform: 'rotate(0deg)' },
+        content: { display: 'none' },
+      },
+    },
+    linked: {
+      true: { trigger: { ms: 2, w: 'auto' } },
+      false: {},
+    },
   },
-  defaultVariants: { active: false },
+  defaultVariants: { active: false, expanded: true, linked: false },
 });
 
 export const chakraDocsTableOfContentsSlotRecipe = defineSlotRecipe({

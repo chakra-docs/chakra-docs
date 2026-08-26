@@ -56,6 +56,42 @@ export function DocsRoutePage(props: {
 }
 ```
 
+Sidebar disclosures are opt-in so existing navigation remains unchanged:
+
+```tsx
+<DocsLayout
+  nav={manifest.nav}
+  page={page}
+  sidebarCollapsible
+  sidebarDefaultExpanded="active"
+/>
+```
+
+`"active"` opens every branch on the current page's navigation path. Manual
+expansion remains open as the route changes, while navigation into a collapsed
+branch opens the new active path. Nested branches toggle independently. The
+other initial values are `"all"`, `"none"`, or an explicit array of nav item
+IDs.
+
+For controlled state, pass `sidebarExpandedIds` and update it from
+`onSidebarExpandedChange`:
+
+```tsx
+const [expandedIds, setExpandedIds] = useState<readonly string[]>([]);
+
+<DocsLayout
+  nav={manifest.nav}
+  page={page}
+  sidebarCollapsible
+  sidebarExpandedIds={expandedIds}
+  onSidebarExpandedChange={setExpandedIds}
+/>;
+```
+
+Controlled consumers remain the source of truth. When the route enters a
+collapsed branch, `onSidebarExpandedChange` receives the current manual IDs
+merged with the active ancestors.
+
 Add search and version switching to your site chrome:
 
 ```tsx
@@ -159,7 +195,7 @@ element therefore changes accent styling without replacing the recipes.
 | --- | --- |
 | `chakraDocsLayout` | `root`, `inner`, `content` |
 | `chakraDocsArticle` | `root`, `header`, `title`, `description` |
-| `chakraDocsSidebar` | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children` |
+| `chakraDocsSidebar` | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children`, `trigger`, `indicator`, `content` |
 | `chakraDocsTableOfContents` | `root`, `label`, `list`, `item`, `link`, `activeIndicator` |
 | `chakraDocsSearch` | `trigger`, `triggerLabel`, `shortcut`, `backdrop`, `positioner`, `root`, `header`, `title`, `body`, `input`, `results`, `sectionLabel`, `resultList`, `result`, `resultLink`, `resultRow`, `resultContent`, `resultTitle`, `resultDescription`, `resultBadge`, `status` |
 | `chakraDocsVersionSelect` | `root`, `label`, `select` |
@@ -171,15 +207,35 @@ element therefore changes accent styling without replacing the recipes.
 The individual recipe definitions, `chakraDocsSlotRecipes`,
 `chakraDocsThemeConfig`, and `chakraDocsRecipeKeys` are public exports. Named
 `*SlotProps` props provide per-instance overrides for the same component parts.
+For example, an application can replace the default disclosure motion:
+
+```ts
+const sidebarRecipe = {
+  base: {
+    indicator: { transition: 'transform 200ms ease' },
+    content: {
+      display: 'grid',
+      transition: 'grid-template-rows 200ms ease',
+      '& > ol': { overflow: 'hidden' },
+    },
+  },
+  variants: {
+    expanded: {
+      true: { content: { display: 'grid', gridTemplateRows: '1fr' } },
+      false: { content: { display: 'grid', gridTemplateRows: '0fr' } },
+    },
+  },
+};
+```
 
 ## API
 
 ### Components
 
 - `DocsProvider` — merges and provides `ChakraDocsConfig` (labels, link component, analytics, code block adapter, layout offsets) to descendants.
-- `DocsLayout` — responsive shell that renders `DocsSidebar` (when `nav` is passed), a content area, and `DocsTableOfContents` (when `headings` is passed). Its content wrapper is a `div` by default so it can safely sit inside an application's existing `main`; standalone pages can opt in with `contentSlotProps={{ as: 'main' }}`. Use `sidebarContent` for a legend, version control, or other content above the navigation, and `sidebarBadgeSlotProps` to style nav badges. Props: `page`, `nav`, `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`, `contentSlotProps`, `sidebarContent`, `sidebarBadgeSlotProps`, `sidebarSlotProps`, `tocSlotProps`, `children`.
+- `DocsLayout` — responsive shell that renders `DocsSidebar` (when `nav` is passed), a content area, and `DocsTableOfContents` (when `headings` is passed). Its content wrapper is a `div` by default so it can safely sit inside an application's existing `main`; standalone pages can opt in with `contentSlotProps={{ as: 'main' }}`. Use `sidebarContent` for a legend, version control, or other content above the navigation, and `sidebarBadgeSlotProps` to style nav badges. Collapsible navigation is enabled with `sidebarCollapsible`; configure its initial state with `sidebarDefaultExpanded`, or control it with `sidebarExpandedIds` and `onSidebarExpandedChange`. The `sidebarTriggerSlotProps`, `sidebarIndicatorSlotProps`, and `sidebarContentSlotProps` props customize its disclosure parts. Non-collapsible navigation remains the default. Props: `page`, `nav`, `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`, `contentSlotProps`, `sidebarContent`, `sidebarBadgeSlotProps`, `sidebarCollapsible`, `sidebarDefaultExpanded`, `sidebarExpandedIds`, `onSidebarExpandedChange`, `sidebarTriggerSlotProps`, `sidebarIndicatorSlotProps`, `sidebarContentSlotProps`, `sidebarSlotProps`, `tocSlotProps`, `children`.
 - `DocsArticle` — article wrapper that renders the page title and description header. Its `root`, `header`, `title`, and `description` parts can be styled through its slot recipe or matching slot props.
-- `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Children render above the navigation list. Badge elements expose their value through `data-badge` and `title`, and the navigation hierarchy exposes `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, and `children` slots.
+- `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Children render above the navigation list. Its direct disclosure props are `collapsible`, `defaultExpanded`, `expandedIds`, and `onExpandedChange`, with matching `triggerSlotProps`, `indicatorSlotProps`, and `contentSlotProps` overrides. Branch headings become buttons with `aria-expanded` and `aria-controls`; linked branches retain their link and add a separately labeled disclosure button. Badge elements expose their value through `data-badge` and `title`. The legacy `children` recipe slot remains supported alongside the new `trigger`, `indicator`, and `content` slots.
 - `DocsTableOfContents` — sticky "On this page" list that tracks the active heading on scroll and smooth-scrolls on click. The active section uses a square `activeIndicator` slot, which can be overridden in the theme or with `activeIndicatorSlotProps`.
 - `DocsSearch` — Cmd/Ctrl+K search dialog with keyboard navigation, popular/default results, and collection scoping. Pass `records` for synchronous local search or `searchProvider` for remote search; the provider takes precedence when both are present. Remote mode sends `collectionId`/`collectionIds`, `limit`, and `popularLimit` to the server, loads popular results on open, debounces typed queries (`debounceMs`, default 150 ms), and aborts superseded requests. `onNavigate` handles both unmodified pointer selection and Enter-key activation; modified clicks retain normal browser behavior. Props: `records`, `searchProvider`, `debounceMs`, `collectionId`, `collectionIds`, `limit`, `popularLimit`, `placeholder`, `onNavigate`, `onResultSelect`, plus `slotProps`/`triggerSlotProps`/`inputSlotProps`/`resultSlotProps`.
 - `DocsVersionSelect` — labeled native select for switching collections/versions. Props: `collections` or `options`, `value`/`defaultValue`, `onValueChange`, `includeAll`, `allValue`, `allLabel`, `label`, `labelHidden`, plus slot props.
@@ -196,7 +252,7 @@ The individual recipe definitions, `chakraDocsSlotRecipes`,
 
 ### Types
 
-`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
+`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
 
 ## Help and contributing
 
