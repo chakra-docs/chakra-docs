@@ -386,6 +386,32 @@ describe('DocsLayout', () => {
 
     expect(markup).toContain('<main');
   });
+
+  it('renders sidebar content and exposes badge values for styling', () => {
+    const markup = render(
+      createElement(
+        DocsLayout,
+        {
+          nav: [
+            {
+              badge: 'Free plan',
+              href: '/docs/free',
+              id: 'free',
+              title: 'Free page',
+            },
+          ],
+          sidebarBadgeSlotProps: { 'data-indicator': 'plan' },
+          sidebarContent: createElement('div', null, 'Plan legend'),
+        },
+        createElement('p', null, 'Content'),
+      ),
+    );
+
+    expect(markup).toContain('Plan legend');
+    expect(markup).toContain('data-badge="Free plan"');
+    expect(markup).toContain('data-indicator="plan"');
+    expect(markup).toContain('title="Free plan"');
+  });
 });
 
 describe('Callout', () => {

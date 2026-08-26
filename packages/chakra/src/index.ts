@@ -217,6 +217,8 @@ export interface DocsLayoutProps extends DocsComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
   contentSlotProps?: Record<string, unknown>;
   innerSlotProps?: Record<string, unknown>;
+  sidebarBadgeSlotProps?: Record<string, unknown>;
+  sidebarContent?: ReactNode;
   sidebarSlotProps?: Record<string, unknown>;
   tocSlotProps?: Record<string, unknown>;
 }
@@ -405,12 +407,17 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
       Box,
       mergeSlotStyleProps(styles.inner, props.innerSlotProps),
       props.nav
-        ? createElement(DocsSidebar, {
-            nav: props.nav,
-            page: props.page,
-            stickyTop: props.stickyTop,
-            slotProps: props.sidebarSlotProps,
-          })
+        ? createElement(
+            DocsSidebar,
+            {
+              nav: props.nav,
+              page: props.page,
+              badgeSlotProps: props.sidebarBadgeSlotProps,
+              stickyTop: props.stickyTop,
+              slotProps: props.sidebarSlotProps,
+            },
+            props.sidebarContent,
+          )
         : null,
       createElement(
         Box,
@@ -496,6 +503,7 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
       top: stickyTop,
       ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
+    props.children,
     createElement(NavList, {
       items: props.nav ?? [],
       activeRoute: props.page?.route,
@@ -1923,7 +1931,11 @@ function NavList(props: {
           item.badge
             ? createElement(
                 Badge,
-                mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+                {
+                  'data-badge': item.badge,
+                  title: item.badge,
+                  ...mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+                },
                 item.badge,
               )
             : null,
