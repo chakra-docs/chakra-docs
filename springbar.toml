@@ -18,7 +18,7 @@ working_dir = "apps/docs"
 command = 'NX_DAEMON=false npx nx run docs:dev -- --port "$PORT"'
 package_manager = "npm"
 port = 4361
-hostnames = ["docs.chakra-docs.test"]
+hostnames = ["chakra-docs.test"]
 mode = "lazy"
 subtype = "app"
 role = "site"

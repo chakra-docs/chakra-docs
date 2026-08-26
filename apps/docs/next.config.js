@@ -27,6 +27,7 @@ const contentSecurityPolicy = [
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
+  allowedDevOrigins: ['chakra-docs.test'],
   nx: {},
   outputFileTracingIncludes: {
     '/api/docs/search': ['src/content/docs/**/*'],
