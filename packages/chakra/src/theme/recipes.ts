@@ -30,6 +30,7 @@ export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
     },
     inner: {
       alignItems: 'flex-start',
+      display: 'flex',
       flexDirection: { base: 'column', lg: 'row' },
       gap: { base: 8, lg: 12 },
     },
@@ -303,6 +304,7 @@ export const chakraDocsPaginationSlotRecipe = defineSlotRecipe({
   base: {
     root: {
       borderTopWidth: '1px',
+      display: 'flex',
       gap: 4,
       justifyContent: 'space-between',
       mt: 12,

@@ -355,6 +355,17 @@ describe('MarkdownContent', () => {
 });
 
 describe('DocsLayout', () => {
+  it('renders valid flex layout recipe declarations', () => {
+    const markup = renderWithStyles(
+      createElement(DocsLayout, null, createElement('p', null, 'Content')),
+    );
+
+    expect(markup).toContain('align-items:flex-start');
+    expect(markup).toContain('flex-direction:column');
+    expect(markup).not.toContain(' alignItems{0:');
+    expect(markup).not.toContain(' flexDirection{0:');
+  });
+
   it('does not introduce a nested main landmark by default', () => {
     const markup = render(
       createElement(DocsLayout, null, createElement('p', null, 'Content')),
@@ -794,6 +805,20 @@ describe('DocsPagination', () => {
     expect(markup).toMatch(/<a[^>]*href="\/docs\/first"[^>]*>First Page<\/a>/);
     expect(markup).toContain('>Next</p>');
     expect(markup).toMatch(/<a[^>]*href="\/docs\/third"[^>]*>Third Page<\/a>/);
+  });
+
+  it('renders valid flex pagination recipe declarations', () => {
+    const markup = renderWithStyles(
+      createElement(DocsPagination, {
+        nav,
+        page: createPage('/docs/second', 'Second Page'),
+      }),
+    );
+
+    expect(markup).toContain('border-top-width:1px');
+    expect(markup).toContain('justify-content:space-between');
+    expect(markup).not.toContain(' borderTopWidth{0:');
+    expect(markup).not.toContain(' justifyContent{0:');
   });
 
   it('omits the previous link on the first page', () => {

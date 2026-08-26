@@ -93,7 +93,6 @@ const Button = Chakra.Button;
 const Code = Chakra.Code;
 const Container = Chakra.Container;
 const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
-const Flex = Chakra.Flex;
 const Heading = Chakra.Heading;
 const HStack = Chakra.HStack;
 const Input = Chakra.Input;
@@ -403,7 +402,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
     Container,
     mergeSlotStyleProps(styles.root, props.slotProps),
     createElement(
-      Flex,
+      Box,
       mergeSlotStyleProps(styles.inner, props.innerSlotProps),
       props.nav
         ? createElement(DocsSidebar, {
@@ -1221,7 +1220,7 @@ export function DocsPagination(props: DocsPaginationProps): ReactNode {
   }
 
   return createElement(
-    Flex,
+    Box,
     {
       as: 'nav',
       ...mergeSlotStyleProps(styles.root, props.slotProps),
