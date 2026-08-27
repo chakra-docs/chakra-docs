@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Fragment,
   createContext,
   createElement,
   useContext,
@@ -67,6 +68,7 @@ import {
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsLayoutSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
@@ -87,6 +89,7 @@ export {
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsLayoutSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
@@ -101,6 +104,10 @@ const Chakra = ChakraRuntime as unknown as Record<string, ElementType>;
 const Badge = Chakra.Badge;
 const Box = Chakra.Box;
 const Button = Chakra.Button;
+const ChakraClipboard = Chakra.Clipboard as unknown as Record<
+  string,
+  ElementType
+>;
 const Code = Chakra.Code;
 const Container = Chakra.Container;
 const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
@@ -147,6 +154,12 @@ export interface DocsLabels {
   closeNavigation: string;
   copyCode: string;
   copiedCode: string;
+  copyPage: string;
+  copiedPage: string;
+  copyLink: string;
+  copiedLink: string;
+  viewMarkdown: string;
+  moreActions: string;
 }
 
 export interface DocsAnalyticsCallbacks {
@@ -159,6 +172,16 @@ export interface DocsAnalyticsCallbacks {
     title?: string;
   }) => void;
   onPackageCommandCopy?: (event: { command: string; manager: string }) => void;
+  onPageCopy?: (event: {
+    page?: DocsPage;
+    value: string;
+    format: 'markdown' | 'link';
+  }) => void;
+  onPageAction?: (event: {
+    page?: DocsPage;
+    action: string;
+    href?: string;
+  }) => void;
 }
 
 export interface ChakraDocsCodeBlockHighlightResult {
@@ -242,9 +265,53 @@ export interface DocsLayoutProps extends DocsComponentProps {
 }
 
 export interface DocsArticleProps extends DocsComponentProps {
+  actions?: ReactNode;
+  actionsSlotProps?: Record<string, unknown>;
   descriptionSlotProps?: Record<string, unknown>;
+  headingSlotProps?: Record<string, unknown>;
   headerSlotProps?: Record<string, unknown>;
   titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsRootProps {
+  children?: ReactNode;
+  editUrl?: string;
+  markdown?: string;
+  markdownUrl?: string;
+  page?: DocsPage;
+  pageUrl?: string;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionProps {
+  children?: ReactNode;
+  copiedLabel?: string;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: string;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionLinkProps extends DocsPageActionProps {
+  href?: string;
+}
+
+export interface DocsPageActionsMenuProps {
+  children?: ReactNode;
+  contentSlotProps?: Record<string, unknown>;
+  label?: string;
+  slotProps?: Record<string, unknown>;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsItemProps extends DocsPageActionProps {
+  action?: string;
+  href?: string;
+  onSelect?: () => void;
 }
 
 export interface DocsStickyComponentProps extends DocsComponentProps {
@@ -388,6 +455,12 @@ const defaultLabels: DocsLabels = {
   closeNavigation: 'Close navigation',
   copyCode: 'Copy code',
   copiedCode: 'Copied',
+  copyPage: 'Copy page',
+  copiedPage: 'Copied',
+  copyLink: 'Copy link',
+  copiedLink: 'Copied',
+  viewMarkdown: 'View as Markdown',
+  moreActions: 'More page actions',
 };
 
 const DocsContext = createContext<ChakraDocsConfig>({
@@ -416,6 +489,488 @@ export function useDocsConfig(): ChakraDocsConfig {
       ...config.labels,
     },
   };
+}
+
+interface DocsPageActionsContextValue {
+  config: ChakraDocsConfig;
+  editUrl?: string;
+  inMenu: boolean;
+  markdown?: string;
+  markdownUrl?: string;
+  page?: DocsPage;
+  pageUrl?: string;
+  styles: Record<string, unknown>;
+}
+
+const DocsPageActionsContext = createContext<
+  DocsPageActionsContextValue | undefined
+>(undefined);
+
+function useDocsPageActionsContext(): DocsPageActionsContextValue {
+  const context = useContext(DocsPageActionsContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPageActions components must be rendered inside DocsPageActions.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsPageActionsRoot(
+  props: DocsPageActionsRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.pageActions,
+    chakraDocsPageActionsSlotRecipe,
+  );
+  const styles = recipe();
+  const page = props.page;
+  const markdown = props.markdown ?? page?.body;
+  const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
+  const markdownUrl = props.markdownUrl;
+  const editUrl =
+    props.editUrl ??
+    (page && config.editUrl ? config.editUrl(page) : undefined);
+  const context: DocsPageActionsContextValue = {
+    config,
+    editUrl,
+    inMenu: false,
+    markdown,
+    markdownUrl,
+    page,
+    pageUrl,
+    styles,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      markdown !== undefined ? createElement(DocsPageActionsCopyPage) : null,
+      pageUrl || markdownUrl || editUrl
+        ? createElement(
+            DocsPageActionsMenu,
+            null,
+            pageUrl ? createElement(DocsPageActionsCopyLink) : null,
+            markdownUrl ? createElement(DocsPageActionsViewMarkdown) : null,
+            editUrl ? createElement(DocsPageActionsEdit) : null,
+          )
+        : null,
+    );
+
+  return createElement(
+    DocsPageActionsContext.Provider,
+    { value: context },
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.root, props.slotProps),
+      children,
+    ),
+  );
+}
+
+export function DocsPageActionsCopyPage(props: DocsPageActionProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (context.markdown === undefined) {
+    return null;
+  }
+
+  return createCopyPageAction({
+    children: props.children,
+    context,
+    copiedLabel:
+      props.copiedLabel ?? labels.copiedPage ?? defaultLabels.copiedPage,
+    description: props.description,
+    descriptionSlotProps: props.descriptionSlotProps,
+    format: 'markdown',
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    indicatorSlotProps: props.indicatorSlotProps,
+    label: props.label ?? labels.copyPage ?? defaultLabels.copyPage,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+    value: context.markdown,
+  });
+}
+
+export function DocsPageActionsCopyLink(props: DocsPageActionProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (!context.pageUrl) {
+    return null;
+  }
+
+  return createCopyPageAction({
+    children: props.children,
+    context,
+    copiedLabel:
+      props.copiedLabel ?? labels.copiedLink ?? defaultLabels.copiedLink,
+    description: props.description,
+    descriptionSlotProps: props.descriptionSlotProps,
+    format: 'link',
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    indicatorSlotProps: props.indicatorSlotProps,
+    label: props.label ?? labels.copyLink ?? defaultLabels.copyLink,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+    value: context.pageUrl,
+  });
+}
+
+export function DocsPageActionsViewMarkdown(
+  props: DocsPageActionLinkProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const href = props.href ?? context.markdownUrl;
+
+  if (!href) {
+    return null;
+  }
+
+  return createPageActionLink({
+    action: 'view-markdown',
+    children: props.children,
+    context,
+    description: props.description,
+    descriptionSlotProps: props.descriptionSlotProps,
+    href,
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    label: props.label ?? labels.viewMarkdown ?? defaultLabels.viewMarkdown,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+  });
+}
+
+export function DocsPageActionsEdit(props: DocsPageActionLinkProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const href = props.href ?? context.editUrl;
+
+  if (!href) {
+    return null;
+  }
+
+  return createPageActionLink({
+    action: 'edit',
+    children: props.children,
+    context,
+    description: props.description,
+    descriptionSlotProps: props.descriptionSlotProps,
+    href,
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    label: props.label ?? labels.editPage ?? defaultLabels.editPage,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+  });
+}
+
+export function DocsPageActionsMenu(
+  props: DocsPageActionsMenuProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const menuContext = { ...context, inMenu: true };
+
+  return createElement(
+    Box,
+    {
+      as: 'details',
+      ...mergeSlotStyleProps(context.styles.menu, props.slotProps),
+    },
+    createElement(
+      Box,
+      {
+        as: 'summary',
+        'aria-label':
+          props.label ?? labels.moreActions ?? defaultLabels.moreActions,
+        ...mergeSlotStyleProps(
+          [context.styles.trigger, context.styles.menuTrigger],
+          props.triggerSlotProps,
+        ),
+      },
+      props.label ?? labels.moreActions ?? defaultLabels.moreActions,
+    ),
+    createElement(
+      DocsPageActionsContext.Provider,
+      { value: menuContext },
+      createElement(
+        Box,
+        mergeSlotStyleProps(context.styles.menuContent, props.contentSlotProps),
+        props.children,
+      ),
+    ),
+  );
+}
+
+export function DocsPageActionsItem(
+  props: DocsPageActionsItemProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const action = props.action ?? 'custom';
+
+  if (props.href) {
+    return createPageActionLink({
+      action,
+      children: props.children,
+      context,
+      description: props.description,
+      descriptionSlotProps: props.descriptionSlotProps,
+      href: props.href,
+      icon: props.icon,
+      iconSlotProps: props.iconSlotProps,
+      label: props.label ?? action,
+      labelSlotProps: props.labelSlotProps,
+      onSelect: props.onSelect,
+      slotProps: props.slotProps,
+    });
+  }
+
+  return createElement(
+    Button,
+    {
+      type: 'button',
+      onClick: () => {
+        props.onSelect?.();
+        context.config.analytics?.onPageAction?.({
+          action,
+          page: context.page,
+        });
+      },
+      ...mergeSlotStyleProps(
+        context.inMenu ? context.styles.menuItem : context.styles.trigger,
+        props.slotProps,
+      ),
+    },
+    createPageActionContent(context, props),
+  );
+}
+
+export const DocsPageActions = {
+  Root: DocsPageActionsRoot,
+  CopyPage: DocsPageActionsCopyPage,
+  CopyLink: DocsPageActionsCopyLink,
+  ViewMarkdown: DocsPageActionsViewMarkdown,
+  Edit: DocsPageActionsEdit,
+  Menu: DocsPageActionsMenu,
+  Item: DocsPageActionsItem,
+} as const;
+
+function createCopyPageAction(props: {
+  children?: ReactNode;
+  context: DocsPageActionsContextValue;
+  copiedLabel: string;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  format: 'markdown' | 'link';
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  label: string;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  value: string;
+}): ReactNode {
+  const { context } = props;
+
+  return createElement(
+    ChakraClipboard.Root,
+    {
+      value: props.value,
+      onStatusChange: (details: { copied: boolean }) => {
+        if (details.copied) {
+          context.config.analytics?.onPageCopy?.({
+            format: props.format,
+            page: context.page,
+            value: props.value,
+          });
+        }
+      },
+      ...mergeSlotStyleProps(context.styles.copyRoot, undefined),
+    },
+    createElement(
+      ChakraClipboard.Trigger,
+      {
+        type: 'button',
+        'aria-label': props.label,
+        ...mergeSlotStyleProps(
+          context.inMenu ? context.styles.menuItem : context.styles.trigger,
+          props.slotProps,
+        ),
+      },
+      props.icon
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
+            },
+            props.icon,
+          )
+        : null,
+      createElement(
+        Box,
+        { as: 'span' },
+        createElement(
+          ChakraClipboard.Indicator,
+          {
+            copied: props.copiedLabel,
+            ...mergeSlotStyleProps(
+              context.styles.indicator,
+              props.indicatorSlotProps,
+            ),
+          },
+          createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.label,
+                props.labelSlotProps,
+              ),
+            },
+            props.children ?? props.label,
+          ),
+        ),
+        props.description
+          ? createElement(
+              Text,
+              {
+                as: 'span',
+                ...mergeSlotStyleProps(
+                  context.styles.description,
+                  props.descriptionSlotProps,
+                ),
+              },
+              props.description,
+            )
+          : null,
+      ),
+    ),
+  );
+}
+
+function createPageActionLink(props: {
+  action: string;
+  children?: ReactNode;
+  context: DocsPageActionsContextValue;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  href: string;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  label: string;
+  labelSlotProps?: Record<string, unknown>;
+  onSelect?: () => void;
+  slotProps?: Record<string, unknown>;
+}): ReactNode {
+  if (!isSafeLinkHref(props.href)) {
+    return null;
+  }
+
+  return createElement(
+    DocsLink,
+    {
+      href: props.href,
+      onClick: () => {
+        props.onSelect?.();
+        props.context.config.analytics?.onPageAction?.({
+          action: props.action,
+          href: props.href,
+          page: props.context.page,
+        });
+      },
+      ...mergeSlotStyleProps(
+        props.context.inMenu
+          ? props.context.styles.menuItem
+          : props.context.styles.trigger,
+        props.slotProps,
+      ),
+    },
+    createPageActionContent(props.context, props),
+  );
+}
+
+function createPageActionContent(
+  context: DocsPageActionsContextValue,
+  props: Pick<
+    DocsPageActionProps,
+    | 'description'
+    | 'descriptionSlotProps'
+    | 'children'
+    | 'icon'
+    | 'iconSlotProps'
+    | 'label'
+    | 'labelSlotProps'
+  >,
+): ReactNode {
+  return createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
+          },
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      { as: 'span' },
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(context.styles.label, props.labelSlotProps),
+        },
+        props.children ?? props.label,
+      ),
+      props.description
+        ? createElement(
+            Text,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.description,
+                props.descriptionSlotProps,
+              ),
+            },
+            props.description,
+          )
+        : null,
+    ),
+  );
+}
+
+function resolvePageActionUrl(
+  page: DocsPage | undefined,
+  siteUrl: string | undefined,
+): string | undefined {
+  if (!page) {
+    return undefined;
+  }
+
+  if (!siteUrl) {
+    return page.route;
+  }
+
+  try {
+    return new URL(page.route, siteUrl).toString();
+  } catch {
+    return page.route;
+  }
 }
 
 export function DocsLayout(props: DocsLayoutProps): ReactNode {
@@ -493,13 +1048,24 @@ export function DocsArticle(props: DocsArticleProps): ReactNode {
           Box,
           mergeSlotStyleProps(styles.header, props.headerSlotProps),
           createElement(
-            Heading,
-            {
-              as: 'h1',
-              size: '3xl',
-              ...mergeSlotStyleProps(styles.title, props.titleSlotProps),
-            },
-            props.page.title,
+            Box,
+            mergeSlotStyleProps(styles.heading, props.headingSlotProps),
+            createElement(
+              Heading,
+              {
+                as: 'h1',
+                size: '3xl',
+                ...mergeSlotStyleProps(styles.title, props.titleSlotProps),
+              },
+              props.page.title,
+            ),
+            props.actions
+              ? createElement(
+                  Box,
+                  mergeSlotStyleProps(styles.actions, props.actionsSlotProps),
+                  props.actions,
+                )
+              : null,
           ),
           props.page.description
             ? createElement(

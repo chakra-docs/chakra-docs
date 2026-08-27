@@ -59,6 +59,43 @@ The table of contents highlights the active section as the page scrolls. Heading
 </DocsArticle>
 ```
 
+Pass `actions` to place responsive page controls alongside the title. The actions container is optional, so existing article headers keep their original structure when no controls are supplied.
+
+## DocsPageActions
+
+`DocsPageActions` provides composable copy and link actions. `CopyPage` copies the Markdown source, while `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their URLs are available.
+
+```tsx
+<DocsArticle
+  page={page}
+  actions={
+    <DocsPageActions.Root
+      page={page}
+      markdown={page.body}
+      markdownUrl={`${page.route}.md`}
+    >
+      <DocsPageActions.CopyPage />
+      <DocsPageActions.Menu>
+        <DocsPageActions.CopyLink />
+        <DocsPageActions.ViewMarkdown />
+        <DocsPageActions.Edit />
+        <DocsPageActions.Item
+          action="report"
+          href="https://github.com/example/docs/issues/new"
+          label="Report an issue"
+        />
+      </DocsPageActions.Menu>
+    </DocsPageActions.Root>
+  }
+>
+  <MdxContent code={page.body} />
+</DocsArticle>
+```
+
+When no children are supplied, the root renders `CopyPage` as the primary action and places the available link, Markdown, and edit actions in its disclosure menu. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page.
+
+The `chakraDocsPageActions` recipe exposes `root`, `copyRoot`, `trigger`, `icon`, `label`, `indicator`, `menu`, `menuTrigger`, `menuContent`, `menuItem`, and `description` slots. Page copies and other actions can be observed through `analytics.onPageCopy` and `analytics.onPageAction`.
+
 ## DocsSidebar
 
 `DocsLayout` renders `DocsSidebar` when `nav` is provided. Use `DocsSidebar` directly if the app needs a different layout grid but still wants the package nav behavior.

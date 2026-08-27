@@ -11,7 +11,9 @@ import type {
 import type { DocsSearchProvider } from '@chakra-docs/search';
 import {
   Callout,
+  DocsArticle,
   DocsLayout,
+  DocsPageActions,
   DocsPagination,
   DocsProvider,
   DocsSearch,
@@ -511,6 +513,105 @@ describe('DocsLayout', () => {
   });
 });
 
+describe('DocsPageActions', () => {
+  it('derives copy, edit, and canonical page actions from page context', () => {
+    const page = {
+      ...createPage('/docs/start', 'Start'),
+      body: '## Install\n\nnpm install',
+    };
+    const markup = render(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            siteUrl: 'https://docs.example.com',
+            editUrl: (currentPage) =>
+              `https://github.com/example/docs/edit/main/${currentPage.path}`,
+          },
+        },
+        createElement(DocsPageActions.Root, {
+          markdownUrl: '/docs/start.md',
+          page,
+        }),
+      ),
+    );
+
+    expect(markup).toContain('aria-label="Copy page"');
+    expect(markup).toContain('aria-label="Copy link"');
+    expect(markup).toContain('aria-label="More page actions"');
+    expect(markup).toContain('href="/docs/start.md"');
+    expect(markup).toContain(
+      'href="https://github.com/example/docs/edit/main//docs/start.mdx"',
+    );
+    expect(markup).toContain('View as Markdown');
+    expect(markup).toContain('Edit this page');
+  });
+
+  it('supports composing only the actions an application wants', () => {
+    const markup = render(
+      createElement(
+        DocsPageActions.Root,
+        { markdown: '# Custom', pageUrl: '/docs/custom' },
+        createElement(DocsPageActions.CopyPage, {
+          children: 'Copy document',
+          label: 'Copy for support',
+        }),
+        createElement(DocsPageActions.Item, {
+          action: 'report',
+          href: 'https://github.com/example/docs/issues/new',
+          label: 'Report an issue',
+        }),
+      ),
+    );
+
+    expect(markup).toContain('aria-label="Copy for support"');
+    expect(markup).toContain('>Copy document<');
+    expect(markup).toContain('>Report an issue<');
+    expect(markup).not.toContain('More page actions');
+    expect(markup).not.toContain('Copy link');
+  });
+
+  it('omits unsafe page-action links', () => {
+    const markup = render(
+      createElement(
+        DocsPageActions.Root,
+        { pageUrl: '/docs/safe' },
+        createElement(DocsPageActions.Item, {
+          href: 'javascript:alert(1)',
+          label: 'Unsafe',
+        }),
+      ),
+    );
+
+    expect(markup).not.toContain('Unsafe');
+    expect(markup).not.toContain('javascript:');
+  });
+
+  it('renders actions in the DocsArticle header slot', () => {
+    const page = createPage('/docs/start', 'Start');
+    const markup = render(
+      createElement(
+        DocsArticle,
+        {
+          actions: createElement(
+            DocsPageActions.Root,
+            { markdown: '# Start', page },
+            createElement(DocsPageActions.CopyPage),
+          ),
+          actionsSlotProps: { 'data-page-actions': 'header' },
+          page,
+        },
+        createElement('p', null, 'Body'),
+      ),
+    );
+
+    expect(markup).toContain('data-page-actions="header"');
+    expect(markup).toContain('aria-label="Copy page"');
+    expect(markup).toContain('<h1');
+    expect(markup).toContain('Body');
+  });
+});
+
 describe('Callout', () => {
   const types = ['info', 'warning', 'success', 'danger'] as const;
 
@@ -926,6 +1027,22 @@ describe('Chakra Docs slot recipes', () => {
       ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],
     ],
     [chakraDocsRecipeKeys.callout, ['root', 'title', 'content']],
+    [
+      chakraDocsRecipeKeys.pageActions,
+      [
+        'root',
+        'copyRoot',
+        'trigger',
+        'icon',
+        'label',
+        'indicator',
+        'menu',
+        'menuTrigger',
+        'menuContent',
+        'menuItem',
+        'description',
+      ],
+    ],
     [
       chakraDocsRecipeKeys.codeBlock,
       [
