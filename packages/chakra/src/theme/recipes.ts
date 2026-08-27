@@ -8,10 +8,13 @@ const { defineConfig, defineSlotRecipe } =
 
 export const chakraDocsRecipeKeys = {
   article: 'chakraDocsArticle',
+  breadcrumbs: 'chakraDocsBreadcrumbs',
   callout: 'chakraDocsCallout',
   codeBlock: 'chakraDocsCodeBlock',
   layout: 'chakraDocsLayout',
+  headingPermalink: 'chakraDocsHeadingPermalink',
   markdownContent: 'chakraDocsMarkdownContent',
+  mobileTableOfContents: 'chakraDocsMobileTableOfContents',
   pageActions: 'chakraDocsPageActions',
   pagination: 'chakraDocsPagination',
   search: 'chakraDocsSearch',
@@ -44,10 +47,19 @@ export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-article',
-  slots: ['root', 'header', 'heading', 'title', 'description', 'actions'],
+  slots: [
+    'root',
+    'header',
+    'breadcrumbs',
+    'heading',
+    'title',
+    'description',
+    'actions',
+  ],
   base: {
     root: { maxW: '3xl' },
     header: { mb: 8 },
+    breadcrumbs: { mb: 4 },
     heading: {
       alignItems: 'flex-start',
       display: 'flex',
@@ -57,6 +69,56 @@ export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
     title: { mb: 3 },
     description: { color: 'fg.muted', fontSize: 'lg' },
     actions: { flexShrink: 0 },
+  },
+});
+
+export const chakraDocsBreadcrumbsSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-breadcrumbs',
+  slots: ['root', 'list', 'item', 'link', 'current', 'separator'],
+  base: {
+    root: { color: 'fg.muted', fontSize: 'sm' },
+    list: {
+      alignItems: 'center',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 2,
+      listStyleType: 'none',
+      m: 0,
+      p: 0,
+    },
+    item: { alignItems: 'center', display: 'inline-flex', gap: 2 },
+    link: {
+      color: 'fg.muted',
+      textDecoration: 'none',
+      _hover: { color: 'fg', textDecoration: 'underline' },
+    },
+    current: { color: 'fg', fontWeight: 'medium' },
+    separator: { color: 'fg.subtle', userSelect: 'none' },
+  },
+});
+
+export const chakraDocsHeadingPermalinkSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-heading-permalink',
+  slots: ['root', 'trigger', 'indicator'],
+  base: {
+    root: { display: 'inline-flex' },
+    trigger: {
+      alignItems: 'center',
+      appearance: 'none',
+      bg: 'transparent',
+      borderWidth: 0,
+      color: 'fg.muted',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      font: 'inherit',
+      fontSize: '0.75em',
+      ms: 2,
+      opacity: 0.5,
+      p: 0,
+      _hover: { color: 'fg', opacity: 1 },
+      _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
+    },
+    indicator: { display: 'inline-flex' },
   },
 });
 
@@ -265,6 +327,81 @@ export const chakraDocsTableOfContentsSlotRecipe = defineSlotRecipe({
           color: 'fg',
           _hover: { color: 'fg' },
         },
+        activeIndicator: { bg: 'currentColor' },
+      },
+      false: {},
+    },
+  },
+  defaultVariants: { active: false },
+});
+
+export const chakraDocsMobileTableOfContentsSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-mobile-table-of-contents',
+  slots: [
+    'root',
+    'trigger',
+    'triggerLabel',
+    'current',
+    'indicator',
+    'content',
+    'list',
+    'item',
+    'link',
+    'activeIndicator',
+  ],
+  base: {
+    root: {
+      borderBottomWidth: '1px',
+      display: { base: 'block', xl: 'none' },
+      mb: 6,
+      pb: 3,
+    },
+    trigger: {
+      alignItems: 'center',
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 'sm',
+      fontWeight: 'semibold',
+      gap: 2,
+      justifyContent: 'space-between',
+      listStyle: 'none',
+      _marker: { display: 'none' },
+    },
+    triggerLabel: { color: 'fg' },
+    current: {
+      color: 'fg.muted',
+      fontWeight: 'normal',
+      marginInlineStart: 'auto',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    },
+    indicator: { color: 'fg.muted', flexShrink: 0 },
+    content: { pt: 3 },
+    list: { listStyleType: 'none', m: 0, p: 0 },
+    item: { py: 1 },
+    link: {
+      color: 'fg.muted',
+      display: 'block',
+      fontSize: 'sm',
+      position: 'relative',
+      px: 2,
+      py: 1,
+      textDecoration: 'none',
+      _hover: { color: 'fg', textDecoration: 'none' },
+    },
+    activeIndicator: {
+      bg: 'transparent',
+      insetBlock: 0,
+      insetInlineStart: 0,
+      position: 'absolute',
+      w: '2px',
+    },
+  },
+  variants: {
+    active: {
+      true: {
+        link: { color: 'fg', fontWeight: 'semibold' },
         activeIndicator: { bg: 'currentColor' },
       },
       false: {},
@@ -516,10 +653,14 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsSlotRecipes = {
   [chakraDocsRecipeKeys.article]: chakraDocsArticleSlotRecipe,
+  [chakraDocsRecipeKeys.breadcrumbs]: chakraDocsBreadcrumbsSlotRecipe,
   [chakraDocsRecipeKeys.callout]: chakraDocsCalloutSlotRecipe,
   [chakraDocsRecipeKeys.codeBlock]: chakraDocsCodeBlockSlotRecipe,
   [chakraDocsRecipeKeys.layout]: chakraDocsLayoutSlotRecipe,
+  [chakraDocsRecipeKeys.headingPermalink]: chakraDocsHeadingPermalinkSlotRecipe,
   [chakraDocsRecipeKeys.markdownContent]: chakraDocsMarkdownContentSlotRecipe,
+  [chakraDocsRecipeKeys.mobileTableOfContents]:
+    chakraDocsMobileTableOfContentsSlotRecipe,
   [chakraDocsRecipeKeys.pageActions]: chakraDocsPageActionsSlotRecipe,
   [chakraDocsRecipeKeys.pagination]: chakraDocsPaginationSlotRecipe,
   [chakraDocsRecipeKeys.search]: chakraDocsSearchSlotRecipe,

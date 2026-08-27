@@ -61,6 +61,19 @@ The table of contents highlights the active section as the page scrolls. Heading
 
 Pass `actions` to place responsive page controls alongside the title. The actions container is optional, so existing article headers keep their original structure when no controls are supplied.
 
+Use the `breadcrumbs` slot to place navigation context above the page title:
+
+```tsx
+<DocsArticle
+  page={page}
+  breadcrumbs={<DocsBreadcrumbs nav={nav} page={page} />}
+>
+  <MdxContent code={page.body} />
+</DocsArticle>
+```
+
+`DocsBreadcrumbs` finds every ancestor of the current route. Pass `homeLabel` and `homeHref` to prepend a site-level item. Its recipe exposes `root`, `list`, `item`, `link`, `current`, and `separator` slots.
+
 ## DocsPageActions
 
 `DocsPageActions` provides composable copy and link actions. `CopyPage` copies the Markdown source, while `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their URLs are available.
@@ -115,6 +128,24 @@ The `chakraDocsPageActions` recipe exposes `root`, `copyRoot`, `trigger`, `icon`
   stickyTop={{ lg: 24 }}
 />
 ```
+
+`DocsLayout` also renders a native disclosure-based `DocsMobileTableOfContents` below the desktop breakpoint. Set `mobileToc={false}` to disable it or render `DocsMobileTableOfContents` directly when the application needs different placement. The mobile recipe exposes `root`, `trigger`, `triggerLabel`, `current`, `indicator`, `content`, `list`, `item`, `link`, and `activeIndicator` slots.
+
+## Heading permalinks
+
+`DocsHeadingPermalink` copies a section link and reports successful copies through `analytics.onHeadingLinkCopy`. Use it directly in an MDX heading component, or enable it in the built-in Markdown renderer.
+
+```tsx
+<MarkdownContent
+  source={page.body ?? ''}
+  headingPermalinks
+  getHeadingHref={(headingId) =>
+    `https://example.com${page.route}#${headingId}`
+  }
+/>
+```
+
+The `chakraDocsHeadingPermalink` recipe exposes `root`, `trigger`, and `indicator` slots. Heading permalinks remain opt-in so existing custom heading markup is unchanged.
 
 ## DocsSearch
 

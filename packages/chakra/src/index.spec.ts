@@ -12,7 +12,10 @@ import type { DocsSearchProvider } from '@chakra-docs/search';
 import {
   Callout,
   DocsArticle,
+  DocsBreadcrumbs,
+  DocsHeadingPermalink,
   DocsLayout,
+  DocsMobileTableOfContents,
   DocsPageActions,
   DocsPagination,
   DocsProvider,
@@ -108,6 +111,25 @@ describe('MarkdownContent', () => {
 
     expect(markup).toContain('<h2 id="setup"');
     expect(markup).toContain('<h2 id="setup-2"');
+  });
+
+  it('adds opt-in copyable heading permalinks', () => {
+    const plain = render(
+      createElement(MarkdownContent, { source: '## Install' }),
+    );
+    const linked = render(
+      createElement(MarkdownContent, {
+        getHeadingHref: (headingId) =>
+          `https://example.com/docs/start#${headingId}`,
+        headingPermalinks: true,
+        source: '## Install',
+      }),
+    );
+
+    expect(plain).not.toContain('Copy section link');
+    expect(linked).toContain('aria-label="Copy section link"');
+    expect(linked).toContain('title="Copy section link"');
+    expect(linked).toContain('>#<');
   });
 
   it('treats single-# lines as paragraphs, not headings', () => {
@@ -612,6 +634,115 @@ describe('DocsPageActions', () => {
   });
 });
 
+describe('DocsBreadcrumbs', () => {
+  const nav: DocsNavItem[] = [
+    {
+      id: 'guides',
+      title: 'Guides',
+      href: '/docs/guides',
+      children: [
+        { id: 'install', title: 'Install', href: '/docs/install' },
+      ],
+    },
+  ];
+
+  it('renders linked ancestors and a current-page item', () => {
+    const markup = render(
+      createElement(DocsBreadcrumbs, {
+        homeHref: '/',
+        homeLabel: 'Home',
+        nav,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+
+    expect(markup).toContain('aria-label="Breadcrumb"');
+    expect(markup).toContain('href="/"');
+    expect(markup).toContain('href="/docs/guides"');
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain('>Install</span>');
+  });
+
+  it('renders in the article breadcrumb slot', () => {
+    const page = createPage('/docs/install', 'Install');
+    const markup = render(
+      createElement(DocsArticle, {
+        breadcrumbs: createElement(DocsBreadcrumbs, { nav, page }),
+        breadcrumbsSlotProps: { 'data-breadcrumbs': 'article' },
+        page,
+      }),
+    );
+
+    expect(markup).toContain('data-breadcrumbs="article"');
+    expect(markup).toContain('aria-label="Breadcrumb"');
+  });
+});
+
+describe('DocsHeadingPermalink', () => {
+  it('renders an accessible clipboard trigger', () => {
+    const markup = render(
+      createElement(DocsHeadingPermalink, {
+        headingId: 'install',
+        title: 'Install',
+      }),
+    );
+
+    expect(markup).toContain('aria-label="Copy section link"');
+    expect(markup).toContain('title="Copy section link"');
+    expect(markup).toContain('>#<');
+  });
+
+  it('omits unsafe permalink values', () => {
+    const markup = render(
+      createElement(DocsHeadingPermalink, {
+        headingId: 'unsafe',
+        href: 'javascript:alert(1)',
+      }),
+    );
+
+    expect(markup).toBe('');
+  });
+});
+
+describe('DocsMobileTableOfContents', () => {
+  const headings = [
+    { id: 'overview', title: 'Overview', level: 2 },
+    { id: 'install', title: 'Install', level: 3 },
+  ];
+
+  it('renders an accessible native disclosure and heading links', () => {
+    const markup = render(
+      createElement(DocsMobileTableOfContents, {
+        headings,
+        triggerSlotProps: { 'data-mobile-toc-trigger': 'custom' },
+      }),
+    );
+
+    expect(markup).toContain('<details');
+    expect(markup).toContain('<summary');
+    expect(markup).toContain('data-mobile-toc-trigger="custom"');
+    expect(markup).toContain('href="#overview"');
+    expect(markup).toContain('href="#install"');
+  });
+
+  it('is included by DocsLayout by default and can be disabled', () => {
+    const enabled = render(
+      createElement(DocsLayout, { headings }, createElement('p', null, 'Body')),
+    );
+    const disabled = render(
+      createElement(
+        DocsLayout,
+        { headings, mobileToc: false },
+        createElement('p', null, 'Body'),
+      ),
+    );
+
+    expect(enabled).toContain('<details');
+    expect(disabled).not.toContain('<details');
+    expect(disabled).toContain('Body');
+  });
+});
+
 describe('Callout', () => {
   const types = ['info', 'warning', 'success', 'danger'] as const;
 
@@ -1007,6 +1138,29 @@ describe('Chakra Docs slot recipes', () => {
 
   it.each([
     [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
+    [
+      chakraDocsRecipeKeys.breadcrumbs,
+      ['root', 'list', 'item', 'link', 'current', 'separator'],
+    ],
+    [
+      chakraDocsRecipeKeys.headingPermalink,
+      ['root', 'trigger', 'indicator'],
+    ],
+    [
+      chakraDocsRecipeKeys.mobileTableOfContents,
+      [
+        'root',
+        'trigger',
+        'triggerLabel',
+        'current',
+        'indicator',
+        'content',
+        'list',
+        'item',
+        'link',
+        'activeIndicator',
+      ],
+    ],
     [
       chakraDocsRecipeKeys.sidebar,
       [

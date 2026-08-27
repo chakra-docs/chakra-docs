@@ -37,6 +37,8 @@ import type {
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
+import { createDocsBreadcrumbItems } from './breadcrumbs.js';
+import type { DocsBreadcrumbItem } from './breadcrumbs.js';
 import {
   getActiveHeadingId,
   getHeadingScrollOffset,
@@ -64,10 +66,13 @@ import {
 import type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 import {
   chakraDocsArticleSlotRecipe,
+  chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsLayoutSlotRecipe,
+  chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
@@ -83,12 +88,17 @@ import {
 
 export type { ChakraDocsStickyTop } from './heading-scroll.js';
 export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
+export type { DocsBreadcrumbItem } from './breadcrumbs.js';
+export { createDocsBreadcrumbItems } from './breadcrumbs.js';
 export {
   chakraDocsArticleSlotRecipe,
+  chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsLayoutSlotRecipe,
+  chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
   chakraDocsRecipeKeys,
@@ -160,6 +170,8 @@ export interface DocsLabels {
   copiedLink: string;
   viewMarkdown: string;
   moreActions: string;
+  copyHeadingLink: string;
+  copiedHeadingLink: string;
 }
 
 export interface DocsAnalyticsCallbacks {
@@ -181,6 +193,11 @@ export interface DocsAnalyticsCallbacks {
     page?: DocsPage;
     action: string;
     href?: string;
+  }) => void;
+  onHeadingLinkCopy?: (event: {
+    headingId: string;
+    href: string;
+    title?: string;
   }) => void;
 }
 
@@ -251,6 +268,17 @@ export interface DocsLayoutProps extends DocsComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
   contentSlotProps?: Record<string, unknown>;
   innerSlotProps?: Record<string, unknown>;
+  mobileToc?: boolean;
+  mobileTocActiveIndicatorSlotProps?: Record<string, unknown>;
+  mobileTocContentSlotProps?: Record<string, unknown>;
+  mobileTocCurrentSlotProps?: Record<string, unknown>;
+  mobileTocIndicatorSlotProps?: Record<string, unknown>;
+  mobileTocItemSlotProps?: Record<string, unknown>;
+  mobileTocLinkSlotProps?: Record<string, unknown>;
+  mobileTocListSlotProps?: Record<string, unknown>;
+  mobileTocSlotProps?: Record<string, unknown>;
+  mobileTocTriggerLabelSlotProps?: Record<string, unknown>;
+  mobileTocTriggerSlotProps?: Record<string, unknown>;
   sidebarBadgeSlotProps?: Record<string, unknown>;
   sidebarCollapsible?: boolean;
   sidebarContentSlotProps?: Record<string, unknown>;
@@ -267,6 +295,8 @@ export interface DocsLayoutProps extends DocsComponentProps {
 export interface DocsArticleProps extends DocsComponentProps {
   actions?: ReactNode;
   actionsSlotProps?: Record<string, unknown>;
+  breadcrumbs?: ReactNode;
+  breadcrumbsSlotProps?: Record<string, unknown>;
   descriptionSlotProps?: Record<string, unknown>;
   headingSlotProps?: Record<string, unknown>;
   headerSlotProps?: Record<string, unknown>;
@@ -343,6 +373,37 @@ export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
   listSlotProps?: Record<string, unknown>;
 }
 
+export interface DocsMobileTableOfContentsProps extends DocsTableOfContentsProps {
+  contentSlotProps?: Record<string, unknown>;
+  currentSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  triggerLabelSlotProps?: Record<string, unknown>;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsBreadcrumbsProps extends DocsComponentProps {
+  currentSlotProps?: Record<string, unknown>;
+  homeHref?: string;
+  homeLabel?: string;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  separator?: ReactNode;
+  separatorSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsHeadingPermalinkProps {
+  children?: ReactNode;
+  copiedLabel?: string;
+  headingId: string;
+  href?: string;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: string;
+  slotProps?: Record<string, unknown>;
+  title?: string;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
@@ -410,6 +471,11 @@ type MarkdownBlock =
   | { type: 'quote'; text: string };
 
 export interface MarkdownContentProps {
+  getHeadingHref?: (headingId: string) => string;
+  headingPermalinkIndicatorSlotProps?: Record<string, unknown>;
+  headingPermalinkSlotProps?: Record<string, unknown>;
+  headingPermalinkTriggerSlotProps?: Record<string, unknown>;
+  headingPermalinks?: boolean;
   source: string;
   slotProps?: Record<string, unknown>;
   codeBlockSlotProps?: Record<string, unknown>;
@@ -461,6 +527,8 @@ const defaultLabels: DocsLabels = {
   copiedLink: 'Copied',
   viewMarkdown: 'View as Markdown',
   moreActions: 'More page actions',
+  copyHeadingLink: 'Copy section link',
+  copiedHeadingLink: 'Copied section link',
 };
 
 const DocsContext = createContext<ChakraDocsConfig>({
@@ -1012,6 +1080,23 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
           as: 'div',
           ...mergeSlotStyleProps(styles.content, props.contentSlotProps),
         },
+        props.headings && props.mobileToc !== false
+          ? createElement(DocsMobileTableOfContents, {
+              activeIndicatorSlotProps:
+                props.mobileTocActiveIndicatorSlotProps,
+              contentSlotProps: props.mobileTocContentSlotProps,
+              currentSlotProps: props.mobileTocCurrentSlotProps,
+              headings: props.headings,
+              indicatorSlotProps: props.mobileTocIndicatorSlotProps,
+              itemSlotProps: props.mobileTocItemSlotProps,
+              linkSlotProps: props.mobileTocLinkSlotProps,
+              listSlotProps: props.mobileTocListSlotProps,
+              scrollMarginTop: props.scrollMarginTop,
+              slotProps: props.mobileTocSlotProps,
+              triggerLabelSlotProps: props.mobileTocTriggerLabelSlotProps,
+              triggerSlotProps: props.mobileTocTriggerSlotProps,
+            })
+          : null,
         props.children ??
           createElement(DocsArticle, {
             page: props.page,
@@ -1047,6 +1132,16 @@ export function DocsArticle(props: DocsArticleProps): ReactNode {
       ? createElement(
           Box,
           mergeSlotStyleProps(styles.header, props.headerSlotProps),
+          props.breadcrumbs
+            ? createElement(
+                Box,
+                mergeSlotStyleProps(
+                  styles.breadcrumbs,
+                  props.breadcrumbsSlotProps,
+                ),
+                props.breadcrumbs,
+              )
+            : null,
           createElement(
             Box,
             mergeSlotStyleProps(styles.heading, props.headingSlotProps),
@@ -1080,6 +1175,153 @@ export function DocsArticle(props: DocsArticleProps): ReactNode {
         )
       : null,
     props.children,
+  );
+}
+
+export function DocsBreadcrumbs(props: DocsBreadcrumbsProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.breadcrumbs,
+    chakraDocsBreadcrumbsSlotRecipe,
+  );
+  const styles = recipe();
+  const items: DocsBreadcrumbItem[] = [
+    ...(props.homeLabel
+      ? [
+          {
+            id: 'home',
+            title: props.homeLabel,
+            href: props.homeHref,
+          },
+        ]
+      : []),
+    ...createDocsBreadcrumbItems(props.nav ?? [], props.page?.route),
+  ];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return createElement(
+    Box,
+    {
+      as: 'nav',
+      'aria-label': 'Breadcrumb',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    createElement(
+      Box,
+      {
+        as: 'ol',
+        ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+      },
+      items.map((item, index) => {
+        const current = index === items.length - 1;
+
+        return createElement(
+          Box,
+          {
+            as: 'li',
+            key: item.id,
+            ...mergeSlotStyleProps(styles.item, props.itemSlotProps),
+          },
+          index > 0
+            ? createElement(
+                Box,
+                {
+                  as: 'span',
+                  'aria-hidden': 'true',
+                  ...mergeSlotStyleProps(
+                    styles.separator,
+                    props.separatorSlotProps,
+                  ),
+                },
+                props.separator ?? '/',
+              )
+            : null,
+          current || !item.href
+            ? createElement(
+                Box,
+                {
+                  as: 'span',
+                  'aria-current': current ? 'page' : undefined,
+                  ...mergeSlotStyleProps(
+                    current ? styles.current : styles.link,
+                    current ? props.currentSlotProps : props.linkSlotProps,
+                  ),
+                },
+                item.title,
+              )
+            : createElement(
+                DocsLink,
+                {
+                  href: item.href,
+                  ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+                },
+                item.title,
+              ),
+        );
+      }),
+    ),
+  );
+}
+
+export function DocsHeadingPermalink(
+  props: DocsHeadingPermalinkProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const labels = config.labels ?? defaultLabels;
+  const href = props.href ?? `#${props.headingId}`;
+  const label =
+    props.label ?? labels.copyHeadingLink ?? defaultLabels.copyHeadingLink;
+  const copiedLabel =
+    props.copiedLabel ??
+    labels.copiedHeadingLink ??
+    defaultLabels.copiedHeadingLink;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.headingPermalink,
+    chakraDocsHeadingPermalinkSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (!isSafeLinkHref(href)) {
+    return null;
+  }
+
+  return createElement(
+    ChakraClipboard.Root,
+    {
+      value: href,
+      onStatusChange: (details: { copied: boolean }) => {
+        if (details.copied) {
+          config.analytics?.onHeadingLinkCopy?.({
+            headingId: props.headingId,
+            href,
+            title: props.title,
+          });
+        }
+      },
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    createElement(
+      ChakraClipboard.Trigger,
+      {
+        type: 'button',
+        'aria-label': label,
+        title: label,
+        ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+      },
+      createElement(
+        ChakraClipboard.Indicator,
+        {
+          copied: copiedLabel,
+          ...mergeSlotStyleProps(
+            styles.indicator,
+            props.indicatorSlotProps,
+          ),
+        },
+        props.children ?? '#',
+      ),
+    ),
   );
 }
 
@@ -1190,10 +1432,6 @@ export function DocsTableOfContents(
   const config = useDocsConfig();
   const labels = config.labels ?? defaultLabels;
   const headings = props.headings ?? [];
-  const headingIds = useMemo(
-    () => headings.map((heading) => heading.id).filter(Boolean),
-    [headings],
-  );
   const stickyTop =
     props.stickyTop ??
     config.layout?.tocStickyTop ??
@@ -1205,20 +1443,15 @@ export function DocsTableOfContents(
     config.layout?.scrollMarginTop ??
     config.layout?.stickyTop ??
     8;
-  const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
+  const [activeHeadingId, setActiveHeadingId] = useActiveTocHeading(
+    headings,
+    scrollMarginTop,
+  );
   const recipe = useChakraDocsSlotRecipe(
     chakraDocsRecipeKeys.tableOfContents,
     chakraDocsTableOfContentsSlotRecipe,
   );
   const styles = recipe();
-
-  useEffect(() => {
-    return observeActiveHeading({
-      headingIds,
-      scrollMarginTop,
-      onChange: setActiveHeadingId,
-    });
-  }, [headingIds, scrollMarginTop]);
 
   if (headings.length === 0) {
     return null;
@@ -1284,6 +1517,156 @@ export function DocsTableOfContents(
       }),
     ),
   );
+}
+
+export function DocsMobileTableOfContents(
+  props: DocsMobileTableOfContentsProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const labels = config.labels ?? defaultLabels;
+  const headings = props.headings ?? [];
+  const scrollMarginTop =
+    props.scrollMarginTop ??
+    props.stickyTop ??
+    config.layout?.scrollMarginTop ??
+    config.layout?.stickyTop ??
+    8;
+  const [activeHeadingId, setActiveHeadingId] = useActiveTocHeading(
+    headings,
+    scrollMarginTop,
+  );
+  const activeHeading = headings.find(
+    (heading) => heading.id === activeHeadingId,
+  );
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.mobileTableOfContents,
+    chakraDocsMobileTableOfContentsSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (headings.length === 0) {
+    return null;
+  }
+
+  return createElement(
+    Box,
+    {
+      as: 'details',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    createElement(
+      Box,
+      {
+        as: 'summary',
+        ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+      },
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(
+            styles.triggerLabel,
+            props.triggerLabelSlotProps,
+          ),
+        },
+        labels.onThisPage ?? defaultLabels.onThisPage,
+      ),
+      activeHeading
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(styles.current, props.currentSlotProps),
+            },
+            activeHeading.title,
+          )
+        : null,
+      createElement(
+        Box,
+        {
+          as: 'span',
+          'aria-hidden': 'true',
+          ...mergeSlotStyleProps(
+            styles.indicator,
+            props.indicatorSlotProps,
+          ),
+        },
+        '⌄',
+      ),
+    ),
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      createElement(
+        Box,
+        {
+          as: 'ol',
+          ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+        },
+        headings.map((heading) => {
+          const active = activeHeadingId === heading.id;
+          const itemStyles = recipe({ active });
+
+          return createElement(
+            Box,
+            {
+              as: 'li',
+              key: heading.id,
+              ps: Math.max(0, heading.level - 2) * 3,
+              ...mergeSlotStyleProps(itemStyles.item, props.itemSlotProps),
+            },
+            createElement(
+              Link,
+              {
+                'aria-current': active ? 'location' : undefined,
+                href: `#${heading.id}`,
+                onClick: (event: DocsAnchorClickEvent) => {
+                  if (!shouldHandleTocClick(event)) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  setActiveHeadingId(heading.id);
+                  scrollToHeading(heading.id, scrollMarginTop);
+                },
+                ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
+              },
+              createElement(Box, {
+                as: 'span',
+                'aria-hidden': 'true',
+                ...mergeSlotStyleProps(
+                  itemStyles.activeIndicator,
+                  props.activeIndicatorSlotProps,
+                ),
+              }),
+              heading.title,
+            ),
+          );
+        }),
+      ),
+    ),
+  );
+}
+
+function useActiveTocHeading(
+  headings: readonly DocsHeading[],
+  scrollMarginTop: ChakraDocsStickyTop,
+): [string | undefined, (headingId: string | undefined) => void] {
+  const headingIds = useMemo(
+    () => headings.map((heading) => heading.id).filter(Boolean),
+    [headings],
+  );
+  const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
+
+  useEffect(() => {
+    return observeActiveHeading({
+      headingIds,
+      scrollMarginTop,
+      onChange: setActiveHeadingId,
+    });
+  }, [headingIds, scrollMarginTop]);
+
+  return [activeHeadingId, setActiveHeadingId];
 }
 
 function observeActiveHeading(props: {
@@ -2240,17 +2623,31 @@ function renderMarkdownBlock(
   });
 
   if (block.type === 'heading') {
+    const headingTitle = stripMarkdown(block.text);
+    const headingId = createNextHeadingId(headingTitle);
+
     return createElement(
       Heading,
       {
         as: headingElement(block.level),
-        id: createNextHeadingId(stripMarkdown(block.text)),
+        id: headingId,
         key: `${block.type}-${index}`,
         size: block.level === 2 ? '2xl' : 'xl',
         scrollMarginTop,
         ...mergeSlotStyleProps(styles.heading, slotProps.headingSlotProps),
       },
       renderInlineMarkdown(block.text, recipe, slotProps),
+      slotProps.headingPermalinks
+        ? createElement(DocsHeadingPermalink, {
+            headingId,
+            href: slotProps.getHeadingHref?.(headingId),
+            indicatorSlotProps:
+              slotProps.headingPermalinkIndicatorSlotProps,
+            slotProps: slotProps.headingPermalinkSlotProps,
+            title: headingTitle,
+            triggerSlotProps: slotProps.headingPermalinkTriggerSlotProps,
+          })
+        : null,
     );
   }
 

@@ -4,7 +4,7 @@ Chakra UI component layer for Chakra Docs.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
 
-Chakra-based building blocks for composing documentation pages inside existing Chakra applications: docs layout primitives, sidebar navigation, table of contents, search, version/collection switching, pagination, callouts, Markdown rendering, and code block shells. React and Chakra stay as peer dependencies, and host apps own the Chakra provider, routing, and branding. All components are client components (the package ships with `'use client'`).
+Chakra-based building blocks for composing documentation pages inside existing Chakra applications: docs layout primitives, sidebar navigation, desktop and mobile tables of contents, breadcrumbs, page and heading actions, search, version/collection switching, pagination, callouts, Markdown rendering, and code block shells. React and Chakra stay as peer dependencies, and host apps own the Chakra provider, routing, and branding. All components are client components (the package ships with `'use client'`).
 
 ## Install
 
@@ -25,7 +25,9 @@ import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import {
   Callout,
   DocsArticle,
+  DocsBreadcrumbs,
   DocsLayout,
+  DocsPageActions,
   DocsPagination,
   DocsProvider,
   MarkdownContent,
@@ -42,11 +44,16 @@ export function DocsRoutePage(props: {
     <ChakraProvider value={defaultSystem}>
       <DocsProvider config={{ labels: { search: 'Search docs' } }}>
         <DocsLayout headings={page.headings} nav={manifest.nav} page={page}>
-          <DocsArticle headings={page.headings} page={page}>
+          <DocsArticle
+            headings={page.headings}
+            page={page}
+            breadcrumbs={<DocsBreadcrumbs nav={manifest.nav} page={page} />}
+            actions={<DocsPageActions.Root page={page} />}
+          >
             <Callout type="info" title="Note">
               This page is generated from Markdown.
             </Callout>
-            <MarkdownContent source={page.body ?? ''} />
+            <MarkdownContent source={page.body ?? ''} headingPermalinks />
             <DocsPagination nav={manifest.nav} page={page} />
           </DocsArticle>
         </DocsLayout>
@@ -187,22 +194,26 @@ const system = createSystem(defaultConfig, chakraDocsThemeConfig, appTheme);
 <ChakraProvider value={system}>{/* app */}</ChakraProvider>;
 ```
 
-Recipe defaults use Chakra semantic colors (`bg`, `fg`, and `border`) and
-inherited `colorPalette.*` values. Setting `colorPalette` on a containing Chakra
-element therefore changes accent styling without replacing the recipes.
+Recipe defaults use portable Chakra semantic colors (`bg`, `fg`, and `border`)
+so they inherit naturally from the host system. Applications can introduce a
+brand palette or replace any slot without changing component code.
 
-| Recipe key | Slots |
-| --- | --- |
-| `chakraDocsLayout` | `root`, `inner`, `content` |
-| `chakraDocsArticle` | `root`, `header`, `title`, `description` |
-| `chakraDocsSidebar` | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children`, `trigger`, `indicator`, `content` |
-| `chakraDocsTableOfContents` | `root`, `label`, `list`, `item`, `link`, `activeIndicator` |
-| `chakraDocsSearch` | `trigger`, `triggerLabel`, `shortcut`, `backdrop`, `positioner`, `root`, `header`, `title`, `body`, `input`, `results`, `sectionLabel`, `resultList`, `result`, `resultLink`, `resultRow`, `resultContent`, `resultTitle`, `resultDescription`, `resultBadge`, `status` |
-| `chakraDocsVersionSelect` | `root`, `label`, `select` |
-| `chakraDocsMarkdownContent` | `root`, `heading`, `paragraph`, `list`, `listItem`, `inlineCode`, `link`, `quote`, `codeBlock` |
-| `chakraDocsPagination` | `root`, `item`, `label`, `link` |
-| `chakraDocsCallout` | `root`, `title`, `content` |
-| `chakraDocsCodeBlock` | `root`, `header`, `title`, `control`, `language`, `copyTrigger`, `copyIndicator`, `content`, `code`, `codeText` |
+| Recipe key                        | Slots                                                                                                                                                                                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chakraDocsLayout`                | `root`, `inner`, `content`                                                                                                                                                                                                                                              |
+| `chakraDocsArticle`               | `root`, `header`, `breadcrumbs`, `heading`, `title`, `description`, `actions`                                                                                                                                                                                           |
+| `chakraDocsBreadcrumbs`           | `root`, `list`, `item`, `link`, `current`, `separator`                                                                                                                                                                                                                  |
+| `chakraDocsHeadingPermalink`      | `root`, `trigger`, `indicator`                                                                                                                                                                                                                                          |
+| `chakraDocsPageActions`           | `root`, `copyRoot`, `trigger`, `icon`, `label`, `indicator`, `menu`, `menuTrigger`, `menuContent`, `menuItem`, `description`                                                                                                                                            |
+| `chakraDocsSidebar`               | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children`, `trigger`, `indicator`, `content`                                                                                                                                                                  |
+| `chakraDocsTableOfContents`       | `root`, `label`, `list`, `item`, `link`, `activeIndicator`                                                                                                                                                                                                              |
+| `chakraDocsMobileTableOfContents` | `root`, `trigger`, `triggerLabel`, `current`, `indicator`, `content`, `list`, `item`, `link`, `activeIndicator`                                                                                                                                                         |
+| `chakraDocsSearch`                | `trigger`, `triggerLabel`, `shortcut`, `backdrop`, `positioner`, `root`, `header`, `title`, `body`, `input`, `results`, `sectionLabel`, `resultList`, `result`, `resultLink`, `resultRow`, `resultContent`, `resultTitle`, `resultDescription`, `resultBadge`, `status` |
+| `chakraDocsVersionSelect`         | `root`, `label`, `select`                                                                                                                                                                                                                                               |
+| `chakraDocsMarkdownContent`       | `root`, `heading`, `paragraph`, `list`, `listItem`, `inlineCode`, `link`, `quote`, `codeBlock`                                                                                                                                                                          |
+| `chakraDocsPagination`            | `root`, `item`, `label`, `link`                                                                                                                                                                                                                                         |
+| `chakraDocsCallout`               | `root`, `title`, `content`                                                                                                                                                                                                                                              |
+| `chakraDocsCodeBlock`             | `root`, `header`, `title`, `control`, `language`, `copyTrigger`, `copyIndicator`, `content`, `code`, `codeText`                                                                                                                                                         |
 
 The individual recipe definitions, `chakraDocsSlotRecipes`,
 `chakraDocsThemeConfig`, and `chakraDocsRecipeKeys` are public exports. Named
@@ -234,13 +245,17 @@ const sidebarRecipe = {
 
 - `DocsProvider` — merges and provides `ChakraDocsConfig` (labels, link component, analytics, code block adapter, layout offsets) to descendants.
 - `DocsLayout` — responsive shell that renders `DocsSidebar` (when `nav` is passed), a content area, and `DocsTableOfContents` (when `headings` is passed). Its content wrapper is a `div` by default so it can safely sit inside an application's existing `main`; standalone pages can opt in with `contentSlotProps={{ as: 'main' }}`. Use `sidebarContent` for a legend, version control, or other content above the navigation, and `sidebarBadgeSlotProps` to style nav badges. Collapsible navigation is enabled with `sidebarCollapsible`; configure its initial state with `sidebarDefaultExpanded`, or control it with `sidebarExpandedIds` and `onSidebarExpandedChange`. The `sidebarTriggerSlotProps`, `sidebarIndicatorSlotProps`, and `sidebarContentSlotProps` props customize its disclosure parts. Non-collapsible navigation remains the default. Props: `page`, `nav`, `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`, `contentSlotProps`, `sidebarContent`, `sidebarBadgeSlotProps`, `sidebarCollapsible`, `sidebarDefaultExpanded`, `sidebarExpandedIds`, `onSidebarExpandedChange`, `sidebarTriggerSlotProps`, `sidebarIndicatorSlotProps`, `sidebarContentSlotProps`, `sidebarSlotProps`, `tocSlotProps`, `children`.
-- `DocsArticle` — article wrapper that renders the page title and description header. Its `root`, `header`, `title`, and `description` parts can be styled through its slot recipe or matching slot props.
+- `DocsArticle` — article wrapper that renders the page title and description header, with optional `breadcrumbs` and `actions` regions.
+- `DocsBreadcrumbs` — navigation path derived from `nav` and `page.route`, with optional site-level home item.
+- `DocsPageActions` — compound page action API with `Root`, `CopyPage`, `CopyLink`, `ViewMarkdown`, `Edit`, `Menu`, and `Item` components.
+- `DocsHeadingPermalink` — accessible clipboard action for a section URL.
 - `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Children render above the navigation list. Its direct disclosure props are `collapsible`, `defaultExpanded`, `expandedIds`, and `onExpandedChange`, with matching `triggerSlotProps`, `indicatorSlotProps`, and `contentSlotProps` overrides. Branch headings become buttons with `aria-expanded` and `aria-controls`; linked branches retain their link and add a separately labeled disclosure button. Badge elements expose their value through `data-badge` and `title`. The legacy `children` recipe slot remains supported alongside the new `trigger`, `indicator`, and `content` slots.
 - `DocsTableOfContents` — sticky "On this page" list that tracks the active heading on scroll and smooth-scrolls on click. The active section uses a square `activeIndicator` slot, which can be overridden in the theme or with `activeIndicatorSlotProps`.
+- `DocsMobileTableOfContents` — disclosure-based mobile heading navigation using the same active-heading and scroll-offset behavior. `DocsLayout` includes it by default when headings are provided; pass `mobileToc={false}` to opt out.
 - `DocsSearch` — Cmd/Ctrl+K search dialog with keyboard navigation, popular/default results, and collection scoping. Pass `records` for synchronous local search or `searchProvider` for remote search; the provider takes precedence when both are present. Remote mode sends `collectionId`/`collectionIds`, `limit`, and `popularLimit` to the server, loads popular results on open, debounces typed queries (`debounceMs`, default 150 ms), and aborts superseded requests. `onNavigate` handles both unmodified pointer selection and Enter-key activation; modified clicks retain normal browser behavior. Props: `records`, `searchProvider`, `debounceMs`, `collectionId`, `collectionIds`, `limit`, `popularLimit`, `placeholder`, `onNavigate`, `onResultSelect`, plus `slotProps`/`triggerSlotProps`/`inputSlotProps`/`resultSlotProps`.
 - `DocsVersionSelect` — labeled native select for switching collections/versions. Props: `collections` or `options`, `value`/`defaultValue`, `onValueChange`, `includeAll`, `allValue`, `allLabel`, `label`, `labelHidden`, plus slot props.
 - `DocsPagination` — previous/next links derived from the flattened nav and the current `page.route`. Props: `nav`, `page`.
-- `MarkdownContent` — lightweight Markdown renderer (headings with manifest-consistent anchor ids, paragraphs, internal/external links, lists, quotes rendered as `Callout`, and backtick- or tilde-fenced code rendered as `CodeBlock`). Props: `source`, `slotProps`.
+- `MarkdownContent` — lightweight Markdown renderer (headings with manifest-consistent anchor ids, optional copyable permalinks, paragraphs, internal/external links, lists, quotes rendered as `Callout`, and backtick- or tilde-fenced code rendered as `CodeBlock`). Props include `source`, `headingPermalinks`, `getHeadingHref`, and slot props.
 - `Callout` — bordered note box. Props: `type` (`'info' | 'warning' | 'success' | 'danger'`, default `'info'`), `title`, `slotProps`, `children`.
 - `CodeBlock` — Chakra `CodeBlock`-based code shell with optional title/language header and copy button. Props: `code`, `language`, `title`, `slotProps`, `children`.
 
@@ -249,10 +264,11 @@ const sidebarRecipe = {
 - `useDocsConfig()` — read the merged `ChakraDocsConfig` (with default labels applied).
 - `createDocsVersionOptions(collections)` — map collections to `DocsVersionOption[]`.
 - `filterSearchRecordsByCollections(records, collectionIds)` — scope search records to a set of collections.
+- `createDocsBreadcrumbItems(nav, activeRoute)` — return every nav ancestor and the active page for breadcrumb rendering.
 
 ### Types
 
-`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
+`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsArticleProps`, `DocsBreadcrumbsProps`, `DocsBreadcrumbItem`, `DocsPageActionsRootProps`, `DocsPageActionProps`, `DocsHeadingPermalinkProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsTableOfContentsProps`, `DocsMobileTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
 
 ## Help and contributing
 
