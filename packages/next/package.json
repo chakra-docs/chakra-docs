@@ -60,6 +60,11 @@
       "import": "./dist/app.js",
       "default": "./dist/app.js"
     },
+    "./documents": {
+      "types": "./dist/documents.d.ts",
+      "import": "./dist/documents.js",
+      "default": "./dist/documents.js"
+    },
     "./link": {
       "types": "./dist/link.d.ts",
       "import": "./dist/link.js",

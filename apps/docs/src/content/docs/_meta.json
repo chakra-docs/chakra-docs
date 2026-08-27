@@ -26,8 +26,13 @@
     "title": "Search",
     "order": 5
   },
+  "machine-readable": {
+    "title": "Machine-readable docs",
+    "order": 6,
+    "badge": "AI"
+  },
   "composition": {
     "title": "Composition",
-    "order": 6
+    "order": 7
   }
 }
