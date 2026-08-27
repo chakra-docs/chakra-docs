@@ -69,6 +69,7 @@ import {
   chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
+  chakraDocsFeedbackSlotRecipe,
   chakraDocsLayoutSlotRecipe,
   chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
@@ -95,6 +96,7 @@ export {
   chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
+  chakraDocsFeedbackSlotRecipe,
   chakraDocsLayoutSlotRecipe,
   chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
@@ -129,6 +131,7 @@ const Link = Chakra.Link;
 const Portal = Chakra.Portal;
 const Stack = Chakra.Stack;
 const Text = Chakra.Text;
+const Textarea = Chakra.Textarea;
 const ChakraCodeBlock = Chakra.CodeBlock as unknown as Record<
   string,
   ElementType
@@ -172,6 +175,14 @@ export interface DocsLabels {
   moreActions: string;
   copyHeadingLink: string;
   copiedHeadingLink: string;
+  feedbackPrompt: string;
+  feedbackHelpful: string;
+  feedbackNotHelpful: string;
+  feedbackCommentPlaceholder: string;
+  feedbackSubmit: string;
+  feedbackSubmitting: string;
+  feedbackSubmitted: string;
+  feedbackError: string;
 }
 
 export interface DocsAnalyticsCallbacks {
@@ -198,6 +209,11 @@ export interface DocsAnalyticsCallbacks {
     headingId: string;
     href: string;
     title?: string;
+  }) => void;
+  onPageFeedback?: (event: {
+    page?: DocsPage;
+    value: DocsPageFeedbackValue;
+    comment: string;
   }) => void;
 }
 
@@ -404,6 +420,46 @@ export interface DocsHeadingPermalinkProps {
   triggerSlotProps?: Record<string, unknown>;
 }
 
+export type DocsPageFeedbackValue =
+  | 'helpful'
+  | 'not-helpful'
+  | (string & {});
+
+export interface DocsPageFeedbackSubmitDetails {
+  comment: string;
+  page?: DocsPage;
+  value: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackRootProps {
+  children?: ReactNode;
+  comment?: string;
+  defaultComment?: string;
+  defaultValue?: DocsPageFeedbackValue;
+  onCommentChange?: (comment: string) => void;
+  onSubmit?: (details: DocsPageFeedbackSubmitDetails) => void | Promise<void>;
+  onValueChange?: (value: DocsPageFeedbackValue) => void;
+  page?: DocsPage;
+  slotProps?: Record<string, unknown>;
+  value?: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageFeedbackOptionProps
+  extends DocsPageFeedbackPartProps {
+  value: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackCommentProps
+  extends DocsPageFeedbackPartProps {
+  label?: string;
+  placeholder?: string;
+}
+
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
@@ -529,6 +585,14 @@ const defaultLabels: DocsLabels = {
   moreActions: 'More page actions',
   copyHeadingLink: 'Copy section link',
   copiedHeadingLink: 'Copied section link',
+  feedbackPrompt: 'Was this page helpful?',
+  feedbackHelpful: 'Yes',
+  feedbackNotHelpful: 'No',
+  feedbackCommentPlaceholder: 'How could this page be improved?',
+  feedbackSubmit: 'Send feedback',
+  feedbackSubmitting: 'Sending…',
+  feedbackSubmitted: 'Thanks for your feedback.',
+  feedbackError: 'Feedback could not be sent. Please try again.',
 };
 
 const DocsContext = createContext<ChakraDocsConfig>({
@@ -1324,6 +1388,298 @@ export function DocsHeadingPermalink(
     ),
   );
 }
+
+type DocsPageFeedbackStatus =
+  | 'idle'
+  | 'submitting'
+  | 'submitted'
+  | 'error';
+
+interface DocsPageFeedbackContextValue {
+  comment: string;
+  config: ChakraDocsConfig;
+  page?: DocsPage;
+  setComment: (comment: string) => void;
+  setValue: (value: DocsPageFeedbackValue) => void;
+  status: DocsPageFeedbackStatus;
+  styles: Record<string, unknown>;
+  submit: () => Promise<void>;
+  value?: DocsPageFeedbackValue;
+}
+
+const DocsPageFeedbackContext = createContext<
+  DocsPageFeedbackContextValue | undefined
+>(undefined);
+
+function useDocsPageFeedbackContext(): DocsPageFeedbackContextValue {
+  const context = useContext(DocsPageFeedbackContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPageFeedback components must be rendered inside DocsPageFeedback.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsPageFeedbackRoot(
+  props: DocsPageFeedbackRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    props.defaultValue,
+  );
+  const [uncontrolledComment, setUncontrolledComment] = useState(
+    props.defaultComment ?? '',
+  );
+  const [status, setStatus] = useState<DocsPageFeedbackStatus>('idle');
+  const value = props.value ?? uncontrolledValue;
+  const comment = props.comment ?? uncontrolledComment;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.feedback,
+    chakraDocsFeedbackSlotRecipe,
+  );
+  const styles = recipe({ status });
+
+  function setValue(nextValue: DocsPageFeedbackValue) {
+    if (props.value === undefined) {
+      setUncontrolledValue(nextValue);
+    }
+
+    setStatus('idle');
+    props.onValueChange?.(nextValue);
+  }
+
+  function setComment(nextComment: string) {
+    if (props.comment === undefined) {
+      setUncontrolledComment(nextComment);
+    }
+
+    setStatus('idle');
+    props.onCommentChange?.(nextComment);
+  }
+
+  async function submit() {
+    if (!value || status === 'submitting' || status === 'submitted') {
+      return;
+    }
+
+    const details = { comment, page: props.page, value };
+    setStatus('submitting');
+
+    try {
+      await props.onSubmit?.(details);
+      config.analytics?.onPageFeedback?.(details);
+      setStatus('submitted');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  const context: DocsPageFeedbackContextValue = {
+    comment,
+    config,
+    page: props.page,
+    setComment,
+    setValue,
+    status,
+    styles,
+    submit,
+    value,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsPageFeedbackPrompt),
+      createElement(
+        DocsPageFeedbackChoices,
+        null,
+        createElement(DocsPageFeedbackOption, { value: 'helpful' }),
+        createElement(DocsPageFeedbackOption, { value: 'not-helpful' }),
+      ),
+      value ? createElement(DocsPageFeedbackComment) : null,
+      value
+        ? createElement(
+            DocsPageFeedbackActions,
+            null,
+            createElement(DocsPageFeedbackSubmit),
+          )
+        : null,
+      createElement(DocsPageFeedbackStatus),
+    );
+
+  return createElement(
+    DocsPageFeedbackContext.Provider,
+    { value: context },
+    createElement(
+      Box,
+      {
+        as: 'form',
+        onSubmit: (event: { preventDefault: () => void }) => {
+          event.preventDefault();
+          void submit();
+        },
+        ...mergeSlotStyleProps(styles.root, props.slotProps),
+      },
+      children,
+    ),
+  );
+}
+
+export function DocsPageFeedbackPrompt(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Text,
+    mergeSlotStyleProps(context.styles.prompt, props.slotProps),
+    props.children ?? labels.feedbackPrompt ?? defaultLabels.feedbackPrompt,
+  );
+}
+
+export function DocsPageFeedbackChoices(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.choices, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsPageFeedbackOption(
+  props: DocsPageFeedbackOptionProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const selected = context.value === props.value;
+  const optionStyles = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.feedback,
+    chakraDocsFeedbackSlotRecipe,
+  )({ selected, status: context.status });
+  const defaultLabel =
+    props.value === 'helpful'
+      ? labels.feedbackHelpful ?? defaultLabels.feedbackHelpful
+      : props.value === 'not-helpful'
+        ? labels.feedbackNotHelpful ?? defaultLabels.feedbackNotHelpful
+        : props.value;
+
+  return createElement(
+    Button,
+    {
+      type: 'button',
+      'aria-pressed': selected,
+      disabled:
+        context.status === 'submitting' || context.status === 'submitted',
+      onClick: () => context.setValue(props.value),
+      ...mergeSlotStyleProps(optionStyles.option, props.slotProps),
+    },
+    props.children ?? defaultLabel,
+  );
+}
+
+export function DocsPageFeedbackComment(
+  props: DocsPageFeedbackCommentProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const placeholder =
+    props.placeholder ??
+    labels.feedbackCommentPlaceholder ??
+    defaultLabels.feedbackCommentPlaceholder;
+
+  return createElement(Textarea, {
+    'aria-label': props.label ?? placeholder,
+    disabled:
+      context.status === 'submitting' || context.status === 'submitted',
+    onChange: (event: { currentTarget: { value: string } }) =>
+      context.setComment(event.currentTarget.value),
+    placeholder,
+    value: context.comment,
+    ...mergeSlotStyleProps(context.styles.comment, props.slotProps),
+  });
+}
+
+export function DocsPageFeedbackActions(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.actions, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsPageFeedbackSubmit(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const label =
+    context.status === 'submitting'
+      ? labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting
+      : labels.feedbackSubmit ?? defaultLabels.feedbackSubmit;
+
+  return createElement(
+    Button,
+    {
+      type: 'submit',
+      disabled:
+        !context.value ||
+        context.status === 'submitting' ||
+        context.status === 'submitted',
+      ...mergeSlotStyleProps(context.styles.submit, props.slotProps),
+    },
+    props.children ?? label,
+  );
+}
+
+export function DocsPageFeedbackStatus(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (context.status === 'idle') {
+    return null;
+  }
+
+  const message =
+    context.status === 'submitting'
+      ? labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting
+      : context.status === 'submitted'
+        ? labels.feedbackSubmitted ?? defaultLabels.feedbackSubmitted
+        : labels.feedbackError ?? defaultLabels.feedbackError;
+
+  return createElement(
+    Text,
+    {
+      role: context.status === 'error' ? 'alert' : 'status',
+      ...mergeSlotStyleProps(context.styles.status, props.slotProps),
+    },
+    props.children ?? message,
+  );
+}
+
+export const DocsPageFeedback = {
+  Root: DocsPageFeedbackRoot,
+  Prompt: DocsPageFeedbackPrompt,
+  Choices: DocsPageFeedbackChoices,
+  Option: DocsPageFeedbackOption,
+  Comment: DocsPageFeedbackComment,
+  Actions: DocsPageFeedbackActions,
+  Submit: DocsPageFeedbackSubmit,
+  Status: DocsPageFeedbackStatus,
+} as const;
 
 export function DocsSidebar(props: DocsSidebarProps): ReactNode {
   const config = useDocsConfig();

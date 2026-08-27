@@ -147,6 +147,39 @@ The `chakraDocsPageActions` recipe exposes `root`, `copyRoot`, `trigger`, `icon`
 
 The `chakraDocsHeadingPermalink` recipe exposes `root`, `trigger`, and `indicator` slots. Heading permalinks remain opt-in so existing custom heading markup is unchanged.
 
+## Page feedback
+
+`DocsPageFeedback` is a compound feedback form. The default UI asks for a helpful/not-helpful choice, reveals an optional comment, and submits through the callback supplied by the host application.
+
+```tsx
+<DocsPageFeedback.Root
+  page={page}
+  onSubmit={async ({ page, value, comment }) => {
+    await saveFeedback({ pageId: page?.id, value, comment });
+  }}
+/>
+```
+
+Compose the parts directly to remove the comment, introduce different choices, or place actions elsewhere:
+
+```tsx
+<DocsPageFeedback.Root page={page} onSubmit={saveFeedback}>
+  <DocsPageFeedback.Prompt>Did this solve the problem?</DocsPageFeedback.Prompt>
+  <DocsPageFeedback.Choices>
+    <DocsPageFeedback.Option value="helpful">Yes</DocsPageFeedback.Option>
+    <DocsPageFeedback.Option value="not-helpful">
+      Not yet
+    </DocsPageFeedback.Option>
+  </DocsPageFeedback.Choices>
+  <DocsPageFeedback.Actions>
+    <DocsPageFeedback.Submit />
+  </DocsPageFeedback.Actions>
+  <DocsPageFeedback.Status />
+</DocsPageFeedback.Root>
+```
+
+`value`/`onValueChange` and `comment`/`onCommentChange` support controlled state. Successful submissions also invoke `analytics.onPageFeedback`. Persistence remains entirely application-owned. The `chakraDocsFeedback` recipe exposes `root`, `prompt`, `choices`, `option`, `comment`, `actions`, `submit`, and `status` slots.
+
 ## DocsSearch
 
 `DocsSearch` renders a command-style search dialog from local manifest records or an asynchronous provider. Pass `collectionId` or `collectionIds` to scope results to one or more collections; remote mode sends that scope to the server before results are limited.

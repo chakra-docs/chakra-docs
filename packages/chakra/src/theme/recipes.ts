@@ -11,6 +11,7 @@ export const chakraDocsRecipeKeys = {
   breadcrumbs: 'chakraDocsBreadcrumbs',
   callout: 'chakraDocsCallout',
   codeBlock: 'chakraDocsCodeBlock',
+  feedback: 'chakraDocsFeedback',
   layout: 'chakraDocsLayout',
   headingPermalink: 'chakraDocsHeadingPermalink',
   markdownContent: 'chakraDocsMarkdownContent',
@@ -120,6 +121,74 @@ export const chakraDocsHeadingPermalinkSlotRecipe = defineSlotRecipe({
     },
     indicator: { display: 'inline-flex' },
   },
+});
+
+export const chakraDocsFeedbackSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-feedback',
+  slots: [
+    'root',
+    'prompt',
+    'choices',
+    'option',
+    'comment',
+    'actions',
+    'submit',
+    'status',
+  ],
+  base: {
+    root: {
+      borderTopWidth: '1px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 3,
+      mt: 10,
+      pt: 6,
+    },
+    prompt: { color: 'fg', fontSize: 'sm', fontWeight: 'semibold' },
+    choices: { display: 'flex', flexWrap: 'wrap', gap: 2 },
+    option: {
+      bg: 'bg',
+      borderColor: 'border',
+      borderRadius: 'md',
+      borderWidth: '1px',
+      color: 'fg',
+      fontSize: 'sm',
+      minH: 8,
+      px: 3,
+      _hover: { bg: 'bg.subtle' },
+    },
+    comment: {
+      bg: 'bg',
+      borderColor: 'border',
+      color: 'fg',
+      fontSize: 'sm',
+      minH: 24,
+      resize: 'vertical',
+    },
+    actions: { display: 'flex', justifyContent: 'flex-end' },
+    submit: { minH: 8 },
+    status: { color: 'fg.muted', fontSize: 'sm' },
+  },
+  variants: {
+    selected: {
+      true: {
+        option: {
+          bg: 'fg',
+          borderColor: 'fg',
+          color: 'bg',
+          _hover: { bg: 'fg' },
+        },
+      },
+      false: {},
+    },
+    status: {
+      idle: {},
+      submitting: { status: { color: 'fg.muted' } },
+      submitted: { status: { color: 'fg.success' } },
+      error: { status: { color: 'fg.error' } },
+    },
+  },
+  defaultVariants: { selected: false, status: 'idle' },
 });
 
 export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
@@ -656,6 +725,7 @@ export const chakraDocsSlotRecipes = {
   [chakraDocsRecipeKeys.breadcrumbs]: chakraDocsBreadcrumbsSlotRecipe,
   [chakraDocsRecipeKeys.callout]: chakraDocsCalloutSlotRecipe,
   [chakraDocsRecipeKeys.codeBlock]: chakraDocsCodeBlockSlotRecipe,
+  [chakraDocsRecipeKeys.feedback]: chakraDocsFeedbackSlotRecipe,
   [chakraDocsRecipeKeys.layout]: chakraDocsLayoutSlotRecipe,
   [chakraDocsRecipeKeys.headingPermalink]: chakraDocsHeadingPermalinkSlotRecipe,
   [chakraDocsRecipeKeys.markdownContent]: chakraDocsMarkdownContentSlotRecipe,

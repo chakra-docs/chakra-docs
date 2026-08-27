@@ -17,6 +17,7 @@ import {
   DocsLayout,
   DocsMobileTableOfContents,
   DocsPageActions,
+  DocsPageFeedback,
   DocsPagination,
   DocsProvider,
   DocsSearch,
@@ -704,6 +705,64 @@ describe('DocsHeadingPermalink', () => {
   });
 });
 
+describe('DocsPageFeedback', () => {
+  it('renders neutral helpful choices by default', () => {
+    const markup = render(createElement(DocsPageFeedback.Root, {}));
+
+    expect(markup).toContain('<form');
+    expect(markup).toContain('>Was this page helpful?</p>');
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain('>Yes</button>');
+    expect(markup).toContain('>No</button>');
+    expect(markup).not.toContain('<textarea');
+  });
+
+  it('reveals comment and submit controls for a default selection', () => {
+    const markup = render(
+      createElement(DocsPageFeedback.Root, {
+        defaultComment: 'More examples, please.',
+        defaultValue: 'not-helpful',
+      }),
+    );
+
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('<textarea');
+    expect(markup).toContain('How could this page be improved?');
+    expect(markup).toContain('More examples, please.');
+    expect(markup).toContain('type="submit"');
+    expect(markup).toContain('>Send feedback</button>');
+  });
+
+  it('supports fully composed controls and provider labels', () => {
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { labels: { feedbackPrompt: 'Useful?' } } },
+        createElement(
+          DocsPageFeedback.Root,
+          { defaultValue: 'helpful' },
+          createElement(DocsPageFeedback.Prompt, {}),
+          createElement(
+            DocsPageFeedback.Choices,
+            {},
+            createElement(
+              DocsPageFeedback.Option,
+              { value: 'helpful' },
+              'Absolutely',
+            ),
+          ),
+          createElement(DocsPageFeedback.Status, {}),
+        ),
+      ),
+    );
+
+    expect(markup).toContain('>Useful?</p>');
+    expect(markup).toContain('>Absolutely</button>');
+    expect(markup).not.toContain('<textarea');
+    expect(markup).not.toContain('Send feedback');
+  });
+});
+
 describe('DocsMobileTableOfContents', () => {
   const headings = [
     { id: 'overview', title: 'Overview', level: 2 },
@@ -1145,6 +1204,19 @@ describe('Chakra Docs slot recipes', () => {
     [
       chakraDocsRecipeKeys.headingPermalink,
       ['root', 'trigger', 'indicator'],
+    ],
+    [
+      chakraDocsRecipeKeys.feedback,
+      [
+        'root',
+        'prompt',
+        'choices',
+        'option',
+        'comment',
+        'actions',
+        'submit',
+        'status',
+      ],
     ],
     [
       chakraDocsRecipeKeys.mobileTableOfContents,
