@@ -11,8 +11,11 @@ import type {
 import type { DocsSearchProvider } from '@chakra-docs/search';
 import {
   Callout,
+  DocsApiTable,
   DocsArticle,
+  DocsBadge,
   DocsBreadcrumbs,
+  DocsCards,
   DocsHeadingPermalink,
   DocsLayout,
   DocsMobileTableOfContents,
@@ -21,6 +24,8 @@ import {
   DocsPagination,
   DocsProvider,
   DocsSearch,
+  DocsSteps,
+  DocsTabs,
   DocsTableOfContents,
   MarkdownContent,
   chakraDocsRecipeKeys,
@@ -1103,6 +1108,112 @@ describe('activateSearchResult', () => {
   );
 });
 
+describe('Docs content primitives', () => {
+  it('renders linked cards and preserves safe-link handling', () => {
+    const markup = render(
+      createElement(
+        DocsCards.Root,
+        null,
+        createElement(DocsCards.Card, {
+          badge: createElement(DocsBadge, null, 'New'),
+          description: 'Start building a documentation site.',
+          href: '/docs/start',
+          icon: '→',
+          title: 'Get started',
+        }),
+        createElement(DocsCards.Card, {
+          href: 'javascript:alert(1)',
+          title: 'Unsafe link',
+        }),
+      ),
+    );
+
+    expect(markup).toContain('<a href="/docs/start"');
+    expect(markup).toContain('>Get started<');
+    expect(markup).toContain('>New<');
+    expect(markup).not.toContain('javascript:');
+  });
+
+  it('renders semantic ordered steps with replaceable indicators', () => {
+    const markup = render(
+      createElement(
+        DocsSteps.Root,
+        null,
+        createElement(DocsSteps.Item, {
+          description: 'Install the package.',
+          title: 'Install',
+        }),
+        createElement(
+          DocsSteps.Item,
+          { indicator: '✓', title: 'Configure' },
+          'Add the theme config.',
+        ),
+      ),
+    );
+
+    expect(markup).toContain('<ol');
+    expect(markup.match(/<li/g)).toHaveLength(2);
+    expect(markup).toContain('>Install<');
+    expect(markup).toContain('>✓</span>');
+  });
+
+  it('renders accessible controlled tab relationships', () => {
+    const markup = render(
+      createElement(
+        DocsTabs.Root,
+        { defaultValue: 'npm', syncKey: 'package-manager' },
+        createElement(
+          DocsTabs.List,
+          null,
+          createElement(DocsTabs.Trigger, { value: 'npm' }, 'npm'),
+          createElement(DocsTabs.Trigger, { value: 'pnpm' }, 'pnpm'),
+        ),
+        createElement(DocsTabs.Content, { value: 'npm' }, 'npm install'),
+        createElement(DocsTabs.Content, { value: 'pnpm' }, 'pnpm add'),
+      ),
+    );
+
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('role="tab" aria-controls=');
+    expect(markup).toContain('aria-selected="true"');
+    expect(markup).toContain('role="tabpanel"');
+    expect(markup).toContain('hidden=""');
+    expect(markup).toContain('aria-labelledby=');
+  });
+
+  it('renders an API reference as a semantic table', () => {
+    const markup = render(
+      createElement(DocsApiTable, {
+        caption: 'DocsLayout props',
+        items: [
+          {
+            defaultValue: 'false',
+            description: 'Enables collapsible navigation.',
+            name: 'sidebarCollapsible',
+            required: true,
+            type: 'boolean',
+          },
+        ],
+      }),
+    );
+
+    expect(markup).toContain('<table');
+    expect(markup).toContain('<caption');
+    expect(markup).toContain('scope="col"');
+    expect(markup).toContain('>sidebarCollapsible<');
+    expect(markup).toContain('>Required<');
+    expect(markup).toContain('>boolean<');
+  });
+
+  it('renders badges from a neutral default with an opt-in accent tone', () => {
+    const markup = render(
+      createElement(DocsBadge, { tone: 'accent' }, 'Experimental'),
+    );
+
+    expect(markup).toContain('>Experimental</span>');
+  });
+});
+
 describe('DocsTableOfContents (SSR)', () => {
   const headings = [
     { id: 'intro', title: 'Intro', level: 2 },
@@ -1196,6 +1307,28 @@ describe('Chakra Docs slot recipes', () => {
   });
 
   it.each([
+    [
+      chakraDocsRecipeKeys.apiTable,
+      [
+        'root',
+        'table',
+        'caption',
+        'header',
+        'row',
+        'columnHeader',
+        'cell',
+        'name',
+        'type',
+        'defaultValue',
+        'description',
+        'required',
+      ],
+    ],
+    [chakraDocsRecipeKeys.badge, ['root']],
+    [
+      chakraDocsRecipeKeys.cards,
+      ['root', 'card', 'icon', 'content', 'title', 'description', 'badge'],
+    ],
     [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
     [
       chakraDocsRecipeKeys.breadcrumbs,
@@ -1248,6 +1381,11 @@ describe('Chakra Docs slot recipes', () => {
         'content',
       ],
     ],
+    [
+      chakraDocsRecipeKeys.steps,
+      ['root', 'item', 'indicator', 'content', 'title', 'description'],
+    ],
+    [chakraDocsRecipeKeys.tabs, ['root', 'list', 'trigger', 'content']],
     [
       chakraDocsRecipeKeys.tableOfContents,
       ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],

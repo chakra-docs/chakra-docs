@@ -180,6 +180,66 @@ Compose the parts directly to remove the comment, introduce different choices, o
 
 `value`/`onValueChange` and `comment`/`onCommentChange` support controlled state. Successful submissions also invoke `analytics.onPageFeedback`. Persistence remains entirely application-owned. The `chakraDocsFeedback` recipe exposes `root`, `prompt`, `choices`, `option`, `comment`, `actions`, `submit`, and `status` slots.
 
+## Content primitives
+
+Cards, steps, synchronized tabs, API tables, and badges provide common MDX building blocks without imposing a site palette. Every part uses its own slot recipe and accepts matching per-instance slot props.
+
+```tsx
+<DocsCards.Root>
+  <DocsCards.Card
+    href="/docs/installation"
+    title="Installation"
+    description="Install and configure the packages."
+    badge={<DocsBadge>Start here</DocsBadge>}
+  />
+  <DocsCards.Card
+    href="/docs/composition"
+    title="Composition"
+    description="Build a docs shell around your application."
+  />
+</DocsCards.Root>
+
+<DocsSteps.Root>
+  <DocsSteps.Item title="Install" description="Add the packages." />
+  <DocsSteps.Item title="Configure">Register the recipe config.</DocsSteps.Item>
+</DocsSteps.Root>
+```
+
+`DocsTabs` can synchronize separate groups on the same page. This is useful for package-manager or framework choices repeated across a guide.
+
+```tsx
+<DocsTabs.Root defaultValue="npm" syncKey="package-manager">
+  <DocsTabs.List>
+    <DocsTabs.Trigger value="npm">npm</DocsTabs.Trigger>
+    <DocsTabs.Trigger value="pnpm">pnpm</DocsTabs.Trigger>
+  </DocsTabs.List>
+  <DocsTabs.Content value="npm">
+    <CodeBlock language="bash" code="npm install @chakra-docs/chakra" />
+  </DocsTabs.Content>
+  <DocsTabs.Content value="pnpm">
+    <CodeBlock language="bash" code="pnpm add @chakra-docs/chakra" />
+  </DocsTabs.Content>
+</DocsTabs.Root>
+```
+
+Use `value` and `onValueChange` to control a tab group. The trigger and panel IDs, `aria-controls`, `aria-labelledby`, and selected state are handled by the component.
+
+```tsx
+<DocsApiTable
+  caption="DocsLayout props"
+  items={[
+    {
+      name: 'sidebarCollapsible',
+      type: 'boolean',
+      defaultValue: 'false',
+      description: 'Allows nested navigation sections to collapse.',
+    },
+  ]}
+/>
+```
+
+`DocsBadge` defaults to a portable neutral treatment. Its `tone="accent"` variant still uses semantic host tokens; applications can replace either tone in `chakraDocsBadge`.
+
 ## DocsSearch
 
 `DocsSearch` renders a command-style search dialog from local manifest records or an asynchronous provider. Pass `collectionId` or `collectionIds` to scope results to one or more collections; remote mode sends that scope to the server before results are limited.

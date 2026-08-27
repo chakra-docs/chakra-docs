@@ -7,9 +7,12 @@ const { defineConfig, defineSlotRecipe } =
   };
 
 export const chakraDocsRecipeKeys = {
+  apiTable: 'chakraDocsApiTable',
   article: 'chakraDocsArticle',
+  badge: 'chakraDocsBadge',
   breadcrumbs: 'chakraDocsBreadcrumbs',
   callout: 'chakraDocsCallout',
+  cards: 'chakraDocsCards',
   codeBlock: 'chakraDocsCodeBlock',
   feedback: 'chakraDocsFeedback',
   layout: 'chakraDocsLayout',
@@ -20,9 +23,199 @@ export const chakraDocsRecipeKeys = {
   pagination: 'chakraDocsPagination',
   search: 'chakraDocsSearch',
   sidebar: 'chakraDocsSidebar',
+  steps: 'chakraDocsSteps',
+  tabs: 'chakraDocsTabs',
   tableOfContents: 'chakraDocsTableOfContents',
   versionSelect: 'chakraDocsVersionSelect',
 } as const;
+
+export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-cards',
+  slots: ['root', 'card', 'icon', 'content', 'title', 'description', 'badge'],
+  base: {
+    root: {
+      display: 'grid',
+      gap: 4,
+      gridTemplateColumns: { base: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+      my: 6,
+    },
+    card: {
+      alignItems: 'flex-start',
+      bg: 'bg',
+      borderColor: 'border',
+      borderRadius: 'md',
+      borderWidth: '1px',
+      color: 'fg',
+      display: 'flex',
+      gap: 3,
+      p: 4,
+      textDecoration: 'none',
+      _hover: { bg: 'bg.subtle', textDecoration: 'none' },
+    },
+    icon: { color: 'fg.muted', flexShrink: 0, mt: 1 },
+    content: { display: 'flex', flex: 1, flexDirection: 'column', gap: 1 },
+    title: { color: 'fg', fontWeight: 'semibold' },
+    description: { color: 'fg.muted', fontSize: 'sm' },
+    badge: { ms: 2 },
+  },
+});
+
+export const chakraDocsStepsSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-steps',
+  slots: ['root', 'item', 'indicator', 'content', 'title', 'description'],
+  base: {
+    root: {
+      counterReset: 'chakra-docs-step',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6,
+      listStyleType: 'none',
+      my: 6,
+      p: 0,
+    },
+    item: {
+      alignItems: 'flex-start',
+      counterIncrement: 'chakra-docs-step',
+      display: 'flex',
+      gap: 4,
+    },
+    indicator: {
+      alignItems: 'center',
+      bg: 'bg.subtle',
+      borderColor: 'border',
+      borderRadius: 'full',
+      borderWidth: '1px',
+      color: 'fg',
+      display: 'inline-flex',
+      flex: '0 0 auto',
+      fontSize: 'sm',
+      fontWeight: 'semibold',
+      h: 8,
+      justifyContent: 'center',
+      w: 8,
+      _before: { content: 'counter(chakra-docs-step)' },
+    },
+    content: { flex: 1, minW: 0 },
+    title: { color: 'fg', fontWeight: 'semibold', mb: 1 },
+    description: { color: 'fg.muted' },
+  },
+  variants: {
+    customIndicator: {
+      true: { indicator: { _before: { display: 'none' } } },
+      false: {},
+    },
+  },
+  defaultVariants: { customIndicator: false },
+});
+
+export const chakraDocsTabsSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-tabs',
+  slots: ['root', 'list', 'trigger', 'content'],
+  base: {
+    root: { my: 6 },
+    list: {
+      borderBottomColor: 'border',
+      borderBottomWidth: '1px',
+      display: 'flex',
+      gap: 1,
+      overflowX: 'auto',
+    },
+    trigger: {
+      appearance: 'none',
+      bg: 'transparent',
+      borderColor: 'transparent',
+      borderWidth: 0,
+      borderBottomWidth: '2px',
+      color: 'fg.muted',
+      cursor: 'pointer',
+      fontWeight: 'medium',
+      mb: '-1px',
+      px: 3,
+      py: 2,
+      whiteSpace: 'nowrap',
+      _hover: { color: 'fg' },
+      _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
+    },
+    content: { color: 'fg', pt: 4 },
+  },
+  variants: {
+    selected: {
+      true: { trigger: { borderBottomColor: 'currentColor', color: 'fg' } },
+      false: {},
+    },
+  },
+  defaultVariants: { selected: false },
+});
+
+export const chakraDocsApiTableSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-api-table',
+  slots: [
+    'root',
+    'table',
+    'caption',
+    'header',
+    'row',
+    'columnHeader',
+    'cell',
+    'name',
+    'type',
+    'defaultValue',
+    'description',
+    'required',
+  ],
+  base: {
+    root: {
+      borderColor: 'border',
+      borderRadius: 'md',
+      borderWidth: '1px',
+      my: 6,
+      overflowX: 'auto',
+    },
+    table: { borderCollapse: 'collapse', textAlign: 'start', w: 'full' },
+    caption: { color: 'fg.muted', fontSize: 'sm', p: 3, textAlign: 'start' },
+    header: { bg: 'bg.subtle' },
+    row: { borderBottomColor: 'border', borderBottomWidth: '1px' },
+    columnHeader: {
+      color: 'fg.muted',
+      fontSize: 'xs',
+      fontWeight: 'semibold',
+      px: 3,
+      py: 2,
+      textAlign: 'start',
+    },
+    cell: { color: 'fg', fontSize: 'sm', px: 3, py: 3, verticalAlign: 'top' },
+    name: { fontWeight: 'semibold' },
+    type: { color: 'fg.muted', fontFamily: 'mono', fontSize: 'xs' },
+    defaultValue: { color: 'fg.muted', fontFamily: 'mono', fontSize: 'xs' },
+    description: { color: 'fg.muted' },
+    required: { ms: 2 },
+  },
+});
+
+export const chakraDocsBadgeSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-badge',
+  slots: ['root'],
+  base: {
+    root: {
+      bg: 'bg.subtle',
+      borderColor: 'border',
+      borderRadius: 'sm',
+      borderWidth: '1px',
+      color: 'fg.muted',
+      fontSize: 'xs',
+      fontWeight: 'semibold',
+      px: 1.5,
+      py: 0.5,
+    },
+  },
+  variants: {
+    tone: {
+      neutral: {},
+      accent: { root: { bg: 'bg.emphasized', color: 'fg' } },
+    },
+  },
+  defaultVariants: { tone: 'neutral' },
+});
 
 export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-layout',
@@ -721,9 +914,12 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
 });
 
 export const chakraDocsSlotRecipes = {
+  [chakraDocsRecipeKeys.apiTable]: chakraDocsApiTableSlotRecipe,
   [chakraDocsRecipeKeys.article]: chakraDocsArticleSlotRecipe,
+  [chakraDocsRecipeKeys.badge]: chakraDocsBadgeSlotRecipe,
   [chakraDocsRecipeKeys.breadcrumbs]: chakraDocsBreadcrumbsSlotRecipe,
   [chakraDocsRecipeKeys.callout]: chakraDocsCalloutSlotRecipe,
+  [chakraDocsRecipeKeys.cards]: chakraDocsCardsSlotRecipe,
   [chakraDocsRecipeKeys.codeBlock]: chakraDocsCodeBlockSlotRecipe,
   [chakraDocsRecipeKeys.feedback]: chakraDocsFeedbackSlotRecipe,
   [chakraDocsRecipeKeys.layout]: chakraDocsLayoutSlotRecipe,
@@ -735,6 +931,8 @@ export const chakraDocsSlotRecipes = {
   [chakraDocsRecipeKeys.pagination]: chakraDocsPaginationSlotRecipe,
   [chakraDocsRecipeKeys.search]: chakraDocsSearchSlotRecipe,
   [chakraDocsRecipeKeys.sidebar]: chakraDocsSidebarSlotRecipe,
+  [chakraDocsRecipeKeys.steps]: chakraDocsStepsSlotRecipe,
+  [chakraDocsRecipeKeys.tabs]: chakraDocsTabsSlotRecipe,
   [chakraDocsRecipeKeys.tableOfContents]: chakraDocsTableOfContentsSlotRecipe,
   [chakraDocsRecipeKeys.versionSelect]: chakraDocsVersionSelectSlotRecipe,
 };

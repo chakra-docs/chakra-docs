@@ -65,9 +65,17 @@ import {
 } from './sidebar-expansion.js';
 import type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 import {
+  getDocsTabsSyncValue,
+  publishDocsTabsSyncValue,
+  subscribeDocsTabsSyncValue,
+} from './tabs-sync.js';
+import {
+  chakraDocsApiTableSlotRecipe,
   chakraDocsArticleSlotRecipe,
+  chakraDocsBadgeSlotRecipe,
   chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
+  chakraDocsCardsSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsFeedbackSlotRecipe,
   chakraDocsLayoutSlotRecipe,
@@ -79,6 +87,8 @@ import {
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
+  chakraDocsStepsSlotRecipe,
+  chakraDocsTabsSlotRecipe,
   chakraDocsTableOfContentsSlotRecipe,
   chakraDocsVersionSelectSlotRecipe,
 } from './theme/recipes.js';
@@ -92,9 +102,12 @@ export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 export type { DocsBreadcrumbItem } from './breadcrumbs.js';
 export { createDocsBreadcrumbItems } from './breadcrumbs.js';
 export {
+  chakraDocsApiTableSlotRecipe,
   chakraDocsArticleSlotRecipe,
+  chakraDocsBadgeSlotRecipe,
   chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
+  chakraDocsCardsSlotRecipe,
   chakraDocsCodeBlockSlotRecipe,
   chakraDocsFeedbackSlotRecipe,
   chakraDocsLayoutSlotRecipe,
@@ -107,6 +120,8 @@ export {
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
   chakraDocsSlotRecipes,
+  chakraDocsStepsSlotRecipe,
+  chakraDocsTabsSlotRecipe,
   chakraDocsTableOfContentsSlotRecipe,
   chakraDocsThemeConfig,
   chakraDocsVersionSelectSlotRecipe,
@@ -458,6 +473,98 @@ export interface DocsPageFeedbackCommentProps
   extends DocsPageFeedbackPartProps {
   label?: string;
   placeholder?: string;
+}
+
+export interface DocsCardsRootProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsCardProps {
+  badge?: ReactNode;
+  badgeSlotProps?: Record<string, unknown>;
+  children?: ReactNode;
+  contentSlotProps?: Record<string, unknown>;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  href?: string;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  title: ReactNode;
+  titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsStepsRootProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsStepProps {
+  children?: ReactNode;
+  contentSlotProps?: Record<string, unknown>;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
+  indicatorSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  title?: ReactNode;
+  titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsTabsRootProps {
+  children?: ReactNode;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  slotProps?: Record<string, unknown>;
+  syncKey?: string;
+  value?: string;
+}
+
+export interface DocsTabsPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsTabsValuePartProps extends DocsTabsPartProps {
+  value: string;
+}
+
+export interface DocsApiTableItem {
+  defaultValue?: ReactNode;
+  description?: ReactNode;
+  name: string;
+  required?: boolean;
+  type?: ReactNode;
+}
+
+export interface DocsApiTableProps {
+  caption?: ReactNode;
+  captionSlotProps?: Record<string, unknown>;
+  cellSlotProps?: Record<string, unknown>;
+  columnHeaderSlotProps?: Record<string, unknown>;
+  defaultLabel?: string;
+  defaultValueSlotProps?: Record<string, unknown>;
+  descriptionLabel?: string;
+  descriptionSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  items: readonly DocsApiTableItem[];
+  nameLabel?: string;
+  nameSlotProps?: Record<string, unknown>;
+  requiredLabel?: string;
+  requiredSlotProps?: Record<string, unknown>;
+  rowSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  tableSlotProps?: Record<string, unknown>;
+  typeLabel?: string;
+  typeSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsBadgeProps {
+  children?: ReactNode;
+  colorPalette?: string;
+  slotProps?: Record<string, unknown>;
+  tone?: 'neutral' | 'accent';
 }
 
 export interface DocsSearchProps {
@@ -1428,7 +1535,7 @@ export function DocsPageFeedbackRoot(
 ): ReactNode {
   const config = useDocsConfig();
   const [uncontrolledValue, setUncontrolledValue] = useState(
-    props.defaultValue,
+    props.defaultValue ?? '',
   );
   const [uncontrolledComment, setUncontrolledComment] = useState(
     props.defaultComment ?? '',
@@ -1680,6 +1787,443 @@ export const DocsPageFeedback = {
   Submit: DocsPageFeedbackSubmit,
   Status: DocsPageFeedbackStatus,
 } as const;
+
+export function DocsCardsRoot(props: DocsCardsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.cards,
+    chakraDocsCardsSlotRecipe,
+  );
+  const styles = recipe();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsCard(props: DocsCardProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.cards,
+    chakraDocsCardsSlotRecipe,
+  );
+  const styles = recipe();
+  const content = createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          mergeSlotStyleProps(styles.icon, props.iconSlotProps),
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.title, props.titleSlotProps),
+        props.title,
+        props.badge
+          ? createElement(
+              Box,
+              {
+                as: 'span',
+                ...mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+              },
+              props.badge,
+            )
+          : null,
+      ),
+      props.description
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(
+              styles.description,
+              props.descriptionSlotProps,
+            ),
+            props.description,
+          )
+        : null,
+      props.children,
+    ),
+  );
+  const cardProps = mergeSlotStyleProps(styles.card, props.slotProps);
+
+  return props.href && isSafeLinkHref(props.href)
+    ? createElement(DocsLink, { href: props.href, ...cardProps }, content)
+    : createElement(Box, cardProps, content);
+}
+
+export const DocsCards = {
+  Root: DocsCardsRoot,
+  Card: DocsCard,
+} as const;
+
+export function DocsStepsRoot(props: DocsStepsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.steps,
+    chakraDocsStepsSlotRecipe,
+  );
+  const styles = recipe();
+
+  return createElement(
+    Box,
+    { as: 'ol', ...mergeSlotStyleProps(styles.root, props.slotProps) },
+    props.children,
+  );
+}
+
+export function DocsStep(props: DocsStepProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.steps,
+    chakraDocsStepsSlotRecipe,
+  );
+  const styles = recipe({ customIndicator: props.indicator !== undefined });
+
+  return createElement(
+    Box,
+    { as: 'li', ...mergeSlotStyleProps(styles.item, props.slotProps) },
+    createElement(
+      Box,
+      {
+        as: 'span',
+        'aria-hidden': 'true',
+        ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+      },
+      props.indicator,
+    ),
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      props.title
+        ? createElement(
+            Box,
+            mergeSlotStyleProps(styles.title, props.titleSlotProps),
+            props.title,
+          )
+        : null,
+      props.description
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(
+              styles.description,
+              props.descriptionSlotProps,
+            ),
+            props.description,
+          )
+        : null,
+      props.children,
+    ),
+  );
+}
+
+export const DocsSteps = {
+  Root: DocsStepsRoot,
+  Item: DocsStep,
+} as const;
+
+interface DocsTabsContextValue {
+  baseId: string;
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
+  select: (value: string) => void;
+  styles: Record<string, unknown>;
+  value: string;
+}
+
+const DocsTabsContext = createContext<DocsTabsContextValue | undefined>(
+  undefined,
+);
+
+function useDocsTabsContext(): DocsTabsContextValue {
+  const context = useContext(DocsTabsContext);
+
+  if (!context) {
+    throw new Error('DocsTabs components must be rendered inside DocsTabs.Root.');
+  }
+
+  return context;
+}
+
+export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.tabs,
+    chakraDocsTabsSlotRecipe,
+  );
+  const styles = recipe();
+  const baseId = useId();
+  const controlled = props.value !== undefined;
+  const [uncontrolledValue, setUncontrolledValue] = useState<string>(
+    props.defaultValue ?? '',
+  );
+  const value = props.value ?? uncontrolledValue;
+  const valueRef = useRef(value);
+  const onValueChangeRef = useRef(props.onValueChange);
+  valueRef.current = value;
+  onValueChangeRef.current = props.onValueChange;
+
+  useEffect(() => {
+    if (!props.syncKey) {
+      return;
+    }
+
+    const syncKey = props.syncKey;
+    const receiveValue = (nextValue: string) => {
+      if (nextValue === valueRef.current) {
+        return;
+      }
+
+      valueRef.current = nextValue;
+      if (!controlled) {
+        setUncontrolledValue(nextValue);
+      }
+      onValueChangeRef.current?.(nextValue);
+    };
+    const unsubscribe = subscribeDocsTabsSyncValue(syncKey, receiveValue);
+    const syncedValue = getDocsTabsSyncValue(syncKey);
+
+    if (syncedValue !== undefined && syncedValue !== valueRef.current) {
+      receiveValue(syncedValue);
+    }
+
+    return unsubscribe;
+  }, [controlled, props.syncKey]);
+
+  const select = (nextValue: string) => {
+    if (nextValue === value) {
+      return;
+    }
+
+    if (!controlled) {
+      setUncontrolledValue(nextValue);
+    }
+    valueRef.current = nextValue;
+    props.onValueChange?.(nextValue);
+
+    if (props.syncKey) {
+      publishDocsTabsSyncValue(props.syncKey, nextValue);
+    }
+  };
+
+  return createElement(
+    DocsTabsContext.Provider,
+    { value: { baseId, recipe, select, styles, value } },
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.root, props.slotProps),
+      props.children,
+    ),
+  );
+}
+
+export function DocsTabsList(props: DocsTabsPartProps): ReactNode {
+  const context = useDocsTabsContext();
+
+  return createElement(
+    Box,
+    {
+      as: 'div',
+      role: 'tablist',
+      ...mergeSlotStyleProps(context.styles.list, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+export function DocsTabsTrigger(props: DocsTabsValuePartProps): ReactNode {
+  const context = useDocsTabsContext();
+  const selected = context.value === props.value;
+  const styles = context.recipe({ selected });
+  const valueId = createDocsTabsValueId(props.value);
+
+  return createElement(
+    Button,
+    {
+      type: 'button',
+      id: `${context.baseId}-tab-${valueId}`,
+      role: 'tab',
+      'aria-controls': `${context.baseId}-panel-${valueId}`,
+      'aria-selected': selected,
+      onClick: () => context.select(props.value),
+      ...mergeSlotStyleProps(styles.trigger, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+export function DocsTabsContent(props: DocsTabsValuePartProps): ReactNode {
+  const context = useDocsTabsContext();
+  const selected = context.value === props.value;
+  const valueId = createDocsTabsValueId(props.value);
+
+  return createElement(
+    Box,
+    {
+      id: `${context.baseId}-panel-${valueId}`,
+      role: 'tabpanel',
+      'aria-labelledby': `${context.baseId}-tab-${valueId}`,
+      hidden: !selected,
+      ...mergeSlotStyleProps(context.styles.content, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+export const DocsTabs = {
+  Root: DocsTabsRoot,
+  List: DocsTabsList,
+  Trigger: DocsTabsTrigger,
+  Content: DocsTabsContent,
+} as const;
+
+export function DocsApiTable(props: DocsApiTableProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.apiTable,
+    chakraDocsApiTableSlotRecipe,
+  );
+  const styles = recipe();
+  const headers = [
+    props.nameLabel ?? 'Name',
+    props.typeLabel ?? 'Type',
+    props.defaultLabel ?? 'Default',
+    props.descriptionLabel ?? 'Description',
+  ];
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    createElement(
+      Box,
+      { as: 'table', ...mergeSlotStyleProps(styles.table, props.tableSlotProps) },
+      props.caption
+        ? createElement(
+            Box,
+            {
+              as: 'caption',
+              ...mergeSlotStyleProps(styles.caption, props.captionSlotProps),
+            },
+            props.caption,
+          )
+        : null,
+      createElement(
+        Box,
+        { as: 'thead', ...mergeSlotStyleProps(styles.header, props.headerSlotProps) },
+        createElement(
+          Box,
+          { as: 'tr', ...mergeSlotStyleProps(styles.row, props.rowSlotProps) },
+          headers.map((header) =>
+            createElement(
+              Box,
+              {
+                as: 'th',
+                key: header,
+                scope: 'col',
+                ...mergeSlotStyleProps(
+                  styles.columnHeader,
+                  props.columnHeaderSlotProps,
+                ),
+              },
+              header,
+            ),
+          ),
+        ),
+      ),
+      createElement(
+        Box,
+        { as: 'tbody' },
+        props.items.map((item) =>
+          createElement(
+            Box,
+            {
+              as: 'tr',
+              key: item.name,
+              ...mergeSlotStyleProps(styles.row, props.rowSlotProps),
+            },
+            createElement(
+              Box,
+              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              createElement(
+                Code,
+                mergeSlotStyleProps(styles.name, props.nameSlotProps),
+                item.name,
+              ),
+              item.required
+                ? createElement(
+                    DocsBadge,
+                    {
+                      slotProps: mergeSlotStyleProps(
+                        styles.required,
+                        props.requiredSlotProps,
+                      ),
+                    },
+                    props.requiredLabel ?? 'Required',
+                  )
+                : null,
+            ),
+            createElement(
+              Box,
+              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              item.type !== undefined
+                ? createElement(
+                    Code,
+                    mergeSlotStyleProps(styles.type, props.typeSlotProps),
+                    item.type,
+                  )
+                : '—',
+            ),
+            createElement(
+              Box,
+              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              item.defaultValue !== undefined
+                ? createElement(
+                    Code,
+                    mergeSlotStyleProps(
+                      styles.defaultValue,
+                      props.defaultValueSlotProps,
+                    ),
+                    item.defaultValue,
+                  )
+                : '—',
+            ),
+            createElement(
+              Box,
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(
+                  [styles.cell, styles.description],
+                  props.descriptionSlotProps,
+                ),
+              },
+              item.description,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+export function DocsBadge(props: DocsBadgeProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.badge,
+    chakraDocsBadgeSlotRecipe,
+  );
+  const styles = recipe({ tone: props.tone ?? 'neutral' });
+
+  return createElement(
+    Badge,
+    {
+      colorPalette: props.colorPalette,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+function createDocsTabsValueId(value: string): string {
+  return value.trim().replace(/[^a-z\d_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'tab';
+}
 
 export function DocsSidebar(props: DocsSidebarProps): ReactNode {
   const config = useDocsConfig();
