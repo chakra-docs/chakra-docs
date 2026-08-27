@@ -136,6 +136,10 @@ npm run yalc:publish
 
 The project spec lives at [docs/specs/chakra-docs-package-spec.md](docs/specs/chakra-docs-package-spec.md).
 
+## Agent skill
+
+The repository publishes a portable [`compose-chakra-docs`](skills/compose-chakra-docs) skill for agents that are integrating, composing, theming, or troubleshooting a Chakra Docs instance. Install it from this repository with a compatible Agent Skills client, or ask Codex's `$skill-installer` to install the skill from its GitHub directory.
+
 ## Help and contributing
 
 - [Report a bug or request a feature](https://github.com/chakra-docs/chakra-docs/issues)

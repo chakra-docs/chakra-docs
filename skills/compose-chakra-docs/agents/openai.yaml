@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Compose Chakra Docs'
+  short_description: 'Compose and theme Chakra Docs instances'
+  default_prompt: 'Use $compose-chakra-docs to add a documentation section to my existing Chakra UI application.'
