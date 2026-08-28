@@ -220,19 +220,21 @@ export const chakraDocsBadgeSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-layout',
-  slots: ['root', 'inner', 'content'],
+  slots: ['root', 'mobileNavigation', 'inner', 'sidebar', 'content'],
   base: {
     root: {
       maxW: '7xl',
       px: { base: 4, md: 8 },
       py: 8,
     },
+    mobileNavigation: { mb: { base: 6, lg: 0 } },
     inner: {
       alignItems: 'flex-start',
       display: 'flex',
       flexDirection: { base: 'column', lg: 'row' },
       gap: { base: 8, lg: 12 },
     },
+    sidebar: { display: { base: 'none', lg: 'block' } },
     content: {
       flex: '1',
       minW: 0,

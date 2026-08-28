@@ -486,6 +486,7 @@ describe('DocsLayout', () => {
   it('keeps sidebar navigation non-collapsible by default', () => {
     const markup = render(
       createElement(DocsLayout, {
+        mobileNavigation: false,
         nav: nestedNav,
         page: createPage('/docs/install', 'Install'),
       }),
@@ -499,6 +500,7 @@ describe('DocsLayout', () => {
   it('expands every active ancestor with accessible nested disclosures', () => {
     const markup = render(
       createElement(DocsLayout, {
+        mobileNavigation: false,
         nav: nestedNav,
         page: createPage('/docs/install', 'Install'),
         sidebarCollapsible: true,
@@ -519,6 +521,7 @@ describe('DocsLayout', () => {
   it('supports explicit and controlled expansion state', () => {
     const collapsed = render(
       createElement(DocsLayout, {
+        mobileNavigation: false,
         nav: nestedNav,
         page: createPage('/docs/install', 'Install'),
         sidebarCollapsible: true,
@@ -527,6 +530,7 @@ describe('DocsLayout', () => {
     );
     const controlled = render(
       createElement(DocsLayout, {
+        mobileNavigation: false,
         nav: nestedNav,
         page: createPage('/docs/install', 'Install'),
         sidebarCollapsible: true,
@@ -542,6 +546,7 @@ describe('DocsLayout', () => {
   it('preserves linked branch navigation with a separate disclosure trigger', () => {
     const markup = render(
       createElement(DocsLayout, {
+        mobileNavigation: false,
         nav: [
           {
             id: 'guides',
@@ -558,6 +563,44 @@ describe('DocsLayout', () => {
 
     expect(markup).toContain('href="/docs/guides"');
     expect(markup).toContain('aria-label="Expand Guides"');
+  });
+
+  it('uses mobile navigation by default and supports opting out', () => {
+    const enabled = render(
+      createElement(DocsLayout, {
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+    const disabled = render(
+      createElement(DocsLayout, {
+        mobileNavigation: false,
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+
+    expect(enabled).toContain('aria-label="Open navigation"');
+    expect(enabled).toContain('>Menu</span>');
+    expect(disabled).not.toContain('aria-label="Open navigation"');
+  });
+
+  it('forwards composed mobile navigation props', () => {
+    const markup = render(
+      createElement(DocsLayout, {
+        mobileNavigationProps: {
+          open: true,
+          search: createElement('div', null, 'Search documentation'),
+          title: 'Documentation',
+        },
+        nav: nestedNav,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+
+    expect(markup).toContain('>Documentation</h2>');
+    expect(markup).toContain('Search documentation');
+    expect(markup).toContain('aria-current="page"');
   });
 });
 
@@ -1523,6 +1566,9 @@ describe('Chakra Docs slot recipes', () => {
     expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base.link,
     ).toMatchObject({ color: 'fg' });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.layout].base.sidebar,
+    ).toMatchObject({ display: { base: 'none', lg: 'block' } });
     expect(chakraDocsSlotRecipes[chakraDocsRecipeKeys.codeBlock]).toMatchObject(
       {
         base: {
@@ -1576,7 +1622,10 @@ describe('Chakra Docs slot recipes', () => {
       chakraDocsRecipeKeys.cards,
       ['root', 'card', 'icon', 'content', 'title', 'description', 'badge'],
     ],
-    [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
+    [
+      chakraDocsRecipeKeys.layout,
+      ['root', 'mobileNavigation', 'inner', 'sidebar', 'content'],
+    ],
     [
       chakraDocsRecipeKeys.mobileNavigation,
       [

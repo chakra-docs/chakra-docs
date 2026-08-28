@@ -315,6 +315,8 @@ export interface DocsLayoutProps extends DocsComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
   contentSlotProps?: Record<string, unknown>;
   innerSlotProps?: Record<string, unknown>;
+  mobileNavigation?: boolean;
+  mobileNavigationProps?: Omit<DocsMobileNavigationRootProps, 'nav' | 'page'>;
   mobileToc?: boolean;
   mobileTocActiveIndicatorSlotProps?: Record<string, unknown>;
   mobileTocContentSlotProps?: Record<string, unknown>;
@@ -1573,10 +1575,38 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
     chakraDocsLayoutSlotRecipe,
   );
   const styles = recipe();
+  const mobileNavigationProps = props.mobileNavigationProps ?? {};
+  const mobileNavigationSidebarProps = mobileNavigationProps.sidebarProps ?? {};
 
   return createElement(
     Container,
     mergeSlotStyleProps(styles.root, props.slotProps),
+    props.nav && props.mobileNavigation !== false
+      ? createElement(DocsMobileNavigationRoot, {
+          ...mobileNavigationProps,
+          nav: props.nav,
+          page: props.page,
+          sidebarContent:
+            mobileNavigationProps.sidebarContent !== undefined
+              ? mobileNavigationProps.sidebarContent
+              : props.sidebarContent,
+          sidebarProps: {
+            badgeSlotProps: props.sidebarBadgeSlotProps,
+            collapsible: props.sidebarCollapsible,
+            contentSlotProps: props.sidebarContentSlotProps,
+            defaultExpanded: props.sidebarDefaultExpanded,
+            expandedIds: props.sidebarExpandedIds,
+            indicatorSlotProps: props.sidebarIndicatorSlotProps,
+            onExpandedChange: props.onSidebarExpandedChange,
+            triggerSlotProps: props.sidebarTriggerSlotProps,
+            ...mobileNavigationSidebarProps,
+          },
+          slotProps: mergeComponentSlotProps(
+            styles.mobileNavigation,
+            mobileNavigationProps.slotProps,
+          ),
+        })
+      : null,
     createElement(
       Box,
       mergeSlotStyleProps(styles.inner, props.innerSlotProps),
@@ -1595,7 +1625,10 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               onExpandedChange: props.onSidebarExpandedChange,
               triggerSlotProps: props.sidebarTriggerSlotProps,
               stickyTop: props.stickyTop,
-              slotProps: props.sidebarSlotProps,
+              slotProps: mergeComponentSlotProps(
+                styles.sidebar,
+                props.sidebarSlotProps,
+              ),
             },
             props.sidebarContent,
           )
