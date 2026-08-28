@@ -34,5 +34,10 @@
   "composition": {
     "title": "Composition",
     "order": 7
+  },
+  "postkit": {
+    "title": "Postkit rendering",
+    "order": 8,
+    "badge": "Postkit"
   }
 }

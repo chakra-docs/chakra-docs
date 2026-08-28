@@ -59,6 +59,18 @@ describe('docs', () => {
     cy.get('a[href="#what-this-example-includes"]').should('exist');
   });
 
+  it('renders the Postkit integration page through Postkit prose and directives', () => {
+    visit('/docs/postkit');
+
+    cy.get('h1').should('contain.text', 'Render docs with Postkit');
+    cy.get('[data-postkit-component="Prose"]').should('have.length', 1);
+    cy.get('[data-postkit-component="Callout"]')
+      .should('have.attr', 'data-postkit-tone', 'tip')
+      .and('contain.text', 'This page is the example');
+    cy.get('#share-the-chakra-system').should('exist');
+    cy.get('a[href="#share-the-chakra-system"]').should('exist');
+  });
+
   it('supports pointer search navigation through the Next router', () => {
     visit('/');
     cy.intercept('GET', '**/api/docs/search?q=installation*').as(

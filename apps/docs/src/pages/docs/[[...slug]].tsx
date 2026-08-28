@@ -8,6 +8,7 @@ import {
 } from '@chakra-docs/chakra';
 import type { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
+import { PostkitMarkdown } from '../../components/postkit-markdown';
 import { SiteShell } from '../../components/site-shell';
 import { StructuredData } from '../../components/structured-data';
 
@@ -44,7 +45,11 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
           slotProps={{ maxW: 'full', px: 0, py: 0 }}
         >
           <DocsArticle headings={props.page.headings} page={props.page}>
-            <MarkdownContent source={props.page.body ?? ''} />
+            {props.page.route === '/docs/postkit' ? (
+              <PostkitMarkdown page={props.page} />
+            ) : (
+              <MarkdownContent source={props.page.body ?? ''} />
+            )}
             <DocsPagination nav={props.nav} page={props.page} />
           </DocsArticle>
         </DocsLayout>
