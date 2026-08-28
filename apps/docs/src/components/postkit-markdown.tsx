@@ -1,10 +1,7 @@
 import type { DocsPage } from '@chakra-docs/core';
-import { NextLink } from '@chakra-docs/next';
-import {
-  Prose,
-  createPostkitMdxComponents,
-  createPostkitRemarkPlugins,
-} from '@postkit/react';
+import { NextLink } from '@chakra-docs/next/link';
+import { Prose, createPostkitMdxComponents } from '@postkit/react';
+import { createPostkitRemarkPlugins } from '@postkit/react/remark';
 import {
   createElement,
   type AnchorHTMLAttributes,

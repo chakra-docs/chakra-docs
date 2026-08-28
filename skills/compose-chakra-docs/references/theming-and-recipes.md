@@ -9,7 +9,7 @@ import { createSystem, defaultConfig } from '@chakra-ui/react';
 import {
   chakraDocsRecipeKeys,
   chakraDocsThemeConfig,
-} from '@chakra-docs/chakra';
+} from '@chakra-docs/chakra/theme';
 
 export const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
   theme: {

@@ -30,8 +30,9 @@ yalc link --no-pure @postkit/react @postkit/shiki @postkit/unfurl
 Compose the Chakra Docs recipes into the site's system, then let `PostkitProvider` provide that same system to both libraries. Postkit stays host-native by default, so the site's semantic tokens and Chakra recipes remain in control.
 
 ```tsx
-import { DocsProvider, chakraDocsThemeConfig } from '@chakra-docs/chakra';
-import { NextLink } from '@chakra-docs/next';
+import { DocsProvider } from '@chakra-docs/chakra';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
+import { NextLink } from '@chakra-docs/next/link';
 import { createSystem, defaultConfig } from '@chakra-ui/react';
 import { PostkitProvider } from '@postkit/react';
 import { createPostkitShikiAdapter } from '@postkit/shiki';
@@ -65,11 +66,8 @@ Build a component map and Remark plugin list once. `output: 'hast'` lets `react-
 
 ```tsx
 import type { DocsPage } from '@chakra-docs/core';
-import {
-  Prose,
-  createPostkitMdxComponents,
-  createPostkitRemarkPlugins,
-} from '@postkit/react';
+import { Prose, createPostkitMdxComponents } from '@postkit/react';
+import { createPostkitRemarkPlugins } from '@postkit/react/remark';
 import ReactMarkdown from 'react-markdown';
 
 const components = createPostkitMdxComponents();

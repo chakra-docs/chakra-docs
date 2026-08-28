@@ -1,6 +1,7 @@
 import { createSystem, defaultConfig } from '@chakra-ui/react';
-import { DocsProvider, chakraDocsThemeConfig } from '@chakra-docs/chakra';
-import { NextLink } from '@chakra-docs/next';
+import { DocsProvider } from '@chakra-docs/chakra';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
+import { NextLink } from '@chakra-docs/next/link';
 import { PostkitProvider } from '@postkit/react';
 import { createPostkitShikiAdapter } from '@postkit/shiki';
 import type { AppProps } from 'next/app';
