@@ -2,6 +2,7 @@ import type { DocsNavItem, DocsPage } from '@chakra-docs/core';
 import {
   DocsArticle,
   DocsLayout,
+  DocsPageActions,
   DocsPagination,
   MarkdownContent,
   type DocsVersionOption,
@@ -44,7 +45,41 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
           page={props.page}
           slotProps={{ maxW: 'full', px: 0, py: 0 }}
         >
-          <DocsArticle headings={props.page.headings} page={props.page}>
+          <DocsArticle
+            actions={
+              props.page.route === '/docs/components' ? (
+                <DocsPageActions.Root
+                  markdown={props.page.body}
+                  page={props.page}
+                  variant="split"
+                >
+                  <DocsPageActions.CopyPage description={null} />
+                  <DocsPageActions.Menu
+                    ariaLabel="More page action examples"
+                    icon={<span aria-hidden="true">⌄</span>}
+                  >
+                    <DocsPageActions.Group label="Page tools">
+                      <DocsPageActions.CopyPage />
+                      <DocsPageActions.CopyLink />
+                    </DocsPageActions.Group>
+                    <DocsPageActions.Separator />
+                    <DocsPageActions.Submenu label="Open in another chat">
+                      <DocsPageActions.Item
+                        action="open-chatgpt"
+                        label="ChatGPT"
+                      />
+                      <DocsPageActions.Item
+                        action="open-claude"
+                        label="Claude"
+                      />
+                    </DocsPageActions.Submenu>
+                  </DocsPageActions.Menu>
+                </DocsPageActions.Root>
+              ) : undefined
+            }
+            headings={props.page.headings}
+            page={props.page}
+          >
             {props.page.route === '/docs/postkit' ? (
               <PostkitMarkdown page={props.page} />
             ) : (

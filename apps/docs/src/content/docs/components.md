@@ -86,17 +86,30 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
       page={page}
       markdown={page.body}
       markdownUrl={`${page.route}.md`}
+      variant="split"
     >
-      <DocsPageActions.CopyPage />
-      <DocsPageActions.Menu>
-        <DocsPageActions.CopyLink />
-        <DocsPageActions.ViewMarkdown />
-        <DocsPageActions.Edit />
+      <DocsPageActions.CopyPage icon={<LuCopy />} />
+      <DocsPageActions.Menu
+        ariaLabel="More page actions"
+        icon={<LuChevronDown />}
+      >
+        <DocsPageActions.Group label="Page tools">
+          <DocsPageActions.CopyLink icon={<LuLink />} />
+          <DocsPageActions.ViewMarkdown icon={<MarkdownIcon />} />
+        </DocsPageActions.Group>
+        <DocsPageActions.Separator />
         <DocsPageActions.Item
-          action="report"
-          href="https://github.com/example/docs/issues/new"
-          label="Report an issue"
+          action="open-v0"
+          href={v0Url}
+          icon={<V0Icon />}
+          label="Open in v0"
         />
+        <DocsPageActions.Submenu label="Open in another chat">
+          <DocsPageActions.Item href={chatGptUrl} label="ChatGPT" />
+          <DocsPageActions.Item href={claudeUrl} label="Claude" />
+        </DocsPageActions.Submenu>
+        <DocsPageActions.Separator />
+        <DocsPageActions.Edit icon={<LuGithub />} />
       </DocsPageActions.Menu>
     </DocsPageActions.Root>
   }
@@ -107,7 +120,11 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
 
 When no children are supplied, the root renders `CopyPage` as the primary action and places the available link, Markdown, and edit actions in its disclosure menu. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page.
 
-The `chakraDocsPageActions` recipe exposes `root`, `copyRoot`, `trigger`, `icon`, `label`, `indicator`, `menu`, `menuTrigger`, `menuContent`, `menuItem`, and `description` slots. Page copies and other actions can be observed through `analytics.onPageCopy` and `analytics.onPageAction`.
+Use `variant="split"` to join the primary action and menu trigger. `Menu` accepts separate `ariaLabel`, `label`, `icon`, and `indicator` content; supplying an icon without a label creates an icon-only trigger with the accessible name intact. Menus and submenus support `open`, `defaultOpen`, `onOpenChange`, and `closeOnSelect`. Selection closes the current disclosure and its ancestors by default; set `closeOnSelect={false}` when an application needs the menu to remain open.
+
+Standard actions provide descriptions automatically inside menus. Pass `description={null}` to suppress one, or customize the matching `copyPageDescription`, `copyLinkDescription`, `viewMarkdownDescription`, and `editPageDescription` labels through `DocsProvider`.
+
+The `chakraDocsPageActions` recipe exposes `root`, `copyRoot`, `trigger`, `primaryTrigger`, `icon`, `label`, `indicator`, `menu`, `menuTrigger`, `menuIndicator`, `menuContent`, `menuItem`, `menuGroup`, `menuGroupLabel`, `menuSeparator`, `submenu`, `submenuTrigger`, `submenuIndicator`, `submenuContent`, and `description` slots. Page copies and other actions can be observed through `analytics.onPageCopy` and `analytics.onPageAction`.
 
 ## DocsSidebar
 

@@ -52,11 +52,11 @@ import type { DocsAnchorClickEvent } from './search-activation.js';
 // mirror src/index.ts and access the runtime through a namespace cast.
 const { ChakraProvider, createSystem, defaultConfig, defaultSystem } =
   ChakraRuntime as unknown as {
-  ChakraProvider: ComponentType<{ value: unknown; children?: ReactNode }>;
-  createSystem: (...configs: unknown[]) => unknown;
-  defaultConfig: unknown;
-  defaultSystem: unknown;
-};
+    ChakraProvider: ComponentType<{ value: unknown; children?: ReactNode }>;
+    createSystem: (...configs: unknown[]) => unknown;
+    defaultConfig: unknown;
+    defaultSystem: unknown;
+  };
 
 function renderWithStyles(node: ReactNode, system = defaultSystem): string {
   return renderToStaticMarkup(
@@ -573,6 +573,9 @@ describe('DocsPageActions', () => {
     );
     expect(markup).toContain('View as Markdown');
     expect(markup).toContain('Edit this page');
+    expect(markup).toContain('Copy a link to this page');
+    expect(markup).toContain('Open this page as plain text');
+    expect(markup).toContain('Suggest changes to this page');
   });
 
   it('supports composing only the actions an application wants', () => {
@@ -615,6 +618,51 @@ describe('DocsPageActions', () => {
     expect(markup).not.toContain('javascript:');
   });
 
+  it('composes controlled menus, groups, separators, and nested submenus', () => {
+    const markup = render(
+      createElement(
+        DocsPageActions.Root,
+        {
+          markdown: '# Rich actions',
+          pageUrl: '/docs/rich-actions',
+          variant: 'split',
+        },
+        createElement(DocsPageActions.CopyPage),
+        createElement(
+          DocsPageActions.Menu,
+          {
+            ariaLabel: 'More choices',
+            icon: createElement('span', null, '⌄'),
+            open: true,
+          },
+          createElement(
+            DocsPageActions.Group,
+            { label: 'Page tools' },
+            createElement(DocsPageActions.CopyLink),
+          ),
+          createElement(DocsPageActions.Separator),
+          createElement(
+            DocsPageActions.Submenu,
+            { defaultOpen: true, label: 'Open in another chat' },
+            createElement(DocsPageActions.Item, {
+              href: 'https://chatgpt.com',
+              label: 'ChatGPT',
+            }),
+          ),
+        ),
+      ),
+    );
+
+    expect(markup).toContain('aria-label="More choices"');
+    expect(markup).toContain('aria-expanded="true"');
+    expect(markup).toContain('aria-controls=');
+    expect(markup).toContain('role="group"');
+    expect(markup).toContain('aria-labelledby=');
+    expect(markup).toContain('<hr');
+    expect(markup).toContain('Open in another chat');
+    expect(markup).toContain('href="https://chatgpt.com"');
+  });
+
   it('renders actions in the DocsArticle header slot', () => {
     const page = createPage('/docs/start', 'Start');
     const markup = render(
@@ -646,9 +694,7 @@ describe('DocsBreadcrumbs', () => {
       id: 'guides',
       title: 'Guides',
       href: '/docs/guides',
-      children: [
-        { id: 'install', title: 'Install', href: '/docs/install' },
-      ],
+      children: [{ id: 'install', title: 'Install', href: '/docs/install' }],
     },
   ];
 
@@ -1299,6 +1345,14 @@ describe('Chakra Docs slot recipes', () => {
       result: { bg: 'bg.subtle', borderColor: 'border.emphasized' },
     });
     expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions].variants.variant
+        .split,
+    ).toMatchObject({
+      root: { gap: 0 },
+      primaryTrigger: { borderEndRadius: 0 },
+      menuTrigger: { borderStartRadius: 0 },
+    });
+    expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base.link,
     ).toMatchObject({ color: 'fg' });
     expect(JSON.stringify(chakraDocsSlotRecipes)).not.toContain(
@@ -1334,10 +1388,7 @@ describe('Chakra Docs slot recipes', () => {
       chakraDocsRecipeKeys.breadcrumbs,
       ['root', 'list', 'item', 'link', 'current', 'separator'],
     ],
-    [
-      chakraDocsRecipeKeys.headingPermalink,
-      ['root', 'trigger', 'indicator'],
-    ],
+    [chakraDocsRecipeKeys.headingPermalink, ['root', 'trigger', 'indicator']],
     [
       chakraDocsRecipeKeys.feedback,
       [
@@ -1397,13 +1448,22 @@ describe('Chakra Docs slot recipes', () => {
         'root',
         'copyRoot',
         'trigger',
+        'primaryTrigger',
         'icon',
         'label',
         'indicator',
         'menu',
         'menuTrigger',
+        'menuIndicator',
         'menuContent',
         'menuItem',
+        'menuGroup',
+        'menuGroupLabel',
+        'menuSeparator',
+        'submenu',
+        'submenuTrigger',
+        'submenuIndicator',
+        'submenuContent',
         'description',
       ],
     ],

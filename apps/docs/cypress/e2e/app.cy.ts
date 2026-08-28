@@ -71,6 +71,23 @@ describe('docs', () => {
     cy.get('a[href="#share-the-chakra-system"]').should('exist');
   });
 
+  it('composes split page actions with independently nested menus', () => {
+    visit('/docs/components');
+
+    cy.get('summary[aria-label="More page action examples"]').as(
+      'pageActionsMenu',
+    );
+    cy.get('@pageActionsMenu').click();
+    cy.get('@pageActionsMenu').parent('details').should('have.attr', 'open');
+    cy.contains('summary', 'Open in another chat').as('chatSubmenu');
+    cy.get('@chatSubmenu').click();
+    cy.get('@chatSubmenu').parent('details').should('have.attr', 'open');
+    cy.contains('button', 'ChatGPT').click();
+    cy.get('@pageActionsMenu')
+      .parent('details')
+      .should('not.have.attr', 'open');
+  });
+
   it('supports pointer search navigation through the Next router', () => {
     visit('/');
     cy.intercept('GET', '**/api/docs/search?q=installation*').as(

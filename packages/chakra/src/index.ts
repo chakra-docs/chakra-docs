@@ -183,11 +183,15 @@ export interface DocsLabels {
   copyCode: string;
   copiedCode: string;
   copyPage: string;
+  copyPageDescription?: string;
   copiedPage: string;
   copyLink: string;
+  copyLinkDescription?: string;
   copiedLink: string;
   viewMarkdown: string;
+  viewMarkdownDescription?: string;
   moreActions: string;
+  editPageDescription?: string;
   copyHeadingLink: string;
   copiedHeadingLink: string;
   feedbackPrompt: string;
@@ -342,6 +346,7 @@ export interface DocsPageActionsRootProps {
   page?: DocsPage;
   pageUrl?: string;
   slotProps?: Record<string, unknown>;
+  variant?: 'default' | 'split';
 }
 
 export interface DocsPageActionProps {
@@ -362,11 +367,44 @@ export interface DocsPageActionLinkProps extends DocsPageActionProps {
 }
 
 export interface DocsPageActionsMenuProps {
+  ariaLabel?: string;
   children?: ReactNode;
+  closeOnSelect?: boolean;
   contentSlotProps?: Record<string, unknown>;
-  label?: string;
+  defaultOpen?: boolean;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  onOpenChange?: (details: DocsPageActionsOpenChangeDetails) => void;
+  open?: boolean;
   slotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsOpenChangeDetails {
+  open: boolean;
+}
+
+export interface DocsPageActionsSubmenuProps extends Omit<
+  DocsPageActionsMenuProps,
+  'label'
+> {
+  label: ReactNode;
+}
+
+export interface DocsPageActionsGroupProps {
+  ariaLabel?: string;
+  children?: ReactNode;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsSeparatorProps {
+  slotProps?: Record<string, unknown>;
 }
 
 export interface DocsPageActionsItemProps extends DocsPageActionProps {
@@ -435,10 +473,7 @@ export interface DocsHeadingPermalinkProps {
   triggerSlotProps?: Record<string, unknown>;
 }
 
-export type DocsPageFeedbackValue =
-  | 'helpful'
-  | 'not-helpful'
-  | (string & {});
+export type DocsPageFeedbackValue = 'helpful' | 'not-helpful' | (string & {});
 
 export interface DocsPageFeedbackSubmitDetails {
   comment: string;
@@ -464,13 +499,11 @@ export interface DocsPageFeedbackPartProps {
   slotProps?: Record<string, unknown>;
 }
 
-export interface DocsPageFeedbackOptionProps
-  extends DocsPageFeedbackPartProps {
+export interface DocsPageFeedbackOptionProps extends DocsPageFeedbackPartProps {
   value: DocsPageFeedbackValue;
 }
 
-export interface DocsPageFeedbackCommentProps
-  extends DocsPageFeedbackPartProps {
+export interface DocsPageFeedbackCommentProps extends DocsPageFeedbackPartProps {
   label?: string;
   placeholder?: string;
 }
@@ -685,11 +718,15 @@ const defaultLabels: DocsLabels = {
   copyCode: 'Copy code',
   copiedCode: 'Copied',
   copyPage: 'Copy page',
+  copyPageDescription: 'Copy page as Markdown for LLMs',
   copiedPage: 'Copied',
   copyLink: 'Copy link',
+  copyLinkDescription: 'Copy a link to this page',
   copiedLink: 'Copied',
   viewMarkdown: 'View as Markdown',
+  viewMarkdownDescription: 'Open this page as plain text',
   moreActions: 'More page actions',
+  editPageDescription: 'Suggest changes to this page',
   copyHeadingLink: 'Copy section link',
   copiedHeadingLink: 'Copied section link',
   feedbackPrompt: 'Was this page helpful?',
@@ -736,6 +773,7 @@ interface DocsPageActionsContextValue {
   inMenu: boolean;
   markdown?: string;
   markdownUrl?: string;
+  onActionSelect?: () => void;
   page?: DocsPage;
   pageUrl?: string;
   styles: Record<string, unknown>;
@@ -765,7 +803,7 @@ export function DocsPageActionsRoot(
     chakraDocsRecipeKeys.pageActions,
     chakraDocsPageActionsSlotRecipe,
   );
-  const styles = recipe();
+  const styles = recipe({ variant: props.variant ?? 'default' });
   const page = props.page;
   const markdown = props.markdown ?? page?.body;
   const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
@@ -824,7 +862,11 @@ export function DocsPageActionsCopyPage(props: DocsPageActionProps): ReactNode {
     context,
     copiedLabel:
       props.copiedLabel ?? labels.copiedPage ?? defaultLabels.copiedPage,
-    description: props.description,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.copyPageDescription ?? defaultLabels.copyPageDescription,
+    ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'markdown',
     icon: props.icon,
@@ -850,7 +892,11 @@ export function DocsPageActionsCopyLink(props: DocsPageActionProps): ReactNode {
     context,
     copiedLabel:
       props.copiedLabel ?? labels.copiedLink ?? defaultLabels.copiedLink,
-    description: props.description,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.copyLinkDescription ?? defaultLabels.copyLinkDescription,
+    ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'link',
     icon: props.icon,
@@ -878,7 +924,11 @@ export function DocsPageActionsViewMarkdown(
     action: 'view-markdown',
     children: props.children,
     context,
-    description: props.description,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.viewMarkdownDescription ?? defaultLabels.viewMarkdownDescription,
+    ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
     icon: props.icon,
@@ -902,7 +952,11 @@ export function DocsPageActionsEdit(props: DocsPageActionLinkProps): ReactNode {
     action: 'edit',
     children: props.children,
     context,
-    description: props.description,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.editPageDescription ?? defaultLabels.editPageDescription,
+    ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
     icon: props.icon,
@@ -918,33 +972,219 @@ export function DocsPageActionsMenu(
 ): ReactNode {
   const context = useDocsPageActionsContext();
   const labels = context.config.labels ?? defaultLabels;
-  const menuContext = { ...context, inMenu: true };
+  const defaultLabel = labels.moreActions ?? defaultLabels.moreActions;
+
+  return usePageActionsDisclosure({
+    ...props,
+    ariaLabel:
+      props.ariaLabel ??
+      (typeof props.label === 'string' ? props.label : defaultLabel),
+    context,
+    label:
+      props.label !== undefined
+        ? props.label
+        : props.icon
+          ? undefined
+          : defaultLabel,
+    slots: {
+      content: context.styles.menuContent,
+      indicator: context.styles.menuIndicator,
+      root: context.styles.menu,
+      trigger: [context.styles.trigger, context.styles.menuTrigger],
+    },
+  });
+}
+
+export function DocsPageActionsSubmenu(
+  props: DocsPageActionsSubmenuProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+
+  return usePageActionsDisclosure({
+    ...props,
+    ariaLabel:
+      props.ariaLabel ??
+      (typeof props.label === 'string' ? props.label : undefined),
+    context,
+    indicator: props.indicator ?? '›',
+    slots: {
+      content: context.styles.submenuContent,
+      indicator: context.styles.submenuIndicator,
+      root: context.styles.submenu,
+      trigger: [context.styles.menuItem, context.styles.submenuTrigger],
+    },
+  });
+}
+
+export function DocsPageActionsGroup(
+  props: DocsPageActionsGroupProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labelId = useId();
+
+  return createElement(
+    Box,
+    {
+      role: 'group',
+      'aria-label': props.ariaLabel,
+      'aria-labelledby': !props.ariaLabel && props.label ? labelId : undefined,
+      ...mergeSlotStyleProps(context.styles.menuGroup, props.slotProps),
+    },
+    props.label
+      ? createElement(
+          Text,
+          {
+            as: 'span',
+            id: labelId,
+            ...mergeSlotStyleProps(
+              context.styles.menuGroupLabel,
+              props.labelSlotProps,
+            ),
+          },
+          props.label,
+        )
+      : null,
+    props.children,
+  );
+}
+
+export function DocsPageActionsSeparator(
+  props: DocsPageActionsSeparatorProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+
+  return createElement(Box, {
+    as: 'hr',
+    ...mergeSlotStyleProps(context.styles.menuSeparator, props.slotProps),
+  });
+}
+
+interface PageActionsDisclosureProps extends DocsPageActionsMenuProps {
+  context: DocsPageActionsContextValue;
+  slots: {
+    content: unknown;
+    indicator: unknown;
+    root: unknown;
+    trigger: unknown;
+  };
+}
+
+interface PageActionClickEvent {
+  defaultPrevented?: boolean;
+  preventDefault?: () => void;
+}
+
+function usePageActionsDisclosure(
+  props: PageActionsDisclosureProps,
+): ReactNode {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(
+    props.defaultOpen ?? false,
+  );
+  const contentId = useId();
+  const open = props.open ?? uncontrolledOpen;
+  const setOpen = (nextOpen: boolean) => {
+    if (props.open === undefined) {
+      setUncontrolledOpen(nextOpen);
+    }
+
+    if (nextOpen !== open) {
+      props.onOpenChange?.({ open: nextOpen });
+    }
+  };
+  const closeAfterSelect = () => {
+    setOpen(false);
+    props.context.onActionSelect?.();
+  };
+  const menuContext: DocsPageActionsContextValue = {
+    ...props.context,
+    inMenu: true,
+    onActionSelect:
+      props.closeOnSelect === false ? undefined : closeAfterSelect,
+  };
+  const triggerProps = mergeSlotStyleProps(
+    props.slots.trigger,
+    props.triggerSlotProps,
+  );
+  const triggerOnClick = triggerProps.onClick;
 
   return createElement(
     Box,
     {
       as: 'details',
-      ...mergeSlotStyleProps(context.styles.menu, props.slotProps),
+      ...mergeSlotStyleProps(props.slots.root, props.slotProps),
+      open,
     },
     createElement(
       Box,
       {
         as: 'summary',
-        'aria-label':
-          props.label ?? labels.moreActions ?? defaultLabels.moreActions,
-        ...mergeSlotStyleProps(
-          [context.styles.trigger, context.styles.menuTrigger],
-          props.triggerSlotProps,
-        ),
+        ...triggerProps,
+        'aria-controls': contentId,
+        'aria-expanded': open,
+        'aria-label': props.ariaLabel,
+        onClick: (event: PageActionClickEvent) => {
+          if (typeof triggerOnClick === 'function') {
+            (triggerOnClick as (event: PageActionClickEvent) => void)(event);
+          }
+
+          if (event.defaultPrevented) {
+            return;
+          }
+
+          event.preventDefault?.();
+          setOpen(!open);
+        },
       },
-      props.label ?? labels.moreActions ?? defaultLabels.moreActions,
+      props.icon
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                props.context.styles.icon,
+                props.iconSlotProps,
+              ),
+            },
+            props.icon,
+          )
+        : null,
+      props.label
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                props.context.styles.label,
+                props.labelSlotProps,
+              ),
+            },
+            props.label,
+          )
+        : null,
+      props.indicator
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              'aria-hidden': 'true',
+              ...mergeSlotStyleProps(
+                props.slots.indicator,
+                props.indicatorSlotProps,
+              ),
+            },
+            props.indicator,
+          )
+        : null,
     ),
     createElement(
       DocsPageActionsContext.Provider,
       { value: menuContext },
       createElement(
         Box,
-        mergeSlotStyleProps(context.styles.menuContent, props.contentSlotProps),
+        {
+          ...mergeSlotStyleProps(props.slots.content, props.contentSlotProps),
+          id: contentId,
+        },
         props.children,
       ),
     ),
@@ -974,21 +1214,28 @@ export function DocsPageActionsItem(
     });
   }
 
+  const slotProps = getPageActionSlotProps(context, props.slotProps);
+  const onClick = slotProps.onClick;
+
   return createElement(
     Button,
     {
       type: 'button',
-      onClick: () => {
+      ...slotProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+
+        if (event.defaultPrevented) {
+          return;
+        }
+
         props.onSelect?.();
         context.config.analytics?.onPageAction?.({
           action,
           page: context.page,
         });
+        context.onActionSelect?.();
       },
-      ...mergeSlotStyleProps(
-        context.inMenu ? context.styles.menuItem : context.styles.trigger,
-        props.slotProps,
-      ),
     },
     createPageActionContent(context, props),
   );
@@ -1001,6 +1248,9 @@ export const DocsPageActions = {
   ViewMarkdown: DocsPageActionsViewMarkdown,
   Edit: DocsPageActionsEdit,
   Menu: DocsPageActionsMenu,
+  Submenu: DocsPageActionsSubmenu,
+  Group: DocsPageActionsGroup,
+  Separator: DocsPageActionsSeparator,
   Item: DocsPageActionsItem,
 } as const;
 
@@ -1020,6 +1270,8 @@ function createCopyPageAction(props: {
   value: string;
 }): ReactNode {
   const { context } = props;
+  const triggerProps = getPageActionSlotProps(context, props.slotProps);
+  const onClick = triggerProps.onClick;
 
   return createElement(
     ChakraClipboard.Root,
@@ -1041,10 +1293,14 @@ function createCopyPageAction(props: {
       {
         type: 'button',
         'aria-label': props.label,
-        ...mergeSlotStyleProps(
-          context.inMenu ? context.styles.menuItem : context.styles.trigger,
-          props.slotProps,
-        ),
+        ...triggerProps,
+        onClick: (event: PageActionClickEvent) => {
+          callPageActionClickHandler(onClick, event);
+
+          if (!event.defaultPrevented) {
+            context.onActionSelect?.();
+          }
+        },
       },
       props.icon
         ? createElement(
@@ -1116,27 +1372,65 @@ function createPageActionLink(props: {
     return null;
   }
 
+  const slotProps = getPageActionSlotProps(props.context, props.slotProps);
+  const onClick = slotProps.onClick;
+
   return createElement(
     DocsLink,
     {
       href: props.href,
-      onClick: () => {
+      ...slotProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+
+        if (event.defaultPrevented) {
+          return;
+        }
+
         props.onSelect?.();
         props.context.config.analytics?.onPageAction?.({
           action: props.action,
           href: props.href,
           page: props.context.page,
         });
+        props.context.onActionSelect?.();
       },
-      ...mergeSlotStyleProps(
-        props.context.inMenu
-          ? props.context.styles.menuItem
-          : props.context.styles.trigger,
-        props.slotProps,
-      ),
     },
     createPageActionContent(props.context, props),
   );
+}
+
+function resolvePageActionDescription(
+  description: ReactNode | undefined,
+  context: DocsPageActionsContextValue,
+  defaultDescription: ReactNode,
+): ReactNode {
+  if (description !== undefined) {
+    return description;
+  }
+
+  return context.inMenu ? defaultDescription : undefined;
+}
+
+function getPageActionSlotProps(
+  context: DocsPageActionsContextValue,
+  slotProps: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  return mergeSlotStyleProps(
+    context.inMenu
+      ? context.styles.menuItem
+      : [context.styles.trigger, context.styles.primaryTrigger],
+    slotProps,
+  );
+}
+
+function callPageActionClickHandler(
+  handler: unknown,
+  event: PageActionClickEvent,
+): void {
+  if (typeof handler === 'function') {
+    (handler as (event: PageActionClickEvent) => void)(event);
+  }
 }
 
 function createPageActionContent(
@@ -1253,8 +1547,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
         },
         props.headings && props.mobileToc !== false
           ? createElement(DocsMobileTableOfContents, {
-              activeIndicatorSlotProps:
-                props.mobileTocActiveIndicatorSlotProps,
+              activeIndicatorSlotProps: props.mobileTocActiveIndicatorSlotProps,
               contentSlotProps: props.mobileTocContentSlotProps,
               currentSlotProps: props.mobileTocCurrentSlotProps,
               headings: props.headings,
@@ -1485,10 +1778,7 @@ export function DocsHeadingPermalink(
         ChakraClipboard.Indicator,
         {
           copied: copiedLabel,
-          ...mergeSlotStyleProps(
-            styles.indicator,
-            props.indicatorSlotProps,
-          ),
+          ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
         },
         props.children ?? '#',
       ),
@@ -1496,11 +1786,7 @@ export function DocsHeadingPermalink(
   );
 }
 
-type DocsPageFeedbackStatus =
-  | 'idle'
-  | 'submitting'
-  | 'submitted'
-  | 'error';
+type DocsPageFeedbackStatus = 'idle' | 'submitting' | 'submitted' | 'error';
 
 interface DocsPageFeedbackContextValue {
   comment: string;
@@ -1673,9 +1959,9 @@ export function DocsPageFeedbackOption(
   )({ selected, status: context.status });
   const defaultLabel =
     props.value === 'helpful'
-      ? labels.feedbackHelpful ?? defaultLabels.feedbackHelpful
+      ? (labels.feedbackHelpful ?? defaultLabels.feedbackHelpful)
       : props.value === 'not-helpful'
-        ? labels.feedbackNotHelpful ?? defaultLabels.feedbackNotHelpful
+        ? (labels.feedbackNotHelpful ?? defaultLabels.feedbackNotHelpful)
         : props.value;
 
   return createElement(
@@ -1704,8 +1990,7 @@ export function DocsPageFeedbackComment(
 
   return createElement(Textarea, {
     'aria-label': props.label ?? placeholder,
-    disabled:
-      context.status === 'submitting' || context.status === 'submitted',
+    disabled: context.status === 'submitting' || context.status === 'submitted',
     onChange: (event: { currentTarget: { value: string } }) =>
       context.setComment(event.currentTarget.value),
     placeholder,
@@ -1733,8 +2018,8 @@ export function DocsPageFeedbackSubmit(
   const labels = context.config.labels ?? defaultLabels;
   const label =
     context.status === 'submitting'
-      ? labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting
-      : labels.feedbackSubmit ?? defaultLabels.feedbackSubmit;
+      ? (labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting)
+      : (labels.feedbackSubmit ?? defaultLabels.feedbackSubmit);
 
   return createElement(
     Button,
@@ -1762,10 +2047,10 @@ export function DocsPageFeedbackStatus(
 
   const message =
     context.status === 'submitting'
-      ? labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting
+      ? (labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting)
       : context.status === 'submitted'
-        ? labels.feedbackSubmitted ?? defaultLabels.feedbackSubmitted
-        : labels.feedbackError ?? defaultLabels.feedbackError;
+        ? (labels.feedbackSubmitted ?? defaultLabels.feedbackSubmitted)
+        : (labels.feedbackError ?? defaultLabels.feedbackError);
 
   return createElement(
     Text,
@@ -1839,10 +2124,7 @@ export function DocsCard(props: DocsCardProps): ReactNode {
       props.description
         ? createElement(
             Text,
-            mergeSlotStyleProps(
-              styles.description,
-              props.descriptionSlotProps,
-            ),
+            mergeSlotStyleProps(styles.description, props.descriptionSlotProps),
             props.description,
           )
         : null,
@@ -1907,10 +2189,7 @@ export function DocsStep(props: DocsStepProps): ReactNode {
       props.description
         ? createElement(
             Text,
-            mergeSlotStyleProps(
-              styles.description,
-              props.descriptionSlotProps,
-            ),
+            mergeSlotStyleProps(styles.description, props.descriptionSlotProps),
             props.description,
           )
         : null,
@@ -1940,7 +2219,9 @@ function useDocsTabsContext(): DocsTabsContextValue {
   const context = useContext(DocsTabsContext);
 
   if (!context) {
-    throw new Error('DocsTabs components must be rendered inside DocsTabs.Root.');
+    throw new Error(
+      'DocsTabs components must be rendered inside DocsTabs.Root.',
+    );
   }
 
   return context;
@@ -2095,7 +2376,10 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
     mergeSlotStyleProps(styles.root, props.slotProps),
     createElement(
       Box,
-      { as: 'table', ...mergeSlotStyleProps(styles.table, props.tableSlotProps) },
+      {
+        as: 'table',
+        ...mergeSlotStyleProps(styles.table, props.tableSlotProps),
+      },
       props.caption
         ? createElement(
             Box,
@@ -2108,7 +2392,10 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
         : null,
       createElement(
         Box,
-        { as: 'thead', ...mergeSlotStyleProps(styles.header, props.headerSlotProps) },
+        {
+          as: 'thead',
+          ...mergeSlotStyleProps(styles.header, props.headerSlotProps),
+        },
         createElement(
           Box,
           { as: 'tr', ...mergeSlotStyleProps(styles.row, props.rowSlotProps) },
@@ -2142,7 +2429,10 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
             },
             createElement(
               Box,
-              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
               createElement(
                 Code,
                 mergeSlotStyleProps(styles.name, props.nameSlotProps),
@@ -2163,7 +2453,10 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
             ),
             createElement(
               Box,
-              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
               item.type !== undefined
                 ? createElement(
                     Code,
@@ -2174,7 +2467,10 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
             ),
             createElement(
               Box,
-              { as: 'td', ...mergeSlotStyleProps(styles.cell, props.cellSlotProps) },
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
               item.defaultValue !== undefined
                 ? createElement(
                     Code,
@@ -2222,7 +2518,12 @@ export function DocsBadge(props: DocsBadgeProps): ReactNode {
 }
 
 function createDocsTabsValueId(value: string): string {
-  return value.trim().replace(/[^a-z\d_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'tab';
+  return (
+    value
+      .trim()
+      .replace(/[^a-z\d_-]+/gi, '-')
+      .replace(/^-+|-+$/g, '') || 'tab'
+  );
 }
 
 export function DocsSidebar(props: DocsSidebarProps): ReactNode {
@@ -2486,10 +2787,7 @@ export function DocsMobileTableOfContents(
         {
           as: 'span',
           'aria-hidden': 'true',
-          ...mergeSlotStyleProps(
-            styles.indicator,
-            props.indicatorSlotProps,
-          ),
+          ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
         },
         '⌄',
       ),
@@ -2916,10 +3214,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
         },
         createElement(
           Text,
-          mergeSlotStyleProps(
-            styles.triggerLabel,
-            props.triggerLabelSlotProps,
-          ),
+          mergeSlotStyleProps(styles.triggerLabel, props.triggerLabelSlotProps),
           labels.search,
         ),
         createElement(
@@ -3326,10 +3621,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
             props.title && props.language
               ? createElement(
                   Badge,
-                  mergeSlotStyleProps(
-                    styles.language,
-                    props.languageSlotProps,
-                  ),
+                  mergeSlotStyleProps(styles.language, props.languageSlotProps),
                   props.language,
                 )
               : null,
@@ -3378,9 +3670,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
 interface SearchResultProps {
   active: boolean;
   onSelect: (event: DocsAnchorClickEvent) => void;
-  recipe: (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>;
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
   record: DocsSearchResult;
   resultBadgeSlotProps?: Record<string, unknown>;
   resultContentSlotProps?: Record<string, unknown>;
@@ -3405,10 +3695,7 @@ function SearchResult(props: SearchResultProps): ReactNode {
       {
         href: props.record.route,
         onClick: props.onSelect,
-        ...mergeSlotStyleProps(
-          styles.resultLink,
-          props.resultLinkSlotProps,
-        ),
+        ...mergeSlotStyleProps(styles.resultLink, props.resultLinkSlotProps),
       },
       createElement(
         HStack,
@@ -3421,10 +3708,7 @@ function SearchResult(props: SearchResultProps): ReactNode {
           ),
           createElement(
             Text,
-            mergeSlotStyleProps(
-              styles.resultTitle,
-              props.resultTitleSlotProps,
-            ),
+            mergeSlotStyleProps(styles.resultTitle, props.resultTitleSlotProps),
             props.record.title,
           ),
           description
@@ -3510,16 +3794,12 @@ function renderMarkdownBlock(
   index: number,
   createNextHeadingId: (title: string) => string,
   scrollMarginTop: ChakraDocsStickyTop,
-  recipe: (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>,
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
   slotProps: MarkdownContentProps,
 ): ReactNode {
   const styles = recipe({
     headingLevel:
-      block.type === 'heading' && block.level === 2
-        ? 'section'
-        : 'subsection',
+      block.type === 'heading' && block.level === 2 ? 'section' : 'subsection',
   });
 
   if (block.type === 'heading') {
@@ -3541,8 +3821,7 @@ function renderMarkdownBlock(
         ? createElement(DocsHeadingPermalink, {
             headingId,
             href: slotProps.getHeadingHref?.(headingId),
-            indicatorSlotProps:
-              slotProps.headingPermalinkIndicatorSlotProps,
+            indicatorSlotProps: slotProps.headingPermalinkIndicatorSlotProps,
             slotProps: slotProps.headingPermalinkSlotProps,
             title: headingTitle,
             triggerSlotProps: slotProps.headingPermalinkTriggerSlotProps,
@@ -3556,10 +3835,7 @@ function renderMarkdownBlock(
       Text,
       {
         key: `${block.type}-${index}`,
-        ...mergeSlotStyleProps(
-          styles.paragraph,
-          slotProps.paragraphSlotProps,
-        ),
+        ...mergeSlotStyleProps(styles.paragraph, slotProps.paragraphSlotProps),
       },
       renderInlineMarkdown(block.text, recipe, slotProps),
     );
@@ -3595,10 +3871,7 @@ function renderMarkdownBlock(
       Callout,
       {
         key: `${block.type}-${index}`,
-        slotProps: mergeSlotStyleProps(
-          styles.quote,
-          slotProps.quoteSlotProps,
-        ),
+        slotProps: mergeSlotStyleProps(styles.quote, slotProps.quoteSlotProps),
         title: 'Note',
       },
       renderInlineMarkdown(block.text, recipe, slotProps),
@@ -3719,9 +3992,7 @@ function isParagraphLine(line: string): boolean {
 
 function renderInlineMarkdown(
   text: string,
-  recipe: (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>,
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
   slotProps: MarkdownContentProps,
 ): ReactNode[] {
   return text
@@ -3735,9 +4006,7 @@ function renderInlineMarkdown(
 function renderInlineMarkdownPart(
   part: string,
   index: number,
-  recipe: (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>,
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
   slotProps: MarkdownContentProps,
 ): ReactNode {
   const key = `${part}-${index}`;
@@ -3851,9 +4120,7 @@ function NavList(props: {
   linkSlotProps?: Record<string, unknown>;
   listSlotProps?: Record<string, unknown>;
   path?: readonly number[];
-  recipe: (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>;
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
   sectionTitleSlotProps?: Record<string, unknown>;
   toggleExpanded: (id: string) => void;
   triggerSlotProps?: Record<string, unknown>;
