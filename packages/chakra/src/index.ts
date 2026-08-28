@@ -270,8 +270,14 @@ export interface ChakraDocsCodeBlockAdapter {
   unloadContext?: (context: unknown) => void;
 }
 
+export type ChakraDocsCodeBlockSize = 'sm' | 'md' | 'lg';
+
 export interface ChakraDocsCodeBlockConfig {
   adapter?: ChakraDocsCodeBlockAdapter;
+  copy?: boolean;
+  lineNumbers?: boolean;
+  size?: ChakraDocsCodeBlockSize;
+  wrap?: boolean;
 }
 
 export interface ChakraDocsLayoutConfig {
@@ -3564,8 +3570,14 @@ export function Callout(props: CalloutProps): ReactNode {
 
 export interface CodeBlockProps extends DocsComponentProps {
   code?: string;
+  copy?: boolean;
+  highlightLines?: number[] | string;
   language?: string;
+  lineNumbers?: boolean;
+  maxHeight?: number | string;
+  size?: ChakraDocsCodeBlockSize;
   title?: string;
+  wrap?: boolean;
   codeSlotProps?: Record<string, unknown>;
   codeTextSlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
@@ -3580,9 +3592,14 @@ export interface CodeBlockProps extends DocsComponentProps {
 export function CodeBlock(props: CodeBlockProps): ReactNode {
   const config = useDocsConfig();
   const code = props.code ?? getCodeText(props.children);
+  const codeBlockConfig = config.codeBlock ?? {};
+  const copy = props.copy ?? codeBlockConfig.copy ?? true;
+  const lineNumbers = props.lineNumbers ?? codeBlockConfig.lineNumbers ?? false;
+  const size = props.size ?? codeBlockConfig.size;
+  const wrap = props.wrap ?? codeBlockConfig.wrap ?? false;
   const copyLabel = config.labels?.copyCode ?? defaultLabels.copyCode;
   const copiedLabel = config.labels?.copiedCode ?? defaultLabels.copiedCode;
-  const hasHeader = Boolean(props.title || props.language || code);
+  const hasHeader = Boolean(props.title || props.language || (code && copy));
   const recipe = useChakraDocsSlotRecipe(
     chakraDocsRecipeKeys.codeBlock,
     chakraDocsCodeBlockSlotRecipe,
@@ -3594,14 +3611,21 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
     {
       code,
       language: props.language,
-      onCopy: code
-        ? () =>
-            config.analytics?.onCodeCopy?.({
-              code,
-              language: props.language,
-              title: props.title,
-            })
-        : undefined,
+      meta: {
+        highlightLines: parseHighlightedLines(props.highlightLines),
+        showLineNumbers: lineNumbers,
+        wordWrap: wrap,
+      },
+      size,
+      onCopy:
+        code && copy
+          ? () =>
+              config.analytics?.onCodeCopy?.({
+                code,
+                language: props.language,
+                title: props.title,
+              })
+          : undefined,
       ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     hasHeader
@@ -3625,7 +3649,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
                   props.language,
                 )
               : null,
-            code
+            code && copy
               ? createElement(
                   ChakraCodeBlock.CopyTrigger,
                   {
@@ -3654,7 +3678,15 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
       : null,
     createElement(
       ChakraCodeBlock.Content,
-      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      mergeSlotStyleProps(
+        [
+          styles.content,
+          props.maxHeight === undefined
+            ? undefined
+            : { maxHeight: props.maxHeight },
+        ],
+        props.contentSlotProps,
+      ),
       createElement(
         ChakraCodeBlock.Code,
         mergeSlotStyleProps(styles.code, props.codeSlotProps),
@@ -4063,6 +4095,34 @@ function normalizeCodeLanguage(
   if (language === 'txt') return 'text';
   if (language === 'sh') return 'bash';
   return language;
+}
+
+function parseHighlightedLines(value: number[] | string | undefined): number[] {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(value.filter((line) => Number.isInteger(line) && line > 0)),
+    ];
+  }
+
+  const lines = new Set<number>();
+
+  for (const part of value?.split(',') ?? []) {
+    const [startValue, endValue] = part.trim().split('-');
+    const start = Number(startValue);
+    const end = Number(endValue ?? startValue);
+
+    if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
+
+    for (
+      let line = Math.max(1, start);
+      line <= Math.min(end, start + 500);
+      line += 1
+    ) {
+      lines.add(line);
+    }
+  }
+
+  return [...lines];
 }
 
 function getCodeText(children: ReactNode): string {

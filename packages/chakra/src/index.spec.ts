@@ -11,6 +11,7 @@ import type {
 import type { DocsSearchProvider } from '@chakra-docs/search';
 import {
   Callout,
+  CodeBlock,
   DocsApiTable,
   DocsArticle,
   DocsBadge,
@@ -34,7 +35,7 @@ import {
   filterSearchRecordsByCollections,
   useDocsConfig,
 } from './index.js';
-import type { DocsLinkProps } from './index.js';
+import type { ChakraDocsCodeBlockAdapter, DocsLinkProps } from './index.js';
 import {
   getActiveHeadingId,
   getHeadingScrollOffset,
@@ -887,6 +888,91 @@ describe('Callout', () => {
 
     expect(markup).toContain('Only body');
     expect(markup).not.toContain('<p');
+  });
+});
+
+describe('CodeBlock', () => {
+  it('uses neutral display defaults', () => {
+    const markup = render(
+      createElement(CodeBlock, { code: 'npm install', language: 'bash' }),
+    );
+
+    expect(markup).toContain('aria-label="Copy code"');
+    expect(markup).not.toContain('data-has-line-numbers');
+    expect(markup).not.toContain('data-word-wrap');
+  });
+
+  it('supports line numbers, wrapping, and highlighted line ranges', () => {
+    const adapter: ChakraDocsCodeBlockAdapter = {
+      loadContextSync: () => ({}),
+      getHighlighter:
+        () =>
+        ({ code, meta }) => ({
+          highlighted: true,
+          code: code
+            .split('\n')
+            .map(
+              (line, index) =>
+                `<span data-line="${index + 1}"${
+                  meta?.highlightLines?.includes(index + 1)
+                    ? ' data-highlight=""'
+                    : ''
+                }>${line}</span>`,
+            )
+            .join('\n'),
+        }),
+    };
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { codeBlock: { adapter } } },
+        createElement(CodeBlock, {
+          code: 'first\nsecond\nthird',
+          highlightLines: '2-3',
+          lineNumbers: true,
+          wrap: true,
+        }),
+      ),
+    );
+
+    expect(markup).toContain('data-has-line-numbers=""');
+    expect(markup).toContain('data-word-wrap=""');
+    expect(markup.match(/data-highlight=""/g)).toHaveLength(2);
+  });
+
+  it('inherits provider defaults and lets direct props override them', () => {
+    const configured = render(
+      createElement(
+        DocsProvider,
+        { config: { codeBlock: { lineNumbers: true, wrap: true } } },
+        createElement(CodeBlock, { code: 'configured' }),
+      ),
+    );
+    const overridden = render(
+      createElement(
+        DocsProvider,
+        { config: { codeBlock: { lineNumbers: true, wrap: true } } },
+        createElement(CodeBlock, {
+          code: 'overridden',
+          lineNumbers: false,
+          wrap: false,
+        }),
+      ),
+    );
+
+    expect(configured).toContain('data-has-line-numbers=""');
+    expect(configured).toContain('data-word-wrap=""');
+    expect(overridden).not.toContain('data-has-line-numbers');
+    expect(overridden).not.toContain('data-word-wrap');
+  });
+
+  it('can omit the copy action and otherwise-empty header', () => {
+    const markup = render(
+      createElement(CodeBlock, { code: 'const value = true;', copy: false }),
+    );
+
+    expect(markup).not.toContain('<button');
+    expect(markup).not.toContain('code-block__header');
   });
 });
 
