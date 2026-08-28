@@ -1,9 +1,4 @@
 import * as ChakraStyledSystemRuntime from '@chakra-ui/react/styled-system';
-import type { SystemConfig } from '@chakra-ui/react/styled-system';
-
-type ChakraSlotRecipeConfig = NonNullable<
-  NonNullable<SystemConfig['theme']>['slotRecipes']
->[string];
 
 const { defineConfig, defineSlotRecipe } =
   ChakraStyledSystemRuntime as unknown as {
@@ -37,6 +32,37 @@ export const chakraDocsRecipeKeys = {
 
 export type ChakraDocsRecipeKey =
   (typeof chakraDocsRecipeKeys)[keyof typeof chakraDocsRecipeKeys];
+
+/** A deliberately shallow style object that avoids recursive Chakra types. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ChakraDocsThemeStyleObject = Readonly<Record<string, any>>;
+
+/** The portable public shape shared by every Chakra Docs slot recipe. */
+export interface ChakraDocsSlotRecipeConfig {
+  readonly className?: string;
+  readonly slots: readonly string[];
+  readonly base: Readonly<Record<string, ChakraDocsThemeStyleObject>>;
+  readonly variants?: Readonly<
+    Record<
+      string,
+      Readonly<
+        Record<string, Readonly<Record<string, ChakraDocsThemeStyleObject>>>
+      >
+    >
+  >;
+  readonly defaultVariants?: Readonly<
+    Record<string, string | number | boolean>
+  >;
+}
+
+/** A lightweight public config that remains consumable by Chakra createSystem. */
+export interface ChakraDocsThemeConfig {
+  readonly theme: {
+    readonly slotRecipes: Readonly<
+      Record<ChakraDocsRecipeKey, ChakraDocsSlotRecipeConfig>
+    >;
+  };
+}
 
 export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-cards',
@@ -1184,7 +1210,7 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsSlotRecipes: Record<
   ChakraDocsRecipeKey,
-  ChakraSlotRecipeConfig
+  ChakraDocsSlotRecipeConfig
 > = {
   [chakraDocsRecipeKeys.apiTable]: chakraDocsApiTableSlotRecipe,
   [chakraDocsRecipeKeys.article]: chakraDocsArticleSlotRecipe,
@@ -1210,6 +1236,6 @@ export const chakraDocsSlotRecipes: Record<
   [chakraDocsRecipeKeys.versionSelect]: chakraDocsVersionSelectSlotRecipe,
 };
 
-export const chakraDocsThemeConfig: SystemConfig = defineConfig({
+export const chakraDocsThemeConfig: ChakraDocsThemeConfig = defineConfig({
   theme: { slotRecipes: chakraDocsSlotRecipes },
 });

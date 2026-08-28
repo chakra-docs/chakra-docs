@@ -195,7 +195,7 @@ import {
 import {
   chakraDocsRecipeKeys,
   chakraDocsThemeConfig,
-} from '@chakra-docs/chakra';
+} from '@chakra-docs/chakra/theme';
 
 const appTheme = defineConfig({
   theme: {

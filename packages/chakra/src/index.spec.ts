@@ -1534,10 +1534,10 @@ describe('Chakra Docs slot recipes', () => {
 
   it('uses portable semantic colors without requiring a color palette', () => {
     expect(
-      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants.active.true,
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants?.active.true,
     ).toMatchObject({ link: { color: 'fg' } });
     expect(
-      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants.expanded
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar].variants?.expanded
         .true,
     ).toMatchObject({
       content: { display: 'block' },
@@ -1545,18 +1545,18 @@ describe('Chakra Docs slot recipes', () => {
     });
     expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.tableOfContents].variants
-        .active.true,
+        ?.active.true,
     ).toMatchObject({
       activeIndicator: { bg: 'currentColor' },
       link: { color: 'fg', _hover: { color: 'fg' } },
     });
     expect(
-      chakraDocsSlotRecipes[chakraDocsRecipeKeys.search].variants.active.true,
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.search].variants?.active.true,
     ).toMatchObject({
       result: { bg: 'bg.subtle', borderColor: 'border.emphasized' },
     });
     expect(
-      chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions].variants.variant
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions].variants?.variant
         .split,
     ).toMatchObject({
       root: { gap: 0 },

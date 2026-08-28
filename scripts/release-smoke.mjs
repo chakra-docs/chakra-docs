@@ -448,6 +448,7 @@ async function smokePackedConsumer() {
 
     const publicEntryPoints = [
       ...publicPackages,
+      '@chakra-docs/chakra/theme',
       '@chakra-docs/search/client',
       '@chakra-docs/search/http',
       '@chakra-docs/next/app',
@@ -466,6 +467,10 @@ const { createElement } = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { ChakraProvider, defaultSystem } = await import('@chakra-ui/react');
 const { Callout, CodeBlock, DocsProvider } = await import('@chakra-docs/chakra');
+const { chakraDocsThemeConfig } = await import('@chakra-docs/chakra/theme');
+if (!chakraDocsThemeConfig?.theme?.slotRecipes?.chakraDocsLayout) {
+  throw new Error('Packed Chakra theme entry point is incomplete.');
+}
 const markup = renderToStaticMarkup(
   createElement(
     ChakraProvider,
@@ -521,6 +526,10 @@ if (
     await writeFile(
       path.join(consumerDir, 'types.tsx'),
       `import { DocsProvider, DocsSearch } from '@chakra-docs/chakra';
+import {
+  chakraDocsThemeConfig,
+  type ChakraDocsThemeConfig,
+} from '@chakra-docs/chakra/theme';
 import type { DocsManifest } from '@chakra-docs/core';
 import { createFeedArtifacts } from '@chakra-docs/feed';
 import { createGenerateStaticParams } from '@chakra-docs/next/app';
@@ -535,6 +544,9 @@ import { createFetchSearchHandler } from '@chakra-docs/search/http';
 import { createAppRouterSearchHandler } from '@chakra-docs/next/search';
 
 declare const manifest: DocsManifest;
+
+const themeConfig: ChakraDocsThemeConfig = chakraDocsThemeConfig;
+void themeConfig;
 
 createGenerateStaticParams({ manifest })();
 createGetStaticPaths({ manifest })();
