@@ -680,6 +680,7 @@ export interface MarkdownContentProps {
   headingPermalinks?: boolean;
   source: string;
   slotProps?: Record<string, unknown>;
+  codeBlockProps?: Omit<CodeBlockProps, 'children' | 'code' | 'language'>;
   codeBlockSlotProps?: Record<string, unknown>;
   headingSlotProps?: Record<string, unknown>;
   inlineCodeSlotProps?: Record<string, unknown>;
@@ -3911,11 +3912,13 @@ function renderMarkdownBlock(
   }
 
   return createElement(CodeBlock, {
+    ...slotProps.codeBlockProps,
     code: block.code,
     key: `${block.type}-${index}`,
     language: normalizeCodeLanguage(block.language),
-    slotProps: mergeSlotStyleProps(
+    slotProps: mergeComponentSlotProps(
       styles.codeBlock,
+      slotProps.codeBlockProps?.slotProps,
       slotProps.codeBlockSlotProps,
     ),
   });
@@ -4345,6 +4348,23 @@ function mergeSidebarSlotProps(
     ...legacyProps,
     ...props,
   };
+}
+
+function mergeComponentSlotProps(
+  styles: unknown,
+  ...slotProps: (Record<string, unknown> | undefined)[]
+): Record<string, unknown> {
+  const mergedProps: Record<string, unknown> = {};
+  const css: unknown[] = [styles];
+
+  for (const current of slotProps) {
+    const { css: currentCss, ...currentProps } = current ?? {};
+
+    css.push(currentCss);
+    Object.assign(mergedProps, currentProps);
+  }
+
+  return { css, ...mergedProps };
 }
 
 function flattenNav(items: DocsNavItem[]): DocsNavItem[] {

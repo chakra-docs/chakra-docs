@@ -189,6 +189,23 @@ describe('MarkdownContent', () => {
     expect(markup).toContain('npm install');
   });
 
+  it('forwards renderer-scoped code block behavior', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        codeBlockProps: {
+          copy: false,
+          lineNumbers: true,
+          wrap: true,
+        },
+        source: '```sh\nnpm install\n```',
+      }),
+    );
+
+    expect(markup).toContain('data-has-line-numbers=""');
+    expect(markup).toContain('data-word-wrap=""');
+    expect(markup).not.toContain('aria-label="Copy code"');
+  });
+
   it('renders unordered lists with one item per bullet', () => {
     const markup = render(
       createElement(MarkdownContent, {
