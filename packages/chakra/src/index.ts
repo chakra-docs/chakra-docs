@@ -101,6 +101,7 @@ import {
 export type { ChakraDocsStickyTop } from './heading-scroll.js';
 export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 export type { DocsBreadcrumbItem } from './breadcrumbs.js';
+export type { ChakraDocsRecipeKey } from './theme/recipes.js';
 export { createDocsBreadcrumbItems } from './breadcrumbs.js';
 export {
   chakraDocsApiTableSlotRecipe,

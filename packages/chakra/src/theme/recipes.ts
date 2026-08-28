@@ -1,4 +1,9 @@
 import * as ChakraStyledSystemRuntime from '@chakra-ui/react/styled-system';
+import type { SystemConfig } from '@chakra-ui/react/styled-system';
+
+type ChakraSlotRecipeConfig = NonNullable<
+  NonNullable<SystemConfig['theme']>['slotRecipes']
+>[string];
 
 const { defineConfig, defineSlotRecipe } =
   ChakraStyledSystemRuntime as unknown as {
@@ -29,6 +34,9 @@ export const chakraDocsRecipeKeys = {
   tableOfContents: 'chakraDocsTableOfContents',
   versionSelect: 'chakraDocsVersionSelect',
 } as const;
+
+export type ChakraDocsRecipeKey =
+  (typeof chakraDocsRecipeKeys)[keyof typeof chakraDocsRecipeKeys];
 
 export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-cards',
@@ -1174,7 +1182,10 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
   defaultVariants: { variant: 'outline' },
 });
 
-export const chakraDocsSlotRecipes = {
+export const chakraDocsSlotRecipes: Record<
+  ChakraDocsRecipeKey,
+  ChakraSlotRecipeConfig
+> = {
   [chakraDocsRecipeKeys.apiTable]: chakraDocsApiTableSlotRecipe,
   [chakraDocsRecipeKeys.article]: chakraDocsArticleSlotRecipe,
   [chakraDocsRecipeKeys.badge]: chakraDocsBadgeSlotRecipe,
@@ -1199,6 +1210,6 @@ export const chakraDocsSlotRecipes = {
   [chakraDocsRecipeKeys.versionSelect]: chakraDocsVersionSelectSlotRecipe,
 };
 
-export const chakraDocsThemeConfig = defineConfig({
+export const chakraDocsThemeConfig: SystemConfig = defineConfig({
   theme: { slotRecipes: chakraDocsSlotRecipes },
 });
