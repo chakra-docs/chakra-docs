@@ -982,6 +982,91 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
     'code',
     'codeText',
   ],
+  base: {
+    root: {
+      '--code-block-highlight-bg': 'colors.bg.emphasized',
+      '--code-block-highlight-border': 'colors.border.emphasized',
+      '--code-block-highlight-added-bg': 'colors.bg.success',
+      '--code-block-highlight-added-border': 'colors.border.success',
+      '--code-block-highlight-removed-bg': 'colors.bg.error',
+      '--code-block-highlight-removed-border': 'colors.border.error',
+      bg: 'bg',
+      borderColor: 'border',
+      color: 'fg',
+      overflow: 'hidden',
+    },
+    header: {
+      alignItems: 'center',
+      borderBottomColor: 'border',
+      borderBottomWidth: '1px',
+      display: 'flex',
+      gap: 2,
+      justifyContent: 'space-between',
+      mb: 0,
+    },
+    title: {
+      color: 'fg.muted',
+      flex: 1,
+      fontFamily: 'mono',
+      minW: 0,
+    },
+    control: {
+      alignItems: 'center',
+      display: 'inline-flex',
+      flexShrink: 0,
+      gap: 2,
+    },
+    language: {
+      color: 'fg.muted',
+      fontFamily: 'mono',
+      fontSize: 'xs',
+    },
+    copyTrigger: {
+      alignItems: 'center',
+      appearance: 'none',
+      bg: 'transparent',
+      borderRadius: 'sm',
+      color: 'fg.muted',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      fontSize: 'sm',
+      minH: 7,
+      px: 2,
+      _hover: { bg: 'bg.subtle', color: 'fg' },
+      _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
+    },
+    copyIndicator: {
+      alignItems: 'center',
+      display: 'inline-flex',
+    },
+    content: { maxW: 'full', overflow: 'hidden' },
+    code: {
+      fontFamily: 'mono',
+      maxW: 'full',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      whiteSpace: 'pre',
+    },
+    codeText: { display: 'block', minW: 0 },
+  },
+  variants: {
+    variant: {
+      outline: {
+        root: { borderColor: 'border', borderWidth: '1px' },
+      },
+      subtle: {
+        root: {
+          bg: 'bg.subtle',
+          borderColor: 'transparent',
+          borderWidth: '1px',
+        },
+      },
+      plain: {
+        root: { borderRadius: 0, borderWidth: 0 },
+      },
+    },
+  },
+  defaultVariants: { variant: 'outline' },
 });
 
 export const chakraDocsSlotRecipes = {

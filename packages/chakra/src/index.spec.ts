@@ -29,6 +29,7 @@ import {
   DocsTabs,
   DocsTableOfContents,
   MarkdownContent,
+  chakraDocsCodeBlockSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSlotRecipes,
   chakraDocsThemeConfig,
@@ -1458,8 +1459,33 @@ describe('Chakra Docs slot recipes', () => {
     expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base.link,
     ).toMatchObject({ color: 'fg' });
+    expect(chakraDocsSlotRecipes[chakraDocsRecipeKeys.codeBlock]).toMatchObject(
+      {
+        base: {
+          root: {
+            '--code-block-highlight-bg': 'colors.bg.emphasized',
+            '--code-block-highlight-border': 'colors.border.emphasized',
+            bg: 'bg',
+            borderColor: 'border',
+            color: 'fg',
+          },
+          language: { color: 'fg.muted' },
+        },
+        defaultVariants: { variant: 'outline' },
+        variants: {
+          variant: {
+            outline: { root: { borderColor: 'border', borderWidth: '1px' } },
+            plain: { root: { borderRadius: 0, borderWidth: 0 } },
+            subtle: { root: { bg: 'bg.subtle' } },
+          },
+        },
+      },
+    );
     expect(JSON.stringify(chakraDocsSlotRecipes)).not.toContain(
       'colorPalette.',
+    );
+    expect(JSON.stringify(chakraDocsCodeBlockSlotRecipe)).not.toMatch(
+      /(?:gray|teal)\./,
     );
   });
 

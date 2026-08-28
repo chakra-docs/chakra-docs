@@ -271,12 +271,14 @@ export interface ChakraDocsCodeBlockAdapter {
 }
 
 export type ChakraDocsCodeBlockSize = 'sm' | 'md' | 'lg';
+export type ChakraDocsCodeBlockVariant = 'outline' | 'subtle' | 'plain';
 
 export interface ChakraDocsCodeBlockConfig {
   adapter?: ChakraDocsCodeBlockAdapter;
   copy?: boolean;
   lineNumbers?: boolean;
   size?: ChakraDocsCodeBlockSize;
+  variant?: ChakraDocsCodeBlockVariant;
   wrap?: boolean;
 }
 
@@ -3578,6 +3580,7 @@ export interface CodeBlockProps extends DocsComponentProps {
   maxHeight?: number | string;
   size?: ChakraDocsCodeBlockSize;
   title?: string;
+  variant?: ChakraDocsCodeBlockVariant;
   wrap?: boolean;
   codeSlotProps?: Record<string, unknown>;
   codeTextSlotProps?: Record<string, unknown>;
@@ -3597,6 +3600,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
   const copy = props.copy ?? codeBlockConfig.copy ?? true;
   const lineNumbers = props.lineNumbers ?? codeBlockConfig.lineNumbers ?? false;
   const size = props.size ?? codeBlockConfig.size;
+  const variant = props.variant ?? codeBlockConfig.variant;
   const wrap = props.wrap ?? codeBlockConfig.wrap ?? false;
   const copyLabel = config.labels?.copyCode ?? defaultLabels.copyCode;
   const copiedLabel = config.labels?.copiedCode ?? defaultLabels.copiedCode;
@@ -3605,7 +3609,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
     chakraDocsRecipeKeys.codeBlock,
     chakraDocsCodeBlockSlotRecipe,
   );
-  const styles = recipe();
+  const styles = recipe({ variant });
 
   return createElement(
     ChakraCodeBlock.Root,
@@ -3684,7 +3688,7 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
           styles.content,
           props.maxHeight === undefined
             ? undefined
-            : { maxHeight: props.maxHeight },
+            : { maxHeight: props.maxHeight, overflowY: 'auto' },
         ],
         props.contentSlotProps,
       ),
