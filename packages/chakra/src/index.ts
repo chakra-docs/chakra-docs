@@ -81,6 +81,7 @@ import {
   chakraDocsLayoutSlotRecipe,
   chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileNavigationSlotRecipe,
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
@@ -113,6 +114,7 @@ export {
   chakraDocsLayoutSlotRecipe,
   chakraDocsHeadingPermalinkSlotRecipe,
   chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileNavigationSlotRecipe,
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
@@ -178,6 +180,8 @@ export interface DocsLabels {
   nextPage: string;
   editPage: string;
   onThisPage: string;
+  navigationTitle: string;
+  navigationMenu: string;
   openNavigation: string;
   closeNavigation: string;
   copyCode: string;
@@ -440,6 +444,52 @@ export interface DocsSidebarProps extends DocsStickyComponentProps {
   listSlotProps?: Record<string, unknown>;
   sectionTitleSlotProps?: Record<string, unknown>;
 }
+
+export interface DocsMobileNavigationOpenChangeDetails {
+  open: boolean;
+}
+
+export interface DocsMobileNavigationRootProps extends DocsComponentProps {
+  closeOnNavigate?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (details: DocsMobileNavigationOpenChangeDetails) => void;
+  open?: boolean;
+  search?: ReactNode;
+  sidebarContent?: ReactNode;
+  sidebarProps?: Omit<DocsSidebarProps, 'nav' | 'page'>;
+  title?: ReactNode;
+}
+
+export interface DocsMobileNavigationTriggerProps {
+  ariaLabel?: string;
+  children?: ReactNode;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationContentProps {
+  backdropSlotProps?: Record<string, unknown>;
+  children?: ReactNode;
+  positionerSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationCloseTriggerProps extends DocsMobileNavigationPartProps {
+  ariaLabel?: string;
+}
+
+export type DocsMobileNavigationSidebarProps = Omit<
+  DocsSidebarProps,
+  'nav' | 'page'
+>;
 
 export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
@@ -722,6 +772,8 @@ const defaultLabels: DocsLabels = {
   nextPage: 'Next',
   editPage: 'Edit this page',
   onThisPage: 'On this page',
+  navigationTitle: 'Browse',
+  navigationMenu: 'Menu',
   openNavigation: 'Open navigation',
   closeNavigation: 'Close navigation',
   copyCode: 'Copy code',
@@ -2635,6 +2687,356 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
     }),
   );
 }
+
+interface DocsMobileNavigationContextValue {
+  closeOnNavigate: boolean;
+  config: ChakraDocsConfig;
+  nav: DocsNavItem[];
+  page?: DocsPage;
+  search?: ReactNode;
+  sidebarContent?: ReactNode;
+  sidebarProps?: Omit<DocsSidebarProps, 'nav' | 'page'>;
+  styles: Record<string, unknown>;
+  title?: ReactNode;
+}
+
+const DocsMobileNavigationContext = createContext<
+  DocsMobileNavigationContextValue | undefined
+>(undefined);
+
+function useDocsMobileNavigationContext(): DocsMobileNavigationContextValue {
+  const context = useContext(DocsMobileNavigationContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsMobileNavigation components must be rendered inside DocsMobileNavigation.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsMobileNavigationRoot(
+  props: DocsMobileNavigationRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.mobileNavigation,
+    chakraDocsMobileNavigationSlotRecipe,
+  );
+  const styles = recipe();
+  const context: DocsMobileNavigationContextValue = {
+    closeOnNavigate: props.closeOnNavigate ?? true,
+    config,
+    nav: props.nav ?? [],
+    page: props.page,
+    search: props.search,
+    sidebarContent: props.sidebarContent,
+    sidebarProps: props.sidebarProps,
+    styles,
+    title: props.title,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsMobileNavigationTrigger),
+      createElement(DocsMobileNavigationContent),
+    );
+
+  return createElement(
+    Dialog.Root,
+    {
+      defaultOpen: props.defaultOpen,
+      lazyMount: true,
+      motionPreset: 'slide-in-left',
+      onOpenChange: props.onOpenChange,
+      open: props.open,
+      unmountOnExit: true,
+    },
+    createElement(
+      DocsMobileNavigationContext.Provider,
+      { value: context },
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.root, props.slotProps),
+        children,
+      ),
+    ),
+  );
+}
+
+export function DocsMobileNavigationTrigger(
+  props: DocsMobileNavigationTriggerProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const content =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(
+        Box,
+        {
+          as: 'span',
+          'aria-hidden': 'true',
+          ...mergeSlotStyleProps(
+            context.styles.triggerIcon,
+            props.iconSlotProps,
+          ),
+        },
+        props.icon ?? '☰',
+      ),
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(
+            context.styles.triggerLabel,
+            props.labelSlotProps,
+          ),
+        },
+        props.label ?? labels.navigationMenu ?? defaultLabels.navigationMenu,
+      ),
+    );
+
+  return createElement(
+    Dialog.Trigger,
+    { asChild: true },
+    createElement(
+      Button,
+      {
+        type: 'button',
+        'aria-label':
+          props.ariaLabel ??
+          labels.openNavigation ??
+          defaultLabels.openNavigation,
+        ...mergeSlotStyleProps(context.styles.trigger, props.slotProps),
+      },
+      content,
+    ),
+  );
+}
+
+export function DocsMobileNavigationContent(
+  props: DocsMobileNavigationContentProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsMobileNavigationHeader),
+      context.search ? createElement(DocsMobileNavigationSearch) : null,
+      createElement(DocsMobileNavigationBody),
+    );
+
+  return createElement(
+    Portal,
+    null,
+    createElement(
+      Dialog.Backdrop,
+      mergeSlotStyleProps(context.styles.backdrop, props.backdropSlotProps),
+    ),
+    createElement(
+      Dialog.Positioner,
+      mergeSlotStyleProps(context.styles.positioner, props.positionerSlotProps),
+      createElement(
+        Dialog.Content,
+        mergeSlotStyleProps(context.styles.content, props.slotProps),
+        children,
+      ),
+    ),
+  );
+}
+
+export function DocsMobileNavigationHeader(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+
+  return createElement(
+    Dialog.Header,
+    mergeSlotStyleProps(context.styles.header, props.slotProps),
+    props.children ??
+      createElement(
+        Fragment,
+        null,
+        createElement(DocsMobileNavigationTitle),
+        createElement(DocsMobileNavigationCloseTrigger),
+      ),
+  );
+}
+
+export function DocsMobileNavigationTitle(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Dialog.Title,
+    mergeSlotStyleProps(context.styles.title, props.slotProps),
+    props.children ??
+      context.title ??
+      labels.navigationTitle ??
+      defaultLabels.navigationTitle,
+  );
+}
+
+export function DocsMobileNavigationCloseTrigger(
+  props: DocsMobileNavigationCloseTriggerProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Dialog.CloseTrigger,
+    { asChild: true },
+    createElement(
+      Button,
+      {
+        type: 'button',
+        'aria-label':
+          props.ariaLabel ??
+          labels.closeNavigation ??
+          defaultLabels.closeNavigation,
+        ...mergeSlotStyleProps(context.styles.closeTrigger, props.slotProps),
+      },
+      props.children ?? '×',
+    ),
+  );
+}
+
+export function DocsMobileNavigationSearch(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const children = props.children ?? context.search;
+
+  if (!children) {
+    return null;
+  }
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.search, props.slotProps),
+    children,
+  );
+}
+
+export function DocsMobileNavigationBody(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+
+  return createElement(
+    Dialog.Body,
+    mergeSlotStyleProps(context.styles.body, props.slotProps),
+    props.children ?? createElement(DocsMobileNavigationSidebar),
+  );
+}
+
+interface DocsMobileNavigationClickEvent {
+  defaultPrevented?: boolean;
+}
+
+function DocsMobileNavigationRouteEffect(props: {
+  route?: string;
+  setOpen: (open: boolean) => void;
+}): null {
+  const previousRouteRef = useRef(props.route);
+
+  useEffect(() => {
+    if (
+      previousRouteRef.current !== undefined &&
+      previousRouteRef.current !== props.route
+    ) {
+      props.setOpen(false);
+    }
+
+    previousRouteRef.current = props.route;
+  }, [props.route, props.setOpen]);
+
+  return null;
+}
+
+export function DocsMobileNavigationSidebar(
+  props: DocsMobileNavigationSidebarProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const configuredProps = context.sidebarProps ?? {};
+
+  return createElement(Dialog.Context, {
+    children: ({ setOpen }: { setOpen: (open: boolean) => void }) => {
+      const linkSlotProps = mergeComponentSlotProps(
+        undefined,
+        configuredProps.linkSlotProps,
+        props.linkSlotProps,
+      );
+      const onClick = linkSlotProps.onClick;
+
+      return createElement(
+        Fragment,
+        null,
+        createElement(DocsMobileNavigationRouteEffect, {
+          route: context.page?.route,
+          setOpen,
+        }),
+        createElement(
+          DocsSidebar,
+          {
+            ...configuredProps,
+            ...props,
+            collapsible:
+              props.collapsible ?? configuredProps.collapsible ?? true,
+            defaultExpanded:
+              props.defaultExpanded ??
+              configuredProps.defaultExpanded ??
+              'active',
+            nav: context.nav,
+            page: context.page,
+            linkSlotProps: {
+              ...linkSlotProps,
+              onClick: (event: DocsMobileNavigationClickEvent) => {
+                if (typeof onClick === 'function') {
+                  (onClick as (event: DocsMobileNavigationClickEvent) => void)(
+                    event,
+                  );
+                }
+
+                if (!event.defaultPrevented && context.closeOnNavigate) {
+                  setOpen(false);
+                }
+              },
+            },
+            slotProps: mergeComponentSlotProps(
+              context.styles.sidebar,
+              configuredProps.slotProps,
+              props.slotProps,
+            ),
+          },
+          props.children ?? configuredProps.children ?? context.sidebarContent,
+        ),
+      );
+    },
+  });
+}
+
+export const DocsMobileNavigation = {
+  Root: DocsMobileNavigationRoot,
+  Trigger: DocsMobileNavigationTrigger,
+  Content: DocsMobileNavigationContent,
+  Header: DocsMobileNavigationHeader,
+  Title: DocsMobileNavigationTitle,
+  CloseTrigger: DocsMobileNavigationCloseTrigger,
+  Search: DocsMobileNavigationSearch,
+  Body: DocsMobileNavigationBody,
+  Sidebar: DocsMobileNavigationSidebar,
+} as const;
 
 export function DocsTableOfContents(
   props: DocsTableOfContentsProps,

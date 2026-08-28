@@ -19,6 +19,7 @@ import {
   DocsCards,
   DocsHeadingPermalink,
   DocsLayout,
+  DocsMobileNavigation,
   DocsMobileTableOfContents,
   DocsPageActions,
   DocsPageFeedback,
@@ -872,6 +873,69 @@ describe('DocsMobileTableOfContents', () => {
   });
 });
 
+describe('DocsMobileNavigation', () => {
+  const nav: DocsNavItem[] = [
+    {
+      id: 'guides',
+      title: 'Guides',
+      children: [{ id: 'install', title: 'Install', href: '/docs/install' }],
+    },
+  ];
+
+  it('renders an accessible trigger and modal navigation drawer', () => {
+    const markup = render(
+      createElement(DocsMobileNavigation.Root, {
+        nav,
+        open: true,
+        page: createPage('/docs/install', 'Install'),
+      }),
+    );
+
+    expect(markup).toContain('aria-label="Open navigation"');
+    expect(markup).toContain('>Menu</span>');
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toContain('>Browse</h2>');
+    expect(markup).toContain('aria-label="Close navigation"');
+    expect(markup).toContain('href="/docs/install"');
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain('aria-expanded="true"');
+  });
+
+  it('supports composing custom trigger, header, and body content', () => {
+    const markup = render(
+      createElement(
+        DocsMobileNavigation.Root,
+        { nav, open: true },
+        createElement(DocsMobileNavigation.Trigger, {
+          icon: '≡',
+          label: 'Documentation',
+        }),
+        createElement(
+          DocsMobileNavigation.Content,
+          null,
+          createElement(
+            DocsMobileNavigation.Header,
+            null,
+            createElement(DocsMobileNavigation.Title, null, 'Explore'),
+            createElement(DocsMobileNavigation.CloseTrigger),
+          ),
+          createElement(
+            DocsMobileNavigation.Body,
+            null,
+            createElement('p', null, 'Custom navigation'),
+            createElement(DocsMobileNavigation.Sidebar),
+          ),
+        ),
+      ),
+    );
+
+    expect(markup).toContain('>Documentation</span>');
+    expect(markup).toContain('>Explore</h2>');
+    expect(markup).toContain('Custom navigation');
+    expect(markup).toContain('href="/docs/install"');
+  });
+});
+
 describe('Callout', () => {
   const types = ['info', 'warning', 'success', 'danger'] as const;
 
@@ -1513,6 +1577,24 @@ describe('Chakra Docs slot recipes', () => {
       ['root', 'card', 'icon', 'content', 'title', 'description', 'badge'],
     ],
     [chakraDocsRecipeKeys.layout, ['root', 'inner', 'content']],
+    [
+      chakraDocsRecipeKeys.mobileNavigation,
+      [
+        'root',
+        'trigger',
+        'triggerIcon',
+        'triggerLabel',
+        'backdrop',
+        'positioner',
+        'content',
+        'header',
+        'title',
+        'closeTrigger',
+        'search',
+        'body',
+        'sidebar',
+      ],
+    ],
     [
       chakraDocsRecipeKeys.breadcrumbs,
       ['root', 'list', 'item', 'link', 'current', 'separator'],
