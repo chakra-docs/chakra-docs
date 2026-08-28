@@ -103,10 +103,11 @@ export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
 export type { DocsBreadcrumbItem } from './breadcrumbs.js';
 export type {
   ChakraDocsRecipeKey,
+  ChakraDocsRecipeKeyMap,
   ChakraDocsSlotRecipeConfig,
   ChakraDocsThemeConfig,
   ChakraDocsThemeStyleObject,
-} from './theme/recipes.js';
+} from './theme/theme-contract.js';
 export { createDocsBreadcrumbItems } from './breadcrumbs.js';
 export {
   chakraDocsApiTableSlotRecipe,

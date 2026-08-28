@@ -1,4 +1,9 @@
 import * as ChakraStyledSystemRuntime from '@chakra-ui/react/styled-system';
+import type {
+  ChakraDocsRecipeKey,
+  ChakraDocsSlotRecipeConfig,
+  ChakraDocsThemeConfig,
+} from './theme-contract.js';
 
 const { defineConfig, defineSlotRecipe } =
   ChakraStyledSystemRuntime as unknown as {
@@ -29,40 +34,6 @@ export const chakraDocsRecipeKeys = {
   tableOfContents: 'chakraDocsTableOfContents',
   versionSelect: 'chakraDocsVersionSelect',
 } as const;
-
-export type ChakraDocsRecipeKey =
-  (typeof chakraDocsRecipeKeys)[keyof typeof chakraDocsRecipeKeys];
-
-/** A deliberately shallow style object that avoids recursive Chakra types. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ChakraDocsThemeStyleObject = Readonly<Record<string, any>>;
-
-/** The portable public shape shared by every Chakra Docs slot recipe. */
-export interface ChakraDocsSlotRecipeConfig {
-  readonly className?: string;
-  readonly slots: readonly string[];
-  readonly base: Readonly<Record<string, ChakraDocsThemeStyleObject>>;
-  readonly variants?: Readonly<
-    Record<
-      string,
-      Readonly<
-        Record<string, Readonly<Record<string, ChakraDocsThemeStyleObject>>>
-      >
-    >
-  >;
-  readonly defaultVariants?: Readonly<
-    Record<string, string | number | boolean>
-  >;
-}
-
-/** A lightweight public config that remains consumable by Chakra createSystem. */
-export interface ChakraDocsThemeConfig {
-  readonly theme: {
-    readonly slotRecipes: Readonly<
-      Record<ChakraDocsRecipeKey, ChakraDocsSlotRecipeConfig>
-    >;
-  };
-}
 
 export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-cards',

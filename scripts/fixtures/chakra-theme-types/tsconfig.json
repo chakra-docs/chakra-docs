@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "paths": {
+      "@chakra-docs/chakra/theme": ["../../../packages/chakra/dist/theme.d.ts"]
+    },
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": []
+  },
+  "include": ["consumer.ts"]
+}
