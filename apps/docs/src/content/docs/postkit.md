@@ -42,7 +42,12 @@ const codeBlockAdapter = createPostkitShikiAdapter();
 export function App({ children }: { children: React.ReactNode }) {
   return (
     <PostkitProvider system={system} codeBlockAdapter={codeBlockAdapter}>
-      <DocsProvider config={{ linkComponent: NextLink }}>
+      <DocsProvider
+        config={{
+          codeBlock: { adapter: codeBlockAdapter },
+          linkComponent: NextLink,
+        }}
+      >
         {children}
       </DocsProvider>
     </PostkitProvider>
@@ -51,6 +56,8 @@ export function App({ children }: { children: React.ReactNode }) {
 ```
 
 Pass `postkitDefaultTheme` as the provider's `preset` only when the host does not already supply the visual defaults you want.
+
+The adapter is supplied to both providers intentionally. Each library owns its own code-block component and behavior defaults, while the shared adapter keeps language support and highlighting themes consistent. Chakra Docs defaults line numbers and wrapping to off; applications can change those globally through `DocsProvider.config.codeBlock` or per built-in Markdown renderer through `MarkdownContent.codeBlockProps`.
 
 ## Render the article body
 

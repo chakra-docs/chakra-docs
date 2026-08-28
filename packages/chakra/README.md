@@ -152,7 +152,7 @@ search endpoint.
 - `linkComponent` — a `DocsLinkComponent` used for internal navigation, including Markdown, sidebar, pagination, and search-result links (for example `DocsLink` from `@chakra-docs/next/link`). External URLs continue to render as ordinary anchors.
 - `labels` — `Partial<DocsLabels>` overrides for UI copy (`search`, `searchPlaceholder`, `searchLoading`, `searchError`, `previousPage`, `nextPage`, `onThisPage`, `copyCode`, ...).
 - `analytics` — `DocsAnalyticsCallbacks` (`onSearchOpen`, `onSearch`, `onSearchResultSelect`, `onCodeCopy`, `onPackageCommandCopy`).
-- `codeBlock.adapter` — a `ChakraDocsCodeBlockAdapter` for syntax highlighting, passed to Chakra's `CodeBlock.AdapterProvider`.
+- `codeBlock` — shared `CodeBlock` defaults. `adapter` configures syntax highlighting; `copy`, `lineNumbers`, `size`, `variant`, and `wrap` configure every nested code block unless an instance overrides them.
 - `layout` — `ChakraDocsLayoutConfig` sticky offsets (`stickyTop`, `sidebarStickyTop`, `tocStickyTop`, `scrollMarginTop`), each accepting responsive Chakra values.
 
 ### Theming and recipes
@@ -267,9 +267,9 @@ const sidebarRecipe = {
 - `DocsSearch` — Cmd/Ctrl+K search dialog with keyboard navigation, popular/default results, and collection scoping. Pass `records` for synchronous local search or `searchProvider` for remote search; the provider takes precedence when both are present. Remote mode sends `collectionId`/`collectionIds`, `limit`, and `popularLimit` to the server, loads popular results on open, debounces typed queries (`debounceMs`, default 150 ms), and aborts superseded requests. `onNavigate` handles both unmodified pointer selection and Enter-key activation; modified clicks retain normal browser behavior. Props: `records`, `searchProvider`, `debounceMs`, `collectionId`, `collectionIds`, `limit`, `popularLimit`, `placeholder`, `onNavigate`, `onResultSelect`, plus `slotProps`/`triggerSlotProps`/`inputSlotProps`/`resultSlotProps`.
 - `DocsVersionSelect` — labeled native select for switching collections/versions. Props: `collections` or `options`, `value`/`defaultValue`, `onValueChange`, `includeAll`, `allValue`, `allLabel`, `label`, `labelHidden`, plus slot props.
 - `DocsPagination` — previous/next links derived from the flattened nav and the current `page.route`. Props: `nav`, `page`.
-- `MarkdownContent` — lightweight Markdown renderer (headings with manifest-consistent anchor ids, optional copyable permalinks, paragraphs, internal/external links, lists, quotes rendered as `Callout`, and backtick- or tilde-fenced code rendered as `CodeBlock`). Props include `source`, `headingPermalinks`, `getHeadingHref`, and slot props.
+- `MarkdownContent` — lightweight Markdown renderer (headings with manifest-consistent anchor ids, optional copyable permalinks, paragraphs, internal/external links, lists, quotes rendered as `Callout`, and backtick- or tilde-fenced code rendered as `CodeBlock`). Props include `source`, `headingPermalinks`, `getHeadingHref`, `codeBlockProps`, and slot props.
 - `Callout` — bordered note box. Props: `type` (`'info' | 'warning' | 'success' | 'danger'`, default `'info'`), `title`, `slotProps`, `children`.
-- `CodeBlock` — Chakra `CodeBlock`-based code shell with optional title/language header and copy button. Props: `code`, `language`, `title`, `slotProps`, `children`.
+- `CodeBlock` — Chakra `CodeBlock`-based code shell with an optional title/language header and configurable copy action, line numbers, wrapping, highlighted lines, size, maximum height, and `outline`, `subtle`, or `plain` recipe variant. Props include `code`, `language`, `title`, `copy`, `lineNumbers`, `wrap`, `highlightLines`, `size`, `variant`, `maxHeight`, `slotProps`, and `children`. Copying defaults on; line numbers and wrapping default off.
 
 ### Hooks and helpers
 

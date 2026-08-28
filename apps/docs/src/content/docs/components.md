@@ -297,15 +297,23 @@ Use `records={manifest.search}` instead for small, local-only sites. When a resu
 
 ## Callout and CodeBlock
 
-`Callout` and `CodeBlock` are small content primitives used by Markdown or MDX renderers.
+`Callout` and `CodeBlock` are small content primitives used by Markdown or MDX renderers. Code blocks copy their contents by default, while line numbers and wrapping remain opt-in.
 
 ```tsx
 <Callout type="info" title="Server-only">
   Build the filesystem manifest from getStaticProps or another server context.
 </Callout>
 
-<CodeBlock language="tsx" title="Docs route" code={source} />
+<CodeBlock
+  language="tsx"
+  title="Docs route"
+  code={source}
+  highlightLines="2,5-7"
+  lineNumbers
+/>
 ```
+
+Use `wrap` for commands or other content that should reflow instead of scrolling horizontally. Set `copy={false}` to omit the copy action, and use `maxHeight` to constrain a long example with vertical scrolling. The `outline`, `subtle`, and `plain` variants are controlled by the `chakraDocsCodeBlock` recipe.
 
 ## CodeBlock highlighting
 
@@ -330,12 +338,32 @@ const shikiAdapter = createShikiAdapter({
   },
 })
 
-<DocsProvider config={{ codeBlock: { adapter: shikiAdapter } }}>
+<DocsProvider
+  config={{
+    codeBlock: {
+      adapter: shikiAdapter,
+      copy: true,
+      lineNumbers: false,
+      size: 'md',
+      variant: 'outline',
+      wrap: false,
+    },
+  }}
+>
   <Component {...pageProps} />
 </DocsProvider>
 ```
 
-If no adapter is provided, Chakra UI's code block falls back to plain text rendering.
+Direct `CodeBlock` props override these provider defaults. The built-in `MarkdownContent` renderer also accepts `codeBlockProps` for defaults scoped to one rendered document:
+
+```tsx
+<MarkdownContent
+  source={page.body ?? ''}
+  codeBlockProps={{ lineNumbers: false, wrap: true }}
+/>
+```
+
+If no adapter is provided, Chakra UI's code block falls back to plain text rendering. The Chakra Docs recipe uses semantic background, foreground, border, success, and error tokens, so code shells adapt to the host system without requiring a brand palette.
 
 ## Host-owned pieces
 
