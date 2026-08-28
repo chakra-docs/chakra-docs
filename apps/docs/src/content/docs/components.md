@@ -42,12 +42,57 @@ The table of contents highlights the active section as the page scrolls. Heading
   page={page}
   headings={page.headings}
   stickyTop={{ lg: 24 }}
+  mobileNavigationProps={{
+    search: <DocsSearch records={manifest.search} />,
+    title: 'Browse documentation',
+  }}
 >
   <DocsArticle page={page}>
     <MarkdownContent source={page.body ?? ''} />
   </DocsArticle>
 </DocsLayout>
 ```
+
+When `nav` is present, the desktop sidebar is shown at `lg` and above. On
+smaller viewports, `DocsLayout` replaces it with a hamburger trigger that opens
+an accessible left-side drawer. The drawer expands the active navigation path,
+allows nested sections to collapse independently, and closes after a link is
+selected or the route changes. Pass `mobileNavigation={false}` when the host
+application already provides this behavior.
+
+`mobileNavigationProps` accepts a title, a search or filter control, controlled
+`open` state, slot overrides, and `sidebarProps`. It inherits the layout's
+navigation settings unless a mobile-specific value overrides them.
+
+For a custom site header or drawer structure, compose the same behavior from
+parts:
+
+```tsx
+<DocsMobileNavigation.Root nav={nav} page={page}>
+  <DocsMobileNavigation.Trigger>
+    <MenuIcon />
+    Browse docs
+  </DocsMobileNavigation.Trigger>
+  <DocsMobileNavigation.Content>
+    <DocsMobileNavigation.Header>
+      <DocsMobileNavigation.Title>Documentation</DocsMobileNavigation.Title>
+      <DocsMobileNavigation.CloseTrigger />
+    </DocsMobileNavigation.Header>
+    <DocsMobileNavigation.Search>
+      <DocsSearch records={manifest.search} />
+    </DocsMobileNavigation.Search>
+    <DocsMobileNavigation.Body>
+      <DocsMobileNavigation.Sidebar />
+    </DocsMobileNavigation.Body>
+  </DocsMobileNavigation.Content>
+</DocsMobileNavigation.Root>
+```
+
+The `chakraDocsMobileNavigation` recipe exposes `root`, `trigger`,
+`triggerIcon`, `triggerLabel`, `backdrop`, `positioner`, `content`, `header`,
+`title`, `closeTrigger`, `search`, `body`, and `sidebar` slots. Chakra's dialog
+primitive provides focus management, Escape and outside-interaction handling,
+and scroll containment.
 
 ## DocsArticle
 
@@ -245,6 +290,12 @@ Use `value` and `onValueChange` to control a tab group. The trigger and panel ID
 <DocsApiTable
   caption="DocsLayout props"
   items={[
+    {
+      name: 'mobileNavigation',
+      type: 'boolean',
+      defaultValue: 'true when nav is present',
+      description: 'Uses the built-in hamburger and drawer below lg.',
+    },
     {
       name: 'sidebarCollapsible',
       type: 'boolean',
