@@ -1560,8 +1560,34 @@ describe('Chakra Docs slot recipes', () => {
         .split,
     ).toMatchObject({
       root: { gap: 0 },
-      primaryTrigger: { borderEndRadius: 0 },
-      menuTrigger: { borderStartRadius: 0 },
+      primaryTrigger: { borderEndRadius: 0, borderEndWidth: 0 },
+      menu: { marginInlineStart: 0 },
+      menuTrigger: {
+        borderStartRadius: 0,
+        px: 'var(--chakra-docs-page-actions-menu-padding)',
+      },
+    });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions],
+    ).toMatchObject({
+      defaultVariants: { size: 'md', variant: 'default' },
+      variants: {
+        size: {
+          sm: {
+            root: {
+              '--chakra-docs-page-actions-height': 'sizes.7',
+              '--chakra-docs-page-actions-radius': 'radii.sm',
+            },
+          },
+          md: {},
+          lg: {
+            root: {
+              '--chakra-docs-page-actions-height': 'sizes.10',
+              '--chakra-docs-page-actions-radius': 'radii.lg',
+            },
+          },
+        },
+      },
     });
     expect(
       chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base.link,

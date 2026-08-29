@@ -520,6 +520,12 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
   ],
   base: {
     root: {
+      '--chakra-docs-page-actions-font-size': 'fontSizes.sm',
+      '--chakra-docs-page-actions-gap': 'spacing.2',
+      '--chakra-docs-page-actions-height': 'sizes.8',
+      '--chakra-docs-page-actions-menu-padding': 'spacing.2',
+      '--chakra-docs-page-actions-radius': 'radii.md',
+      '--chakra-docs-page-actions-trigger-padding': 'spacing.3',
       alignItems: 'center',
       display: 'flex',
       flexWrap: 'wrap',
@@ -531,17 +537,17 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       appearance: 'none',
       bg: 'bg',
       borderColor: 'border',
-      borderRadius: 'md',
       borderWidth: '1px',
       color: 'fg',
       cursor: 'pointer',
       display: 'inline-flex',
-      fontSize: 'sm',
+      fontSize: 'var(--chakra-docs-page-actions-font-size)',
       fontWeight: 'medium',
-      gap: 2,
-      minH: 8,
-      px: 3,
+      gap: 'var(--chakra-docs-page-actions-gap)',
+      minH: 'var(--chakra-docs-page-actions-height)',
+      px: 'var(--chakra-docs-page-actions-trigger-padding)',
       textDecoration: 'none',
+      borderRadius: 'var(--chakra-docs-page-actions-radius)',
       _hover: { bg: 'bg.subtle', textDecoration: 'none' },
       _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
     },
@@ -581,7 +587,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       color: 'fg',
       cursor: 'pointer',
       display: 'flex',
-      fontSize: 'sm',
+      fontSize: 'var(--chakra-docs-page-actions-font-size)',
       gap: 3,
       p: 2,
       textAlign: 'start',
@@ -636,22 +642,45 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     description: { color: 'fg.muted', fontSize: 'xs' },
   },
   variants: {
+    size: {
+      sm: {
+        root: {
+          '--chakra-docs-page-actions-font-size': 'fontSizes.xs',
+          '--chakra-docs-page-actions-gap': 'spacing.1.5',
+          '--chakra-docs-page-actions-height': 'sizes.7',
+          '--chakra-docs-page-actions-menu-padding': 'spacing.2',
+          '--chakra-docs-page-actions-radius': 'radii.sm',
+          '--chakra-docs-page-actions-trigger-padding': 'spacing.2',
+        },
+      },
+      md: {},
+      lg: {
+        root: {
+          '--chakra-docs-page-actions-font-size': 'fontSizes.md',
+          '--chakra-docs-page-actions-height': 'sizes.10',
+          '--chakra-docs-page-actions-menu-padding': 'spacing.3',
+          '--chakra-docs-page-actions-radius': 'radii.lg',
+          '--chakra-docs-page-actions-trigger-padding': 'spacing.4',
+        },
+      },
+    },
     variant: {
       default: {},
       split: {
         root: { gap: 0 },
         primaryTrigger: {
+          borderEndWidth: 0,
           borderEndRadius: 0,
         },
-        menu: { marginInlineStart: '-1px' },
+        menu: { marginInlineStart: 0 },
         menuTrigger: {
           borderStartRadius: 0,
-          px: 2,
+          px: 'var(--chakra-docs-page-actions-menu-padding)',
         },
       },
     },
   },
-  defaultVariants: { variant: 'default' },
+  defaultVariants: { size: 'md', variant: 'default' },
 });
 
 export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({

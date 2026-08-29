@@ -366,9 +366,12 @@ export interface DocsPageActionsRootProps {
   markdownUrl?: string;
   page?: DocsPage;
   pageUrl?: string;
+  size?: DocsPageActionsSize;
   slotProps?: Record<string, unknown>;
   variant?: 'default' | 'split';
 }
+
+export type DocsPageActionsSize = 'sm' | 'md' | 'lg';
 
 export interface DocsPageActionProps {
   children?: ReactNode;
@@ -873,7 +876,10 @@ export function DocsPageActionsRoot(
     chakraDocsRecipeKeys.pageActions,
     chakraDocsPageActionsSlotRecipe,
   );
-  const styles = recipe({ variant: props.variant ?? 'default' });
+  const styles = recipe({
+    size: props.size ?? 'md',
+    variant: props.variant ?? 'default',
+  });
   const page = props.page;
   const markdown = props.markdown ?? page?.body;
   const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
