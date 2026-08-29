@@ -872,14 +872,6 @@ export function DocsPageActionsRoot(
   props: DocsPageActionsRootProps,
 ): ReactNode {
   const config = useDocsConfig();
-  const recipe = useChakraDocsSlotRecipe(
-    chakraDocsRecipeKeys.pageActions,
-    chakraDocsPageActionsSlotRecipe,
-  );
-  const styles = recipe({
-    size: props.size ?? 'md',
-    variant: props.variant ?? 'default',
-  });
   const page = props.page;
   const markdown = props.markdown ?? page?.body;
   const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
@@ -887,6 +879,22 @@ export function DocsPageActionsRoot(
   const editUrl =
     props.editUrl ??
     (page && config.editUrl ? config.editUrl(page) : undefined);
+  const automaticComposition = props.children === undefined;
+  const hasPrimaryAction = markdown !== undefined;
+  const hasMenu = Boolean(pageUrl || markdownUrl || editUrl);
+  const effectiveVariant =
+    props.variant === 'split' &&
+    (!automaticComposition || (hasPrimaryAction && hasMenu))
+      ? 'split'
+      : 'default';
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.pageActions,
+    chakraDocsPageActionsSlotRecipe,
+  );
+  const styles = recipe({
+    size: props.size ?? 'md',
+    variant: effectiveVariant,
+  });
   const context: DocsPageActionsContextValue = {
     config,
     editUrl,
@@ -902,11 +910,19 @@ export function DocsPageActionsRoot(
     createElement(
       Fragment,
       null,
-      markdown !== undefined ? createElement(DocsPageActionsCopyPage) : null,
-      pageUrl || markdownUrl || editUrl
+      hasPrimaryAction ? createElement(DocsPageActionsCopyPage) : null,
+      hasMenu
         ? createElement(
             DocsPageActionsMenu,
-            null,
+            hasPrimaryAction && effectiveVariant === 'split'
+              ? {
+                  ariaLabel:
+                    config.labels?.moreActions ?? defaultLabels.moreActions,
+                  indicator: createElement(PageActionsChevronIcon),
+                  label: null,
+                }
+              : null,
+            hasPrimaryAction ? createElement(DocsPageActionsCopyPage) : null,
             pageUrl ? createElement(DocsPageActionsCopyLink) : null,
             markdownUrl ? createElement(DocsPageActionsViewMarkdown) : null,
             editUrl ? createElement(DocsPageActionsEdit) : null,
@@ -1059,7 +1075,7 @@ export function DocsPageActionsMenu(
     label:
       props.label !== undefined
         ? props.label
-        : props.icon
+        : props.icon || props.indicator
           ? undefined
           : defaultLabel,
     slots: {
@@ -1069,6 +1085,26 @@ export function DocsPageActionsMenu(
       trigger: [context.styles.trigger, context.styles.menuTrigger],
     },
   });
+}
+
+function PageActionsChevronIcon(): ReactNode {
+  return createElement(
+    'svg',
+    {
+      'aria-hidden': 'true',
+      fill: 'none',
+      height: '1em',
+      viewBox: '0 0 16 16',
+      width: '1em',
+    },
+    createElement('path', {
+      d: 'm4 6 4 4 4-4',
+      stroke: 'currentColor',
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      strokeWidth: '1.5',
+    }),
+  );
 }
 
 export function DocsPageActionsSubmenu(

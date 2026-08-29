@@ -123,6 +123,17 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
 
 `DocsPageActions` provides composable copy and link actions. `CopyPage` copies the Markdown source, while `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their URLs are available.
 
+The common split-button composition needs no explicit children. It renders Copy page as the primary action and a compact, accessible menu containing the available Copy page, Copy link, View Markdown, and Edit actions:
+
+```tsx
+<DocsPageActions.Root
+  editUrl={editUrl}
+  markdownUrl={markdownUrl}
+  page={page}
+  variant="split"
+/>
+```
+
 ```tsx
 <DocsArticle
   page={page}
@@ -163,7 +174,7 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
 </DocsArticle>
 ```
 
-When no children are supplied, the root renders `CopyPage` as the primary action and places the available link, Markdown, and edit actions in its disclosure menu. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page.
+When no children are supplied, the root renders `CopyPage` as the primary action and places Copy page plus the available link, Markdown, and edit actions in its disclosure menu. Unavailable actions are omitted; a menu without a primary action retains a visible label instead of rendering a lone chevron. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page.
 
 Use `variant="split"` to join the primary action and menu trigger without overlapping their borders. Choose `size="sm"`, `size="md"`, or `size="lg"` to resize the triggers while the split variant continues to own their adjoining corners and divider. `Menu` accepts separate `ariaLabel`, `label`, `icon`, and `indicator` content; supplying an icon without a label creates an icon-only trigger with the accessible name intact. Menus and submenus support `open`, `defaultOpen`, `onOpenChange`, and `closeOnSelect`. Selection closes the current disclosure and its ancestors by default; set `closeOnSelect={false}` when an application needs the menu to remain open.
 

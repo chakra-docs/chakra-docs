@@ -628,6 +628,7 @@ describe('DocsPageActions', () => {
     );
 
     expect(markup).toContain('aria-label="Copy page"');
+    expect(markup.match(/aria-label="Copy page"/g)).toHaveLength(2);
     expect(markup).toContain('aria-label="Copy link"');
     expect(markup).toContain('aria-label="More page actions"');
     expect(markup).toContain('href="/docs/start.md"');
@@ -639,6 +640,44 @@ describe('DocsPageActions', () => {
     expect(markup).toContain('Copy a link to this page');
     expect(markup).toContain('Open this page as plain text');
     expect(markup).toContain('Suggest changes to this page');
+  });
+
+  it('renders a complete compact split composition without children', () => {
+    const page = {
+      ...createPage('/docs/split', 'Split'),
+      body: '# Split actions',
+    };
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { siteUrl: 'https://docs.example.com' } },
+        createElement(DocsPageActions.Root, {
+          markdownUrl: '/docs/split.md',
+          page,
+          variant: 'split',
+        }),
+      ),
+    );
+
+    expect(markup.match(/aria-label="Copy page"/g)).toHaveLength(2);
+    expect(markup).toContain('aria-label="More page actions"');
+    expect(markup).toContain('viewBox="0 0 16 16"');
+    expect(markup).not.toContain('>More page actions<');
+    expect(markup).toContain('Copy link');
+    expect(markup).toContain('View as Markdown');
+  });
+
+  it('keeps a visible menu label when a split composition has no primary', () => {
+    const markup = render(
+      createElement(DocsPageActions.Root, {
+        markdownUrl: '/docs/markdown-only.md',
+        variant: 'split',
+      }),
+    );
+
+    expect(markup).toContain('>More page actions<');
+    expect(markup).toContain('View as Markdown');
+    expect(markup).not.toContain('viewBox="0 0 16 16"');
   });
 
   it('supports composing only the actions an application wants', () => {
