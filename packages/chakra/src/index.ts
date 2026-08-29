@@ -152,6 +152,7 @@ const HStack = Chakra.HStack;
 const Input = Chakra.Input;
 const Kbd = Chakra.Kbd;
 const Link = Chakra.Link;
+const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
 const Portal = Chakra.Portal;
 const Stack = Chakra.Stack;
 const Text = Chakra.Text;
@@ -404,12 +405,42 @@ export interface DocsPageActionsMenuProps {
   labelSlotProps?: Record<string, unknown>;
   onOpenChange?: (details: DocsPageActionsOpenChangeDetails) => void;
   open?: boolean;
+  positioning?: DocsPageActionsPositioning;
+  positionerSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
 }
 
 export interface DocsPageActionsOpenChangeDetails {
   open: boolean;
+}
+
+export type DocsPageActionsPlacement =
+  | 'top'
+  | 'top-start'
+  | 'top-end'
+  | 'right'
+  | 'right-start'
+  | 'right-end'
+  | 'bottom'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'left'
+  | 'left-start'
+  | 'left-end';
+
+export interface DocsPageActionsPositioning {
+  fitViewport?: boolean;
+  flip?: boolean | DocsPageActionsPlacement[];
+  gutter?: number;
+  hideWhenDetached?: boolean;
+  overflowPadding?: number;
+  overlap?: boolean;
+  placement?: DocsPageActionsPlacement;
+  sameWidth?: boolean;
+  shift?: number;
+  slide?: boolean;
+  strategy?: 'absolute' | 'fixed';
 }
 
 export interface DocsPageActionsSubmenuProps extends Omit<
@@ -846,7 +877,6 @@ interface DocsPageActionsContextValue {
   inMenu: boolean;
   markdown?: string;
   markdownUrl?: string;
-  onActionSelect?: () => void;
   page?: DocsPage;
   pageUrl?: string;
   styles: Record<string, unknown>;
@@ -1081,6 +1111,7 @@ export function DocsPageActionsMenu(
     slots: {
       content: context.styles.menuContent,
       indicator: context.styles.menuIndicator,
+      positioner: context.styles.menuPositioner,
       root: context.styles.menu,
       trigger: [context.styles.trigger, context.styles.menuTrigger],
     },
@@ -1119,9 +1150,11 @@ export function DocsPageActionsSubmenu(
       (typeof props.label === 'string' ? props.label : undefined),
     context,
     indicator: props.indicator ?? '›',
+    nested: true,
     slots: {
       content: context.styles.submenuContent,
       indicator: context.styles.submenuIndicator,
+      positioner: context.styles.submenuPositioner,
       root: context.styles.submenu,
       trigger: [context.styles.menuItem, context.styles.submenuTrigger],
     },
@@ -1135,19 +1168,19 @@ export function DocsPageActionsGroup(
   const labelId = useId();
 
   return createElement(
-    Box,
+    ChakraMenu.ItemGroup,
     {
-      role: 'group',
       'aria-label': props.ariaLabel,
       'aria-labelledby': !props.ariaLabel && props.label ? labelId : undefined,
+      unstyled: true,
       ...mergeSlotStyleProps(context.styles.menuGroup, props.slotProps),
     },
     props.label
       ? createElement(
-          Text,
+          ChakraMenu.ItemGroupLabel,
           {
-            as: 'span',
             id: labelId,
+            unstyled: true,
             ...mergeSlotStyleProps(
               context.styles.menuGroupLabel,
               props.labelSlotProps,
@@ -1165,17 +1198,19 @@ export function DocsPageActionsSeparator(
 ): ReactNode {
   const context = useDocsPageActionsContext();
 
-  return createElement(Box, {
-    as: 'hr',
+  return createElement(ChakraMenu.Separator, {
+    unstyled: true,
     ...mergeSlotStyleProps(context.styles.menuSeparator, props.slotProps),
   });
 }
 
 interface PageActionsDisclosureProps extends DocsPageActionsMenuProps {
   context: DocsPageActionsContextValue;
+  nested?: boolean;
   slots: {
     content: unknown;
     indicator: unknown;
+    positioner: unknown;
     root: unknown;
     trigger: unknown;
   };
@@ -1189,117 +1224,154 @@ interface PageActionClickEvent {
 function usePageActionsDisclosure(
   props: PageActionsDisclosureProps,
 ): ReactNode {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(
-    props.defaultOpen ?? false,
-  );
-  const contentId = useId();
-  const open = props.open ?? uncontrolledOpen;
-  const setOpen = (nextOpen: boolean) => {
-    if (props.open === undefined) {
-      setUncontrolledOpen(nextOpen);
-    }
-
-    if (nextOpen !== open) {
-      props.onOpenChange?.({ open: nextOpen });
-    }
-  };
-  const closeAfterSelect = () => {
-    setOpen(false);
-    props.context.onActionSelect?.();
-  };
+  const disclosureId = useId();
   const menuContext: DocsPageActionsContextValue = {
     ...props.context,
     inMenu: true,
-    onActionSelect:
-      props.closeOnSelect === false ? undefined : closeAfterSelect,
   };
   const triggerProps = mergeSlotStyleProps(
     props.slots.trigger,
     props.triggerSlotProps,
   );
-  const triggerOnClick = triggerProps.onClick;
+  const triggerContent = createPageActionsDisclosureTrigger(props);
+  const trigger = props.nested
+    ? createElement(
+        ChakraMenu.TriggerItem,
+        {
+          ...triggerProps,
+          'aria-label': props.ariaLabel,
+          unstyled: true,
+          value: `submenu-${disclosureId}`,
+        },
+        triggerContent,
+      )
+    : createElement(
+        ChakraMenu.Trigger,
+        { asChild: true },
+        createElement(
+          Button,
+          {
+            type: 'button',
+            ...triggerProps,
+            'aria-label': props.ariaLabel,
+          },
+          triggerContent,
+        ),
+      );
+  const defaultPositioning: DocsPageActionsPositioning = props.nested
+    ? {
+        flip: true,
+        gutter: 4,
+        overflowPadding: 8,
+        placement: 'right-start',
+        slide: true,
+      }
+    : {
+        flip: true,
+        gutter: 8,
+        overflowPadding: 8,
+        placement: 'bottom-end',
+        slide: true,
+      };
+  const positioning = { ...defaultPositioning, ...props.positioning };
 
   return createElement(
-    Box,
+    ChakraMenu.Root,
     {
-      as: 'details',
-      ...mergeSlotStyleProps(props.slots.root, props.slotProps),
-      open,
+      closeOnSelect: props.closeOnSelect ?? true,
+      defaultOpen: props.defaultOpen,
+      id: disclosureId,
+      loopFocus: true,
+      onOpenChange: (details: { open: boolean }) =>
+        props.onOpenChange?.({ open: details.open }),
+      open: props.open,
+      positioning,
+      typeahead: true,
+      unstyled: true,
     },
     createElement(
       Box,
-      {
-        as: 'summary',
-        ...triggerProps,
-        'aria-controls': contentId,
-        'aria-expanded': open,
-        'aria-label': props.ariaLabel,
-        onClick: (event: PageActionClickEvent) => {
-          if (typeof triggerOnClick === 'function') {
-            (triggerOnClick as (event: PageActionClickEvent) => void)(event);
-          }
-
-          if (event.defaultPrevented) {
-            return;
-          }
-
-          event.preventDefault?.();
-          setOpen(!open);
-        },
-      },
-      props.icon
-        ? createElement(
-            Box,
-            {
-              as: 'span',
-              ...mergeSlotStyleProps(
-                props.context.styles.icon,
-                props.iconSlotProps,
-              ),
-            },
-            props.icon,
-          )
-        : null,
-      props.label
-        ? createElement(
-            Box,
-            {
-              as: 'span',
-              ...mergeSlotStyleProps(
-                props.context.styles.label,
-                props.labelSlotProps,
-              ),
-            },
-            props.label,
-          )
-        : null,
-      props.indicator
-        ? createElement(
-            Box,
-            {
-              as: 'span',
-              'aria-hidden': 'true',
-              ...mergeSlotStyleProps(
-                props.slots.indicator,
-                props.indicatorSlotProps,
-              ),
-            },
-            props.indicator,
-          )
-        : null,
-    ),
-    createElement(
-      DocsPageActionsContext.Provider,
-      { value: menuContext },
+      mergeSlotStyleProps(props.slots.root, props.slotProps),
+      trigger,
       createElement(
-        Box,
-        {
-          ...mergeSlotStyleProps(props.slots.content, props.contentSlotProps),
-          id: contentId,
-        },
-        props.children,
+        Portal,
+        null,
+        createElement(
+          ChakraMenu.Positioner,
+          {
+            unstyled: true,
+            ...mergeSlotStyleProps(
+              props.slots.positioner,
+              props.positionerSlotProps,
+            ),
+          },
+          createElement(
+            ChakraMenu.Content,
+            {
+              unstyled: true,
+              ...mergeSlotStyleProps(
+                props.slots.content,
+                props.contentSlotProps,
+              ),
+            },
+            createElement(
+              DocsPageActionsContext.Provider,
+              { value: menuContext },
+              props.children,
+            ),
+          ),
+        ),
       ),
     ),
+  );
+}
+
+function createPageActionsDisclosureTrigger(
+  props: PageActionsDisclosureProps,
+): ReactNode {
+  return createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(
+              props.context.styles.icon,
+              props.iconSlotProps,
+            ),
+          },
+          props.icon,
+        )
+      : null,
+    props.label
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(
+              props.context.styles.label,
+              props.labelSlotProps,
+            ),
+          },
+          props.label,
+        )
+      : null,
+    props.indicator
+      ? createElement(
+          ChakraMenu.Indicator,
+          {
+            'aria-hidden': 'true',
+            unstyled: true,
+            ...mergeSlotStyleProps(
+              props.slots.indicator,
+              props.indicatorSlotProps,
+            ),
+          },
+          props.indicator,
+        )
+      : null,
   );
 }
 
@@ -1307,6 +1379,7 @@ export function DocsPageActionsItem(
   props: DocsPageActionsItemProps,
 ): ReactNode {
   const context = useDocsPageActionsContext();
+  const itemId = useId();
   const action = props.action ?? 'custom';
 
   if (props.href) {
@@ -1329,7 +1402,7 @@ export function DocsPageActionsItem(
   const slotProps = getPageActionSlotProps(context, props.slotProps);
   const onClick = slotProps.onClick;
 
-  return createElement(
+  const item = createElement(
     Button,
     {
       type: 'button',
@@ -1346,11 +1419,18 @@ export function DocsPageActionsItem(
           action,
           page: context.page,
         });
-        context.onActionSelect?.();
       },
     },
     createPageActionContent(context, props),
   );
+
+  return context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        { asChild: true, unstyled: true, value: `${action}-${itemId}` },
+        item,
+      )
+    : item;
 }
 
 export const DocsPageActions = {
@@ -1384,6 +1464,74 @@ function createCopyPageAction(props: {
   const { context } = props;
   const triggerProps = getPageActionSlotProps(context, props.slotProps);
   const onClick = triggerProps.onClick;
+  const trigger = createElement(
+    ChakraClipboard.Trigger,
+    {
+      type: 'button',
+      'aria-label': props.label,
+      ...triggerProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+      },
+    },
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
+          },
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      { as: 'span' },
+      createElement(
+        ChakraClipboard.Indicator,
+        {
+          copied: props.copiedLabel,
+          ...mergeSlotStyleProps(
+            context.styles.indicator,
+            props.indicatorSlotProps,
+          ),
+        },
+        createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.label, props.labelSlotProps),
+          },
+          props.children ?? props.label,
+        ),
+      ),
+      props.description
+        ? createElement(
+            Text,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.description,
+                props.descriptionSlotProps,
+              ),
+            },
+            props.description,
+          )
+        : null,
+    ),
+  );
+  const item = context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        {
+          asChild: true,
+          unstyled: true,
+          value: props.format === 'markdown' ? 'copy-page' : 'copy-link',
+          valueText: props.label,
+        },
+        trigger,
+      )
+    : trigger;
 
   return createElement(
     ChakraClipboard.Root,
@@ -1400,69 +1548,7 @@ function createCopyPageAction(props: {
       },
       ...mergeSlotStyleProps(context.styles.copyRoot, undefined),
     },
-    createElement(
-      ChakraClipboard.Trigger,
-      {
-        type: 'button',
-        'aria-label': props.label,
-        ...triggerProps,
-        onClick: (event: PageActionClickEvent) => {
-          callPageActionClickHandler(onClick, event);
-
-          if (!event.defaultPrevented) {
-            context.onActionSelect?.();
-          }
-        },
-      },
-      props.icon
-        ? createElement(
-            Box,
-            {
-              as: 'span',
-              ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
-            },
-            props.icon,
-          )
-        : null,
-      createElement(
-        Box,
-        { as: 'span' },
-        createElement(
-          ChakraClipboard.Indicator,
-          {
-            copied: props.copiedLabel,
-            ...mergeSlotStyleProps(
-              context.styles.indicator,
-              props.indicatorSlotProps,
-            ),
-          },
-          createElement(
-            Box,
-            {
-              as: 'span',
-              ...mergeSlotStyleProps(
-                context.styles.label,
-                props.labelSlotProps,
-              ),
-            },
-            props.children ?? props.label,
-          ),
-        ),
-        props.description
-          ? createElement(
-              Text,
-              {
-                as: 'span',
-                ...mergeSlotStyleProps(
-                  context.styles.description,
-                  props.descriptionSlotProps,
-                ),
-              },
-              props.description,
-            )
-          : null,
-      ),
-    ),
+    item,
   );
 }
 
@@ -1487,7 +1573,7 @@ function createPageActionLink(props: {
   const slotProps = getPageActionSlotProps(props.context, props.slotProps);
   const onClick = slotProps.onClick;
 
-  return createElement(
+  const link = createElement(
     DocsLink,
     {
       href: props.href,
@@ -1505,11 +1591,23 @@ function createPageActionLink(props: {
           href: props.href,
           page: props.context.page,
         });
-        props.context.onActionSelect?.();
       },
     },
     createPageActionContent(props.context, props),
   );
+
+  return props.context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        {
+          asChild: true,
+          unstyled: true,
+          value: `${props.action}:${props.href}`,
+          valueText: props.label,
+        },
+        link,
+      )
+    : link;
 }
 
 function resolvePageActionDescription(

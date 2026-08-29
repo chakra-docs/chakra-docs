@@ -620,10 +620,19 @@ describe('DocsPageActions', () => {
               `https://github.com/example/docs/edit/main/${currentPage.path}`,
           },
         },
-        createElement(DocsPageActions.Root, {
-          markdownUrl: '/docs/start.md',
-          page,
-        }),
+        createElement(
+          DocsPageActions.Root,
+          { markdownUrl: '/docs/start.md', page },
+          createElement(DocsPageActions.CopyPage),
+          createElement(
+            DocsPageActions.Menu,
+            { open: true },
+            createElement(DocsPageActions.CopyPage),
+            createElement(DocsPageActions.CopyLink),
+            createElement(DocsPageActions.ViewMarkdown),
+            createElement(DocsPageActions.Edit),
+          ),
+        ),
       ),
     );
 
@@ -659,12 +668,9 @@ describe('DocsPageActions', () => {
       ),
     );
 
-    expect(markup.match(/aria-label="Copy page"/g)).toHaveLength(2);
     expect(markup).toContain('aria-label="More page actions"');
     expect(markup).toContain('viewBox="0 0 16 16"');
     expect(markup).not.toContain('>More page actions<');
-    expect(markup).toContain('Copy link');
-    expect(markup).toContain('View as Markdown');
   });
 
   it('keeps a visible menu label when a split composition has no primary', () => {
@@ -676,7 +682,6 @@ describe('DocsPageActions', () => {
     );
 
     expect(markup).toContain('>More page actions<');
-    expect(markup).toContain('View as Markdown');
     expect(markup).not.toContain('viewBox="0 0 16 16"');
   });
 
@@ -760,7 +765,9 @@ describe('DocsPageActions', () => {
     expect(markup).toContain('aria-controls=');
     expect(markup).toContain('role="group"');
     expect(markup).toContain('aria-labelledby=');
-    expect(markup).toContain('<hr');
+    expect(markup).toContain('role="separator"');
+    expect(markup).toContain('role="menu"');
+    expect(markup).toContain('role="menuitem"');
     expect(markup).toContain('Open in another chat');
     expect(markup).toContain('href="https://chatgpt.com"');
   });
@@ -1780,6 +1787,7 @@ describe('Chakra Docs slot recipes', () => {
         'menu',
         'menuTrigger',
         'menuIndicator',
+        'menuPositioner',
         'menuContent',
         'menuItem',
         'menuGroup',
@@ -1788,6 +1796,7 @@ describe('Chakra Docs slot recipes', () => {
         'submenu',
         'submenuTrigger',
         'submenuIndicator',
+        'submenuPositioner',
         'submenuContent',
         'description',
       ],

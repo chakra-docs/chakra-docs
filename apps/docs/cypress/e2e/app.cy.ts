@@ -74,18 +74,26 @@ describe('docs', () => {
   it('composes split page actions with independently nested menus', () => {
     visit('/docs/components');
 
-    cy.get('summary[aria-label="More page action examples"]').as(
+    cy.get('button[aria-label="More page action examples"]').as(
       'pageActionsMenu',
     );
     cy.get('@pageActionsMenu').click();
-    cy.get('@pageActionsMenu').parent('details').should('have.attr', 'open');
-    cy.contains('summary', 'Open in another chat').as('chatSubmenu');
+    cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'true');
+    cy.contains('[role="menuitem"]', 'Open in another chat').as('chatSubmenu');
     cy.get('@chatSubmenu').click();
-    cy.get('@chatSubmenu').parent('details').should('have.attr', 'open');
-    cy.contains('button', 'ChatGPT').click();
+    cy.get('@chatSubmenu').should('have.attr', 'aria-expanded', 'true');
+    cy.contains('[role="menuitem"]', 'ChatGPT').click();
+    cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
+
+    cy.get('@pageActionsMenu').click();
+    cy.get('[role="menu"]').should('be.visible').type('{esc}');
     cy.get('@pageActionsMenu')
-      .parent('details')
-      .should('not.have.attr', 'open');
+      .should('have.attr', 'aria-expanded', 'false')
+      .and('be.focused');
+
+    cy.get('@pageActionsMenu').click();
+    cy.get('h1').click();
+    cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
   });
 
   it('supports pointer search navigation through the Next router', () => {
@@ -158,9 +166,11 @@ describe('docs', () => {
   });
 
   it('uses the configured Next link component for docs navigation', () => {
+    cy.viewport(1280, 720);
     visit('/docs/installation');
 
     cy.contains('a[href="/docs/configuration"]', 'Configuration')
+      .filter(':visible')
       .last()
       .click();
 
