@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "yalc:link": "yalc link --no-pure @postkit/react @postkit/shiki @postkit/unfurl"
+    "yalc:link": "yalc link --no-pure @postkit/core @postkit/react @postkit/shiki @postkit/unfurl"
   },
   "nx": {
     "targets": {
@@ -21,6 +21,8 @@
     "@chakra-docs/search": "*",
     "@chakra-docs/source-filesystem": "*",
     "@chakra-ui/react": "^3.36.0",
+    "mdast-util-mdx": "^3.0.0",
+    "micromark-extension-mdxjs": "^3.0.0",
     "next": "~16.2.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
