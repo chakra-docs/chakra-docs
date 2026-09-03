@@ -136,15 +136,20 @@ describe('createDocsSearchEngine', () => {
       createRecord({ id: 'cafe', title: 'CaféConfig reference' }),
       createRecord({ id: 'snake', title: 'theme_config options' }),
       createRecord({ id: 'javascript', title: 'JavaScript SDK' }),
+      createRecord({
+        id: 'javascript-body',
+        title: 'Language guide',
+        text: 'JavaScript SDK',
+      }),
     ]);
 
     expect(engine.search({ query: 'cafe config' }).results[0]?.id).toBe('cafe');
     expect(engine.search({ query: 'theme config' }).results[0]?.id).toBe(
       'snake',
     );
-    expect(engine.search({ query: 'javascript' }).results[0]?.id).toBe(
-      'javascript',
-    );
+    expect(
+      engine.search({ query: 'javascript sdk' }).results.map(({ id }) => id),
+    ).toEqual(['javascript', 'javascript-body']);
   });
 
   it('searches tags and aliases without exposing aliases in results', () => {

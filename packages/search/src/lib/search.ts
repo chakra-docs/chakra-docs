@@ -58,6 +58,7 @@ export interface DocsSearchEngine {
 
 interface IndexedSearchRecord {
   result: DocsSearchResult;
+  exactTitle: string;
   title: string;
   pageTitle: string;
   sectionTitle: string;
@@ -135,6 +136,7 @@ function createIndexedRecord(record: DocsSearchRecord): IndexedSearchRecord {
 
   return {
     result,
+    exactTitle: normalizeDocsSearchText(record.title),
     title: createDocsSearchText(record.title),
     pageTitle: createDocsSearchText(record.pageTitle ?? ''),
     sectionTitle: createDocsSearchText(record.sectionTitle ?? ''),
@@ -225,7 +227,7 @@ function scoreSearchRecord(
   item: IndexedSearchRecord,
   normalizedQuery: string,
 ): number {
-  if (item.title === normalizedQuery) {
+  if (item.exactTitle === normalizedQuery) {
     return MAX_SCORE;
   }
 
