@@ -28,6 +28,10 @@ export interface DocsFrontmatter {
   publishedAt?: string | Date;
   author?: string;
   tags?: string[];
+  /** Additional terms that should resolve to this page in documentation search. */
+  aliases?: string[];
+  /** Optional relevance adjustment used by search adapters. */
+  searchPriority?: number;
   [key: string]: unknown;
 }
 
@@ -110,6 +114,8 @@ export interface DocsSearchRecord {
   headings: DocsHeading[];
   text: string;
   tags?: string[];
+  aliases?: string[];
+  searchPriority?: number;
 }
 
 export interface DocsSitemapEntry {

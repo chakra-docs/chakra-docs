@@ -2,7 +2,13 @@ import type { DocsSearchRecord } from '@chakra-docs/core';
 
 const DEFAULT_RESULT_LIMIT = 8;
 const DEFAULT_POPULAR_LIMIT = 6;
-const MAX_SCORE = 100;
+const MAX_SCORE = 200;
+const MAX_SYNONYM_EXPANSIONS = 24;
+
+export interface DocsSearchEngineOptions {
+  /** Groups of equivalent terms or phrases used to expand incoming queries. */
+  synonyms?: readonly (readonly string[])[];
+}
 
 export interface DocsSearchQuery {
   query: string;
@@ -53,8 +59,12 @@ interface IndexedSearchRecord {
   result: DocsSearchResult;
   title: string;
   pageTitle: string;
+  sectionTitle: string;
   description: string;
   text: string;
+  tags: string;
+  aliases: string;
+  priority: number;
 }
 
 /**
@@ -64,15 +74,17 @@ interface IndexedSearchRecord {
  */
 export function createDocsSearchEngine(
   records: readonly DocsSearchRecord[],
+  options: DocsSearchEngineOptions = {},
 ): DocsSearchEngine {
   const index = records.map(createIndexedRecord);
+  const synonyms = createSynonymIndex(options.synonyms);
 
   return {
     search(query) {
       assertSearchQuery(query);
 
       const displayQuery = query.query.trim();
-      const normalizedQuery = displayQuery.toLowerCase();
+      const normalizedQuery = normalizeSearchText(displayQuery);
       const collectionScope = normalizeCollectionScope(query.collectionIds);
 
       if (!normalizedQuery) {
@@ -94,7 +106,7 @@ export function createDocsSearchEngine(
         query: displayQuery,
         results: getRankedResults(
           index,
-          normalizedQuery,
+          expandSearchQueries(normalizedQuery, synonyms),
           collectionScope,
           normalizeLimit(query.limit, DEFAULT_RESULT_LIMIT, index.length),
         ),
@@ -122,10 +134,14 @@ function createIndexedRecord(record: DocsSearchRecord): IndexedSearchRecord {
 
   return {
     result,
-    title: record.title.toLowerCase(),
-    pageTitle: record.pageTitle?.toLowerCase() ?? '',
-    description: record.description?.toLowerCase() ?? '',
-    text: record.text.toLowerCase(),
+    title: normalizeSearchText(record.title),
+    pageTitle: normalizeSearchText(record.pageTitle ?? ''),
+    sectionTitle: normalizeSearchText(record.sectionTitle ?? ''),
+    description: normalizeSearchText(record.description ?? ''),
+    text: normalizeSearchText(record.text),
+    tags: normalizeSearchText(record.tags?.join(' ') ?? ''),
+    aliases: normalizeSearchText(record.aliases?.join(' ') ?? ''),
+    priority: normalizePriority(record.searchPriority),
   };
 }
 
@@ -158,7 +174,7 @@ function getPopularResults(
 
 function getRankedResults(
   index: readonly IndexedSearchRecord[],
-  normalizedQuery: string,
+  normalizedQueries: readonly string[],
   collectionScope: ReadonlySet<string> | undefined,
   limit: number,
 ): DocsSearchResult[] {
@@ -175,7 +191,9 @@ function getRankedResults(
       continue;
     }
 
-    const score = scoreSearchRecord(item, normalizedQuery);
+    const score = Math.max(
+      ...normalizedQueries.map((query) => scoreSearchRecord(item, query)),
+    );
 
     if (score === 0) {
       continue;
@@ -216,12 +234,28 @@ function scoreSearchRecord(
     score += 40;
   }
 
+  if (item.aliases.includes(normalizedQuery)) {
+    score += 35;
+  }
+
+  if (item.tags.includes(normalizedQuery)) {
+    score += 30;
+  }
+
   if (
     item.pageTitle &&
     item.pageTitle !== item.title &&
     item.pageTitle.includes(normalizedQuery)
   ) {
     score += 15;
+  }
+
+  if (
+    item.sectionTitle &&
+    item.sectionTitle !== item.title &&
+    item.sectionTitle.includes(normalizedQuery)
+  ) {
+    score += 25;
   }
 
   if (item.description.includes(normalizedQuery)) {
@@ -232,7 +266,111 @@ function scoreSearchRecord(
     score += item.result.kind === 'heading' ? 15 : 10;
   }
 
+  if (score === 0 && normalizedQuery.includes(' ')) {
+    score = scoreSearchTerms(item, normalizedQuery.split(' '));
+  }
+
+  if (score > 0) {
+    score += item.priority;
+  }
+
+  return Math.max(0, Math.min(MAX_SCORE - 1, score));
+}
+
+function scoreSearchTerms(
+  item: IndexedSearchRecord,
+  terms: readonly string[],
+): number {
+  let score = 0;
+  let matchedTerms = 0;
+
+  for (const term of terms) {
+    let termScore = 0;
+
+    if (item.title.includes(term)) termScore = Math.max(termScore, 14);
+    if (item.aliases.includes(term)) termScore = Math.max(termScore, 12);
+    if (item.tags.includes(term)) termScore = Math.max(termScore, 10);
+    if (item.sectionTitle.includes(term)) termScore = Math.max(termScore, 9);
+    if (item.pageTitle.includes(term)) termScore = Math.max(termScore, 8);
+    if (item.description.includes(term)) termScore = Math.max(termScore, 5);
+    if (item.text.includes(term)) termScore = Math.max(termScore, 3);
+
+    if (termScore > 0) {
+      matchedTerms += 1;
+      score += termScore;
+    }
+  }
+
+  if (matchedTerms === terms.length) {
+    score += 15;
+  }
+
   return score;
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+    .replace(/[_/.-]+/g, ' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizePriority(value: number | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(-20, Math.min(20, Math.round(value)));
+}
+
+function createSynonymIndex(
+  groups: readonly (readonly string[])[] | undefined,
+): ReadonlyMap<string, readonly string[]> {
+  const index = new Map<string, readonly string[]>();
+
+  for (const group of groups ?? []) {
+    const terms = [...new Set(group.map(normalizeSearchText).filter(Boolean))];
+
+    for (const term of terms) {
+      index.set(
+        term,
+        terms.filter((candidate) => candidate !== term),
+      );
+    }
+  }
+
+  return index;
+}
+
+function expandSearchQueries(
+  query: string,
+  synonyms: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  const expanded = new Set<string>([query]);
+
+  for (const synonym of synonyms.get(query) ?? []) {
+    expanded.add(synonym);
+  }
+
+  const terms = query.split(' ');
+
+  for (let index = 0; index < terms.length; index += 1) {
+    for (const synonym of synonyms.get(terms[index] ?? '') ?? []) {
+      const variant = [...terms];
+      variant[index] = synonym;
+      expanded.add(variant.join(' '));
+
+      if (expanded.size >= MAX_SYNONYM_EXPANSIONS) {
+        return [...expanded];
+      }
+    }
+  }
+
+  return [...expanded];
 }
 
 function isInCollectionScope(

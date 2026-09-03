@@ -228,6 +228,8 @@ function createPageSearchRecord(page: DocsPage): DocsSearchRecord {
       ...(page.headings ?? []).map((heading) => heading.title),
     ]),
     tags: page.frontmatter.tags,
+    aliases: page.frontmatter.aliases,
+    searchPriority: page.frontmatter.searchPriority,
   };
 }
 
@@ -259,6 +261,8 @@ function createHeadingSearchRecords(page: DocsPage): DocsSearchRecord[] {
       sectionTextByHeadingId.get(heading.id),
     ]),
     tags: page.frontmatter.tags,
+    aliases: page.frontmatter.aliases,
+    searchPriority: page.frontmatter.searchPriority,
   }));
 }
 

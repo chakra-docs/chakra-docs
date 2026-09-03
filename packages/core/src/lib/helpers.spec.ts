@@ -333,6 +333,35 @@ describe('docs manifest helpers', () => {
     ]);
   });
 
+  it('copies search aliases and priority into page and heading records', () => {
+    const records = createSearchRecords([
+      {
+        ...jsPage,
+        frontmatter: {
+          ...jsPage.frontmatter,
+          aliases: ['js sdk', 'node client'],
+          searchPriority: 4,
+        },
+      },
+    ]);
+
+    expect(records).not.toHaveLength(0);
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          aliases: ['js sdk', 'node client'],
+          searchPriority: 4,
+        }),
+      ]),
+    );
+    expect(
+      records.every(
+        (record) =>
+          record.searchPriority === 4 && record.aliases?.[0] === 'js sdk',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps section search text aligned when code fences use mixed markers', () => {
     const page: DocsPage = {
       ...jsPage,
