@@ -62,6 +62,11 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "default": "./dist/client.js"
+    },
+    "./minisearch": {
+      "types": "./dist/minisearch.d.ts",
+      "import": "./dist/minisearch.js",
+      "default": "./dist/minisearch.js"
     }
   },
   "files": [
@@ -78,6 +83,7 @@
   },
   "dependencies": {
     "@chakra-docs/core": "0.1.0",
+    "minisearch": "^7.2.0",
     "tslib": "^2.3.0"
   },
   "engines": {

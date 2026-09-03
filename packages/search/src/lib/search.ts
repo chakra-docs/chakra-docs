@@ -1,4 +1,5 @@
 import type { DocsSearchRecord } from '@chakra-docs/core';
+import { createDocsSearchText, normalizeDocsSearchText } from './normalize.js';
 
 const DEFAULT_RESULT_LIMIT = 8;
 const DEFAULT_POPULAR_LIMIT = 6;
@@ -84,7 +85,7 @@ export function createDocsSearchEngine(
       assertSearchQuery(query);
 
       const displayQuery = query.query.trim();
-      const normalizedQuery = normalizeSearchText(displayQuery);
+      const normalizedQuery = normalizeDocsSearchText(displayQuery);
       const collectionScope = normalizeCollectionScope(query.collectionIds);
 
       if (!normalizedQuery) {
@@ -134,13 +135,13 @@ function createIndexedRecord(record: DocsSearchRecord): IndexedSearchRecord {
 
   return {
     result,
-    title: normalizeSearchText(record.title),
-    pageTitle: normalizeSearchText(record.pageTitle ?? ''),
-    sectionTitle: normalizeSearchText(record.sectionTitle ?? ''),
-    description: normalizeSearchText(record.description ?? ''),
-    text: normalizeSearchText(record.text),
-    tags: normalizeSearchText(record.tags?.join(' ') ?? ''),
-    aliases: normalizeSearchText(record.aliases?.join(' ') ?? ''),
+    title: createDocsSearchText(record.title),
+    pageTitle: createDocsSearchText(record.pageTitle ?? ''),
+    sectionTitle: createDocsSearchText(record.sectionTitle ?? ''),
+    description: createDocsSearchText(record.description ?? ''),
+    text: createDocsSearchText(record.text),
+    tags: createDocsSearchText(record.tags?.join(' ') ?? ''),
+    aliases: createDocsSearchText(record.aliases?.join(' ') ?? ''),
     priority: normalizePriority(record.searchPriority),
   };
 }
@@ -308,17 +309,6 @@ function scoreSearchTerms(
   return score;
 }
 
-function normalizeSearchText(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
-    .replace(/[_/.-]+/g, ' ')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function normalizePriority(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return 0;
@@ -333,7 +323,9 @@ function createSynonymIndex(
   const index = new Map<string, readonly string[]>();
 
   for (const group of groups ?? []) {
-    const terms = [...new Set(group.map(normalizeSearchText).filter(Boolean))];
+    const terms = [
+      ...new Set(group.map(normalizeDocsSearchText).filter(Boolean)),
+    ];
 
     for (const term of terms) {
       index.set(
