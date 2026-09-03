@@ -109,6 +109,7 @@ for (const packageName of publicPackages) {
 
 const core = await import('@chakra-docs/core');
 const search = await import('@chakra-docs/search');
+const miniSearch = await import('@chakra-docs/search/minisearch');
 const sourceFilesystem = await import('@chakra-docs/source-filesystem');
 const sourceGit = await import('@chakra-docs/source-git');
 const chakra = await import('@chakra-docs/chakra');
@@ -190,6 +191,14 @@ Run the installer.
         title: result.title,
       })),
     [{ route: '/docs/getting-started#install', title: 'Install' }],
+  );
+
+  const fuzzySearchEngine = miniSearch.createMiniSearchEngine(manifest.search, {
+    synonyms: [['setup', 'installation']],
+  });
+  assert.equal(
+    fuzzySearchEngine.search({ query: 'instll' }).results[0]?.title,
+    'Install',
   );
 
   const generatedManifest = await cli.buildDocsManifest({

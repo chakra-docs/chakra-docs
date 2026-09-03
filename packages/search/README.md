@@ -40,6 +40,56 @@ An empty or whitespace-only query returns the first non-heading page records,
 capped by `popularLimit` (six by default). Non-empty queries preserve manifest
 order when records have the same score.
 
+The built-in engine has no search dependency and supports normalized substring,
+tag, alias, multi-term, and synonym matching. Pass synonym groups when creating
+the engine:
+
+```ts
+const docsSearch = createDocsSearchEngine(manifest.search, {
+  synonyms: [
+    ['a11y', 'accessibility'],
+    ['ssr', 'server rendering', 'server-side rendering'],
+  ],
+});
+```
+
+## Fuzzy and prefix search
+
+Import the focused MiniSearch adapter when the corpus needs typo tolerance,
+prefix matching, weighted fields, duplicate-page limiting, or suggestions.
+The focused export keeps MiniSearch out of clients that only use the HTTP
+provider.
+
+```ts
+import { createMiniSearchEngine } from '@chakra-docs/search/minisearch';
+
+const docsSearch = createMiniSearchEngine(manifest.search, {
+  fuzzy: { distance: 0.2, minTermLength: 4 },
+  prefix: { enabled: true, lastTermOnly: true, minTermLength: 2 },
+  fields: {
+    title: 10,
+    pageTitle: 7,
+    sectionTitle: 7,
+    tags: 6,
+    aliases: 6,
+    description: 3,
+    text: 1,
+  },
+  synonyms: [
+    ['js', 'javascript'],
+    ['ts', 'typescript'],
+  ],
+});
+
+docsSearch.search({ query: 'javscript config' });
+docsSearch.suggest('instal', 5);
+```
+
+Fuzzy matching is disabled for short terms by default, exact titles receive a
+ranking bonus, and no more than two results from one page are returned unless
+`maxResultsPerPage` is changed. The public adapter types do not expose
+MiniSearch implementation types.
+
 ## Fetch handler
 
 `@chakra-docs/search/http` exposes a standard Fetch handler suitable for a Next

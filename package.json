@@ -20,6 +20,7 @@
     "test:coverage": "nx run-many -t test --coverage",
     "test:release": "nx run chakra-docs-workspace:release-validation",
     "types:performance:check": "npm exec nx -- run @chakra-docs/chakra:build && node scripts/check-chakra-theme-types.mjs",
+    "search:performance:check": "npm exec nx -- run @chakra-docs/search:build && node scripts/check-search-performance.mjs",
     "typecheck": "nx run-many -t typecheck",
     "release:smoke": "node scripts/release-smoke.mjs",
     "yalc:publish": "nx yalc-publish"

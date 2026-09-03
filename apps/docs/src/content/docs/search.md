@@ -14,17 +14,23 @@ This demo keeps the corpus on the server. `@chakra-docs/search` builds a reusabl
 ```ts
 // pages/api/docs/search.ts
 import {
-  createDocsSearchEngine,
   type DocsSearchEngine,
   type DocsSearchProvider,
 } from '@chakra-docs/search';
 import { createPagesRouterSearchHandler } from '@chakra-docs/next/search';
+import { createMiniSearchEngine } from '@chakra-docs/search/minisearch';
 
 let enginePromise: Promise<DocsSearchEngine> | undefined;
 
 const search: DocsSearchProvider = async (query) => {
   enginePromise ??= getDocsManifest().then((manifest) =>
-    createDocsSearchEngine(manifest.search),
+    createMiniSearchEngine(manifest.search, {
+      synonyms: [
+        ['a11y', 'accessibility'],
+        ['js', 'javascript'],
+        ['ssr', 'server rendering', 'server-side rendering'],
+      ],
+    }),
   );
   return (await enginePromise).search(query);
 };
@@ -45,6 +51,28 @@ const searchProvider = createHttpSearchProvider('/api/docs/search');
 The endpoint accepts `q`, repeated `collection` parameters, `limit`, and `popularLimit`. It validates and caps inputs before searching. Results omit the full searchable `text` and `headings`, which keeps API responses and hydrated client state small.
 
 Create the engine once per warm Next process or as a singleton Nest provider. Rate limiting and authentication belong at the application or edge layer. For private documentation, apply authorization and collection scope before ranking and limiting results.
+
+The MiniSearch adapter searches weighted title, section, tag, alias,
+description, and body fields. It enables last-term prefix matching, guards
+short terms from fuzzy expansion, favors exact titles, and limits repetitive
+heading results from the same page. Importing it from the focused
+`@chakra-docs/search/minisearch` entry point keeps the implementation out of
+HTTP-only browser bundles.
+
+Pages can add search-specific metadata without changing their visible title or
+body:
+
+```yaml
+---
+title: Accessibility
+aliases: [a11y, inclusive UI]
+searchPriority: 5
+---
+```
+
+`searchPriority` is bounded by the engine. It adjusts otherwise relevant
+results and the ordering of popular pages; it cannot make an unrelated record
+match.
 
 ## Local search
 
