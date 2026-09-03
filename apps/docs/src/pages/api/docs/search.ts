@@ -1,8 +1,8 @@
 import {
-  createDocsSearchEngine,
   type DocsSearchEngine,
   type DocsSearchProvider,
 } from '@chakra-docs/search';
+import { createMiniSearchEngine } from '@chakra-docs/search/minisearch';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDocsManifest } from '../../../docs/manifest';
 
@@ -17,7 +17,19 @@ let searchHandlerPromise: Promise<SearchApiHandler> | undefined;
 const searchProvider: DocsSearchProvider = async (query, options) => {
   options?.signal?.throwIfAborted();
   searchEnginePromise ??= getDocsManifest().then((manifest) =>
-    createDocsSearchEngine(manifest.search),
+    createMiniSearchEngine(manifest.search, {
+      synonyms: [
+        ['a11y', 'accessibility'],
+        ['api', 'application programming interface'],
+        ['cli', 'command line', 'command-line interface'],
+        ['config', 'configuration'],
+        ['js', 'javascript'],
+        ['md', 'markdown'],
+        ['mdx', 'markdown jsx'],
+        ['ssr', 'server rendering', 'server-side rendering'],
+        ['ts', 'typescript'],
+      ],
+    }),
   );
   const engine = await searchEnginePromise;
   options?.signal?.throwIfAborted();
