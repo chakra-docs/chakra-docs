@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/search",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Server-side search engine, Fetch handler, and HTTP client for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -82,7 +82,7 @@
     ]
   },
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
     "minisearch": "^7.2.0",
     "tslib": "^2.3.0"
   },

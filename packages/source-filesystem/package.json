@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/source-filesystem",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Filesystem Markdown and MDX content source for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -61,7 +61,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
     "js-yaml": "^4.3.0",
     "tinyglobby": "^0.2.16",
     "tslib": "^2.3.0"
