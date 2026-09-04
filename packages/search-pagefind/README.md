@@ -38,7 +38,7 @@ for (const record of records) {
 await index.writeFiles({ outputPath: 'public/pagefind' });
 ```
 
-Page-level records map to the page route and heading-level records map to `route#heading-id`, so results can deep-link into sections. Canonically encoded route segments are preserved as-is in Pagefind URLs. Each record's `meta` carries `id`, `kind` (`page` or `heading`), `pageId`, `pageTitle`, `sectionTitle`, `headingId`, and `collectionId` as strings (empty when absent).
+Page-level records map to the page route and heading-level records map to `route#heading-id`, so results can deep-link into sections. Canonically encoded route segments are preserved as-is in Pagefind URLs. Tags and aliases are appended to the indexed content so they participate in matching. Each record's `meta` carries the available document identity, display, source, tag, alias, and search-priority fields as strings (empty when absent).
 
 ## API
 

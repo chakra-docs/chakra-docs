@@ -118,6 +118,7 @@ interface DocsSearchRecord {
   kind?: 'page' | 'heading';
   pageId?: string;
   collectionId?: string;
+  sourceId?: string;
   route: string;
   title: string;
   pageTitle?: string;
@@ -128,6 +129,8 @@ interface DocsSearchRecord {
   headings: DocsHeading[];
   text: string;
   tags?: string[];
+  aliases?: string[];
+  searchPriority?: number;
 }
 ```
 
@@ -145,7 +148,7 @@ import { createPagefindDocumentRecords } from '@chakra-docs/search-pagefind';
 const pagefindRecords = createPagefindDocumentRecords(manifest.search);
 ```
 
-Those records can be written into whatever indexing pipeline the host app uses. Chakra Docs does not force the site to use Pagefind; it provides a manifest-level search contract and an optional adapter.
+Those records can be written into whatever indexing pipeline the host app uses. The adapter appends tags and aliases to Pagefind's indexed content and preserves extended search metadata as strings. Chakra Docs does not force the site to use Pagefind; it provides a manifest-level search contract and an optional adapter.
 
 ## Drafts and hidden pages
 
