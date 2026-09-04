@@ -32,6 +32,7 @@
 
 - **chakra:** preserve flex recipe styles ([1d777a0](https://github.com/chakra-docs/chakra-docs/commit/1d777a0))
 - **chakra:** use portable semantic color defaults ([bbe8fb6](https://github.com/chakra-docs/chakra-docs/commit/bbe8fb6))
+- **deps:** resolve dependency advisories ([1204f00](https://github.com/chakra-docs/chakra-docs/commit/1204f00))
 - **docs:** resolve Postkit MDX dependencies ([3b0099f](https://github.com/chakra-docs/chakra-docs/commit/3b0099f))
 - **release:** support granular Nx release commands ([fe80651](https://github.com/chakra-docs/chakra-docs/commit/fe80651))
 - **search:** preserve exact identifier ranking ([4dc41c0](https://github.com/chakra-docs/chakra-docs/commit/4dc41c0))
