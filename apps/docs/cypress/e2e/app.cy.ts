@@ -178,6 +178,28 @@ describe('docs', () => {
     cy.get('h1').should('contain.text', 'Configuration');
   });
 
+  it('opens, navigates, and dismisses the mobile documentation drawer', () => {
+    cy.viewport(375, 667);
+    visit('/docs/installation');
+
+    cy.get('button[aria-label="Open navigation"]')
+      .should('be.visible')
+      .and('contain.text', 'Menu')
+      .click();
+
+    cy.get('[role="dialog"]')
+      .should('be.visible')
+      .and('contain.text', 'Browse');
+    cy.get('button[aria-label="Close navigation"]').should('be.visible');
+    cy.get('[role="dialog"]')
+      .contains('a[href="/docs/configuration"]', 'Configuration')
+      .click();
+
+    cy.location('pathname').should('equal', '/docs/configuration');
+    cy.get('[role="dialog"]').should('not.exist');
+    cy.get('h1').should('contain.text', 'Configuration');
+  });
+
   it('renders a useful not-found response', () => {
     visit('/this-page-does-not-exist', false);
 
