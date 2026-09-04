@@ -28,10 +28,23 @@ All eleven public packages use one fixed version.
 5. Run the release checks:
 
    ```bash
+   npm audit --omit=dev --audit-level=moderate
+   npm audit --audit-level=high
+   npm exec nx -- format:check --all
    npm run test:release
+   npm run lint
+   npm run typecheck
+   npm run test:coverage
    npm run build
+   npm run types:performance:check
+   npm run search:performance:check
+   npm exec nx -- run docs:e2e --skipNxCache
    npm run release:smoke
    ```
+
+   These commands intentionally mirror the main CI job that authorizes a
+   release. Run the complete list after versioning so the verified commit is
+   the same commit that will be published.
 
 6. Open and merge the pull request only after CI succeeds. The successful CI
    push run for the resulting merge commit is the release authorization.
