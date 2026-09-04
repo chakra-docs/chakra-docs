@@ -10,9 +10,7 @@ interface ChakraDocsSystem {
   ) => ChakraDocsSlotRecipeConfig;
   sva: (
     config: ChakraDocsSlotRecipeConfig,
-  ) => (
-    props?: Record<string, unknown>,
-  ) => Record<string, unknown>;
+  ) => (props?: Record<string, unknown>) => Record<string, unknown>;
 }
 
 const { useChakraContext } = ChakraStyledSystemRuntime as unknown as {
@@ -26,8 +24,7 @@ export function useChakraDocsSlotRecipe(
   const system = useChakraContext();
 
   return useMemo(
-    () =>
-      system.sva(structuredClone(system.getSlotRecipe(key, fallback))),
+    () => system.sva(structuredClone(system.getSlotRecipe(key, fallback))),
     [fallback, key, system],
   );
 }
