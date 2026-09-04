@@ -127,6 +127,18 @@ describe('docs document metadata', () => {
       }),
     ).toThrow('Invalid public docs URL');
   });
+
+  it('rejects invalid site URLs and unsupported public URL protocols', () => {
+    expect(() =>
+      createDocsPageLinkDescriptors(page, { siteUrl: 'not a url' }),
+    ).toThrow('Invalid public docs site URL');
+    expect(() =>
+      createDocsPageLinkDescriptors(page, {
+        canonicalUrl: 'mailto:docs@example.com',
+        siteUrl: 'https://example.com',
+      }),
+    ).toThrow('Invalid public docs site URL');
+  });
 });
 
 describe('Markdown handlers', () => {
@@ -180,6 +192,50 @@ describe('Markdown handlers', () => {
     expect(result.body).toBe('# Plain Start\n');
   });
 
+  it('resolves array, slug, and request URL values in Pages Router handlers', async () => {
+    const handler = createPagesRouterMarkdownHandler({ manifest });
+    const arrayResult = createPagesResponse();
+    const slugResult = createPagesResponse();
+    const requestUrlResult = createPagesResponse();
+
+    await handler(
+      createPagesRequest({ query: { route: ['docs', 'start'] } }),
+      arrayResult.response,
+    );
+    await handler(
+      createPagesRequest({ query: { slug: 'docs/start.md' } }),
+      slugResult.response,
+    );
+    await handler(
+      createPagesRequest({ url: '/docs/start.md' }),
+      requestUrlResult.response,
+    );
+
+    expect(arrayResult.response.statusCode).toBe(200);
+    expect(slugResult.response.statusCode).toBe(200);
+    expect(requestUrlResult.response.statusCode).toBe(200);
+  });
+
+  it('uses the fallback route and rejects unsupported Pages Router methods', async () => {
+    const handler = createPagesRouterMarkdownHandler({ manifest });
+    const missingResult = createPagesResponse();
+    const methodResult = createPagesResponse();
+
+    await handler(createPagesRequest({}), missingResult.response);
+    await handler(
+      createPagesRequest({
+        method: 'POST',
+        query: { route: '/docs/start.md' },
+      }),
+      methodResult.response,
+    );
+
+    expect(missingResult.response.statusCode).toBe(404);
+    expect(missingResult.body).toBe('Not found\n');
+    expect(methodResult.response.statusCode).toBe(405);
+    expect(methodResult.getHeader('allow')).toBe('GET, HEAD');
+  });
+
   it('supports mapping a rewritten App Router path', async () => {
     const handler = createAppRouterMarkdownHandler({
       manifest,
@@ -225,5 +281,22 @@ describe('llms handlers', () => {
     expect(result.body).toContain('## Start');
     expect(result.body).toContain('Hello.');
     expect(result.body).not.toContain('## Draft');
+  });
+
+  it('supports HEAD and rejects unsupported llms methods', async () => {
+    const handler = createPagesRouterLlmsHandler({ manifest });
+    const headResult = createPagesResponse();
+    const methodResult = createPagesResponse();
+
+    await handler(createPagesRequest({ method: 'HEAD' }), headResult.response);
+    await handler(
+      createPagesRequest({ method: 'POST' }),
+      methodResult.response,
+    );
+
+    expect(headResult.response.statusCode).toBe(200);
+    expect(headResult.body).toBe('');
+    expect(methodResult.response.statusCode).toBe(405);
+    expect(methodResult.getHeader('allow')).toBe('GET, HEAD');
   });
 });
