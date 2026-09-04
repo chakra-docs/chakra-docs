@@ -249,6 +249,7 @@ Run the installer.
   assert.equal(pagefindRecords[0].url, '/docs/getting-started');
   assert.equal(pagefindRecords[0].title, 'Getting started');
   assert.match(pagefindRecords[0].content, /Install and configure docs/);
+  assert.match(pagefindRecords[0].content, /docs\nguide/);
   assert.deepEqual(pagefindRecords[0].meta, {
     id: 'docs:getting-started',
     kind: 'page',
@@ -256,7 +257,13 @@ Run the installer.
     pageTitle: 'Getting started',
     sectionTitle: '',
     headingId: '',
+    headingLevel: '',
     collectionId: 'docs',
+    sourceId: '',
+    description: 'Install and configure docs.',
+    tags: 'docs, guide',
+    aliases: '',
+    searchPriority: '',
   });
 
   const feedArtifacts = feed.createFeedArtifacts(manifest.feeds, {
