@@ -101,18 +101,26 @@
     },
     "version": {
       "preVersionCommand": "npm exec nx -- run-many -t build",
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk",
+      "git": {
+        "commit": false,
+        "stageChanges": false,
+        "tag": false,
+        "push": false
+      }
     },
     "changelog": {
+      "git": {
+        "commit": false,
+        "stageChanges": false,
+        "tag": false,
+        "push": false
+      },
       "workspaceChangelog": {
         "file": "CHANGELOG.md",
         "createRelease": false
       }
-    },
-    "git": {
-      "commit": false,
-      "tag": false,
-      "push": false
     }
   },
   "targetDefaults": {

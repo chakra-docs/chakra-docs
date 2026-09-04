@@ -94,11 +94,20 @@ test('release workflow publishes an immutable, CI-verified commit', () => {
   assert.match(releaseWorkflow, /npm exec nx -- release publish/);
   assert.match(releaseWorkflow, /node scripts\/verify-published-version\.mjs/);
 
-  assert.deepEqual(nxConfig.release?.git, {
+  const disabledGitOperations = {
     commit: false,
+    stageChanges: false,
     tag: false,
     push: false,
-  });
+  };
+
+  assert.equal(nxConfig.release?.git, undefined);
+  assert.equal(
+    nxConfig.release?.version?.fallbackCurrentVersionResolver,
+    'disk',
+  );
+  assert.deepEqual(nxConfig.release?.version?.git, disabledGitOperations);
+  assert.deepEqual(nxConfig.release?.changelog?.git, disabledGitOperations);
   assert.equal(
     nxConfig.release?.changelog?.workspaceChangelog?.createRelease,
     false,
