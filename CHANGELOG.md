@@ -30,6 +30,7 @@
 
 ### 🩹 Fixes
 
+- **next:** normalize Markdown catch-all parameters without duplicating the `.md` suffix.
 - **chakra:** preserve flex recipe styles ([1d777a0](https://github.com/chakra-docs/chakra-docs/commit/1d777a0))
 - **chakra:** use portable semantic color defaults ([bbe8fb6](https://github.com/chakra-docs/chakra-docs/commit/bbe8fb6))
 - **deps:** resolve dependency advisories ([1204f00](https://github.com/chakra-docs/chakra-docs/commit/1204f00))

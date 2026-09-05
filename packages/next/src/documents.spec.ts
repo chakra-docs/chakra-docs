@@ -142,6 +142,35 @@ describe('docs document metadata', () => {
 });
 
 describe('Markdown handlers', () => {
+  it.each(['route', 'slug'])(
+    'normalizes suffixed and extensionless catch-all %s parameters',
+    async (key) => {
+      const handler = createPagesRouterMarkdownHandler({ manifest });
+
+      for (const method of ['GET', 'HEAD']) {
+        for (const value of [
+          ['docs', 'start.md'],
+          ['docs', 'start'],
+          'docs/start.md',
+          '/docs/start',
+        ]) {
+          const result = createPagesResponse();
+          await handler(
+            createPagesRequest({ method, query: { [key]: value } }),
+            result.response,
+          );
+
+          expect(result.response.statusCode).toBe(200);
+          if (method === 'HEAD') {
+            expect(result.body).toBe('');
+          } else {
+            expect(result.body).toContain(page.body);
+          }
+        }
+      }
+    },
+  );
+
   it('serves App Router Markdown responses and supports HEAD', async () => {
     const handler = createAppRouterMarkdownHandler({ manifest });
     const response = await handler(

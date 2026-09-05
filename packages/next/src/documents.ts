@@ -217,7 +217,7 @@ function resolvePagesMarkdownRoute(
   const queryRoute = request.query.route ?? request.query.slug;
 
   if (Array.isArray(queryRoute)) {
-    return `/${queryRoute.join('/')}.md`;
+    return `/${queryRoute.join('/')}`;
   }
 
   if (queryRoute) {
