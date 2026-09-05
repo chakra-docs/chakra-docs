@@ -281,7 +281,7 @@ const sidebarRecipe = {
 - `DocsPageFeedback` — compound feedback form with controlled or uncontrolled choice/comment state, async submission status, and application-owned persistence.
 - `DocsCards` — compound responsive card grid with `Root` and safe linked `Card` parts.
 - `DocsSteps` — semantic ordered procedure with `Root` and independently composable `Item` parts.
-- `DocsTabs` — accessible compound tabs with controlled/uncontrolled state and optional same-page synchronization through `syncKey`.
+- `DocsTabs` — compound tabs powered by Chakra Tabs, with arrow/Home/End keyboard navigation, roving focus, controlled/uncontrolled state, and optional same-page synchronization through `syncKey`. Styling remains owned by `chakraDocsTabs` and per-instance slot props.
 - `DocsApiTable` — responsive semantic API-reference table for names, types, defaults, descriptions, and required markers.
 - `DocsBadge` — neutral metadata badge with an opt-in `accent` tone.
 - `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Children render above the navigation list. Its direct disclosure props are `collapsible`, `defaultExpanded`, `expandedIds`, and `onExpandedChange`, with matching `triggerSlotProps`, `indicatorSlotProps`, and `contentSlotProps` overrides. Branch headings become buttons with `aria-expanded` and `aria-controls`; linked branches retain their link and add a separately labeled disclosure button. Badge elements expose their value through `data-badge` and `title`. The legacy `children` recipe slot remains supported alongside the new `trigger`, `indicator`, and `content` slots.

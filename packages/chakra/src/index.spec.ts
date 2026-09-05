@@ -1477,7 +1477,8 @@ describe('Docs content primitives', () => {
     );
 
     expect(markup).toContain('role="tablist"');
-    expect(markup).toContain('role="tab" aria-controls=');
+    expect(markup).toContain('role="tab"');
+    expect(markup).toContain('aria-controls=');
     expect(markup).toContain('aria-selected="true"');
     expect(markup).toContain('role="tabpanel"');
     expect(markup).toContain('hidden=""');

@@ -30,6 +30,7 @@
 
 ### 🩹 Fixes
 
+- **chakra:** use Chakra Tabs for keyboard navigation, roving focus, and unique tab/panel relationships while retaining recipes and synchronized selection.
 - **search:** match MiniSearch synonyms at punctuation boundaries without matching inside identifiers.
 - **next:** normalize Markdown catch-all parameters without duplicating the `.md` suffix.
 - **chakra:** preserve flex recipe styles ([1d777a0](https://github.com/chakra-docs/chakra-docs/commit/1d777a0))

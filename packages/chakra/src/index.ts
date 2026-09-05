@@ -147,6 +147,7 @@ const ChakraClipboard = Chakra.Clipboard as unknown as Record<
 const Code = Chakra.Code;
 const Container = Chakra.Container;
 const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
+const Tabs = Chakra.Tabs as unknown as Record<string, ElementType>;
 const Heading = Chakra.Heading;
 const HStack = Chakra.HStack;
 const Input = Chakra.Input;
@@ -2445,9 +2446,7 @@ export const DocsSteps = {
 } as const;
 
 interface DocsTabsContextValue {
-  baseId: string;
   recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
-  select: (value: string) => void;
   styles: Record<string, unknown>;
   value: string;
 }
@@ -2474,7 +2473,6 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
     chakraDocsTabsSlotRecipe,
   );
   const styles = recipe();
-  const baseId = useId();
   const controlled = props.value !== undefined;
   const [uncontrolledValue, setUncontrolledValue] = useState<string>(
     props.defaultValue ?? '',
@@ -2530,10 +2528,15 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
 
   return createElement(
     DocsTabsContext.Provider,
-    { value: { baseId, recipe, select, styles, value } },
+    { value: { recipe, styles, value } },
     createElement(
-      Box,
-      mergeSlotStyleProps(styles.root, props.slotProps),
+      Tabs.Root,
+      {
+        ...mergeSlotStyleProps(styles.root, props.slotProps),
+        unstyled: true,
+        value,
+        onValueChange: (details: { value: string }) => select(details.value),
+      },
       props.children,
     ),
   );
@@ -2543,10 +2546,8 @@ export function DocsTabsList(props: DocsTabsPartProps): ReactNode {
   const context = useDocsTabsContext();
 
   return createElement(
-    Box,
+    Tabs.List,
     {
-      as: 'div',
-      role: 'tablist',
       ...mergeSlotStyleProps(context.styles.list, props.slotProps),
     },
     props.children,
@@ -2557,18 +2558,12 @@ export function DocsTabsTrigger(props: DocsTabsValuePartProps): ReactNode {
   const context = useDocsTabsContext();
   const selected = context.value === props.value;
   const styles = context.recipe({ selected });
-  const valueId = createDocsTabsValueId(props.value);
 
   return createElement(
-    Button,
+    Tabs.Trigger,
     {
-      type: 'button',
-      id: `${context.baseId}-tab-${valueId}`,
-      role: 'tab',
-      'aria-controls': `${context.baseId}-panel-${valueId}`,
-      'aria-selected': selected,
-      onClick: () => context.select(props.value),
       ...mergeSlotStyleProps(styles.trigger, props.slotProps),
+      value: props.value,
     },
     props.children,
   );
@@ -2576,17 +2571,12 @@ export function DocsTabsTrigger(props: DocsTabsValuePartProps): ReactNode {
 
 export function DocsTabsContent(props: DocsTabsValuePartProps): ReactNode {
   const context = useDocsTabsContext();
-  const selected = context.value === props.value;
-  const valueId = createDocsTabsValueId(props.value);
 
   return createElement(
-    Box,
+    Tabs.Content,
     {
-      id: `${context.baseId}-panel-${valueId}`,
-      role: 'tabpanel',
-      'aria-labelledby': `${context.baseId}-tab-${valueId}`,
-      hidden: !selected,
       ...mergeSlotStyleProps(context.styles.content, props.slotProps),
+      value: props.value,
     },
     props.children,
   );
@@ -2755,15 +2745,6 @@ export function DocsBadge(props: DocsBadgeProps): ReactNode {
       ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     props.children,
-  );
-}
-
-function createDocsTabsValueId(value: string): string {
-  return (
-    value
-      .trim()
-      .replace(/[^a-z\d_-]+/gi, '-')
-      .replace(/^-+|-+$/g, '') || 'tab'
   );
 }
 
