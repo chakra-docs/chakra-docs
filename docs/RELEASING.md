@@ -8,6 +8,29 @@ creates a GitHub release.
 
 All eleven public packages use one fixed version.
 
+## Pending 0.2.0 prerequisite: reproducible Postkit dependencies
+
+The docs application currently imports Postkit through local, ignored yalc
+links. These links are not installed by `npm ci` on a clean CI runner. A local
+site build or package-consumer smoke check is therefore not enough to clear
+the release gate.
+
+Before merging the release branch:
+
+1. Publish the compatible Postkit package set used by the docs application
+   (`@postkit/core`, `@postkit/react`, `@postkit/shiki`, and `@postkit/unfurl`).
+   The development artifacts currently identify themselves as `0.1.1`; verify
+   the actual published versions and APIs rather than assuming the older
+   registry packages provide them.
+2. Declare the docs application's direct Postkit dependencies in
+   `apps/docs/package.json` and regenerate and commit `package-lock.json`.
+   Keep yalc as an optional development override, not a CI prerequisite.
+3. Verify `npm ci`, typechecks, the site build, and browser tests in a clean
+   checkout without a yalc store or links. Then remove this pending section.
+
+Do not publish Postkit implicitly as part of a Chakra Docs release or bypass
+the required successful CI run to work around missing packages.
+
 ## Prepare a release pull request
 
 1. Start from the latest default branch with a clean working tree.
