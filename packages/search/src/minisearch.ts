@@ -77,7 +77,10 @@ interface ResolvedOptions {
   fields: Required<DocsMiniSearchFieldWeights>;
   fuzzy: Required<DocsMiniSearchFuzzyOptions> | false;
   prefix: Required<DocsMiniSearchPrefixOptions> | false;
-  synonyms: readonly (readonly string[])[];
+  synonyms: readonly {
+    terms: readonly string[];
+    patterns: readonly RegExp[];
+  }[];
   maxResultsPerPage: number;
 }
 
@@ -241,17 +244,13 @@ function createMiniSearchDocument(
 
 function collectDocumentSynonyms(
   searchableText: string,
-  groups: readonly (readonly string[])[],
+  groups: ResolvedOptions['synonyms'],
 ): string {
   const expansions = new Set<string>();
 
   for (const group of groups) {
-    const normalized = group.map(normalizeDocsSearchText).filter(Boolean);
-
-    const paddedText = ` ${searchableText} `;
-
-    if (normalized.some((term) => paddedText.includes(` ${term} `))) {
-      normalized.forEach((term) => expansions.add(term));
+    if (group.patterns.some((pattern) => pattern.test(searchableText))) {
+      group.terms.forEach((term) => expansions.add(term));
     }
   }
 
@@ -411,7 +410,24 @@ function resolveOptions(options: DocsMiniSearchEngineOptions): ResolvedOptions {
             minTermLength: options.prefix?.minTermLength ?? 2,
             lastTermOnly: options.prefix?.lastTermOnly ?? true,
           },
-    synonyms: options.synonyms ?? [],
+    // Compile once per index, not once per document. Preserve identifier
+    // punctuation (C++, C#, @scope) while accepting prose punctuation.
+    synonyms: (options.synonyms ?? []).map((group) => {
+      const terms = [
+        ...new Set(group.map(normalizeDocsSearchText).filter(Boolean)),
+      ];
+      const boundary = '[^\\p{L}\\p{N}\\p{M}+#@]';
+      return {
+        terms,
+        patterns: terms.map(
+          (term) =>
+            new RegExp(
+              `(?:^|${boundary})${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|${boundary})`,
+              'u',
+            ),
+        ),
+      };
+    }),
     maxResultsPerPage: Math.max(
       0,
       Math.floor(options.maxResultsPerPage ?? DEFAULT_MAX_RESULTS_PER_PAGE),

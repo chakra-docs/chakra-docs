@@ -1,5 +1,6 @@
 import type { DocsSearchRecord } from '@chakra-docs/core';
 import { createMiniSearchEngine } from './minisearch.js';
+import { createDocsSearchEngine } from './lib/search.js';
 
 function createRecord(
   overrides: Partial<DocsSearchRecord> & Pick<DocsSearchRecord, 'id'>,
@@ -15,6 +16,58 @@ function createRecord(
 }
 
 describe('createMiniSearchEngine', () => {
+  it.each([
+    'Learn accessibility, keyboard navigation and focus management.',
+    '(accessibility)',
+    'accessibility: keyboard navigation',
+    '“accessibility” matters.',
+    'accessibility',
+  ])('matches synonyms at prose boundaries: %s', (text) => {
+    const records = [createRecord({ id: 'guide', title: 'Guide', text })];
+    const options = { synonyms: [['a11y', 'accessibility']] };
+    for (const createEngine of [
+      createMiniSearchEngine,
+      createDocsSearchEngine,
+    ]) {
+      expect(
+        createEngine(records, options).search({ query: 'a11y' }).results,
+      ).toEqual([expect.objectContaining({ id: 'guide' })]);
+    }
+  });
+
+  it('matches whole phrases and preserves identifier punctuation', () => {
+    const engine = createMiniSearchEngine(
+      [
+        createRecord({
+          id: 'rendering',
+          text: 'Learn (server-side rendering), today.',
+        }),
+        createRecord({ id: 'cpp', text: 'Use C++, safely.' }),
+        createRecord({
+          id: 'partial',
+          text: 'inaccessibility accessibilityTools',
+        }),
+        createRecord({ id: 'unicode', text: 'éaccessibility accessibility語' }),
+      ],
+      {
+        synonyms: [
+          ['ssr', 'server-side rendering'],
+          ['cplusplus', 'C++'],
+          ['a11y', 'accessibility'],
+        ],
+        fuzzy: false,
+        prefix: false,
+      },
+    );
+    expect(engine.search({ query: 'ssr' }).results.map(({ id }) => id)).toEqual(
+      ['rendering'],
+    );
+    expect(
+      engine.search({ query: 'cplusplus' }).results.map(({ id }) => id),
+    ).toEqual(['cpp']);
+    expect(engine.search({ query: 'a11y' }).results).toEqual([]);
+  });
+
   it('supports fuzzy and last-term prefix matching with short-term guards', () => {
     const engine = createMiniSearchEngine([
       createRecord({ id: 'javascript', title: 'JavaScript configuration' }),
