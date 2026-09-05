@@ -2914,7 +2914,8 @@ export function DocsMobileNavigationRoot(
       motionPreset: 'slide-in-left',
       onOpenChange: props.onOpenChange,
       open: props.open,
-      unmountOnExit: true,
+      // Preserve uncontrolled sidebar expansion after the first opening.
+      unmountOnExit: false,
     },
     createElement(
       DocsMobileNavigationContext.Provider,
@@ -3106,6 +3107,8 @@ interface DocsMobileNavigationClickEvent {
 }
 
 function DocsMobileNavigationRouteEffect(props: {
+  closeOnNavigate: boolean;
+  open: boolean;
   route?: string;
   setOpen: (open: boolean) => void;
 }): null {
@@ -3113,6 +3116,8 @@ function DocsMobileNavigationRouteEffect(props: {
 
   useEffect(() => {
     if (
+      props.closeOnNavigate &&
+      props.open &&
       previousRouteRef.current !== undefined &&
       previousRouteRef.current !== props.route
     ) {
@@ -3120,7 +3125,7 @@ function DocsMobileNavigationRouteEffect(props: {
     }
 
     previousRouteRef.current = props.route;
-  }, [props.route, props.setOpen]);
+  }, [props.closeOnNavigate, props.open, props.route, props.setOpen]);
 
   return null;
 }
@@ -3132,7 +3137,13 @@ export function DocsMobileNavigationSidebar(
   const configuredProps = context.sidebarProps ?? {};
 
   return createElement(Dialog.Context, {
-    children: ({ setOpen }: { setOpen: (open: boolean) => void }) => {
+    children: ({
+      open,
+      setOpen,
+    }: {
+      open: boolean;
+      setOpen: (open: boolean) => void;
+    }) => {
       const linkSlotProps = mergeComponentSlotProps(
         undefined,
         configuredProps.linkSlotProps,
@@ -3144,6 +3155,8 @@ export function DocsMobileNavigationSidebar(
         Fragment,
         null,
         createElement(DocsMobileNavigationRouteEffect, {
+          closeOnNavigate: context.closeOnNavigate,
+          open,
           route: context.page?.route,
           setOpen,
         }),

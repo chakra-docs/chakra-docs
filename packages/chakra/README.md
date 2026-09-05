@@ -121,6 +121,12 @@ navigation. For a custom header or drawer composition, use the exported
 `DocsMobileNavigation.Root`, `Trigger`, `Content`, `Header`, `Title`,
 `CloseTrigger`, `Search`, `Body`, and `Sidebar` parts.
 
+The drawer mounts lazily and retains its contents after closing, preserving
+manual sidebar expansion across reopenings and client-side navigation. New
+active branches open automatically. Set `closeOnNavigate={false}` on the root
+to keep the drawer open for both link selections and `page.route` changes.
+Controlled `open` and sidebar `expandedIds` remain application-owned.
+
 Add search and version switching to your site chrome:
 
 ```tsx

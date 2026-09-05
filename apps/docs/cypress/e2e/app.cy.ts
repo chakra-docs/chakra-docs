@@ -196,7 +196,7 @@ describe('docs', () => {
       .click();
 
     cy.location('pathname').should('equal', '/docs/configuration');
-    cy.get('[role="dialog"]').should('not.exist');
+    cy.get('[role="dialog"]').should('not.be.visible');
     cy.get('h1').should('contain.text', 'Configuration');
   });
 

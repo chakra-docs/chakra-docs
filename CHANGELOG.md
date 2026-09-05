@@ -30,6 +30,7 @@
 
 ### 🩹 Fixes
 
+- **chakra:** honor mobile navigation dismissal preferences and preserve manual sidebar expansion across drawer reopenings and navigation.
 - **chakra:** use Chakra Tabs for keyboard navigation, roving focus, and unique tab/panel relationships while retaining recipes and synchronized selection.
 - **search:** match MiniSearch synonyms at punctuation boundaries without matching inside identifiers.
 - **next:** normalize Markdown catch-all parameters without duplicating the `.md` suffix.

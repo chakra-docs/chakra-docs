@@ -6,7 +6,11 @@ import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as ChakraRuntime from '@chakra-ui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DocsTabs } from './index.js';
+import { DocsMobileNavigation, DocsTabs } from './index.js';
+
+// DOM mounting and focus effects need headroom when coverage and builds share
+// a CI worker. Keep the broader unit-test timeout unchanged.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 const { ChakraProvider, defaultSystem } = ChakraRuntime as unknown as {
   ChakraProvider: ComponentType<{ value: unknown; children?: ReactNode }>;
@@ -18,6 +22,12 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  vi.stubGlobal('matchMedia', (media: string) => ({
+    matches: false,
+    media,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
   vi.stubGlobal('CSS', {
     escape: (value: string) =>
       Array.from(
@@ -50,6 +60,162 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
+});
+
+const navigation = [
+  {
+    id: 'guide',
+    title: 'Guide',
+    children: [{ id: 'start', title: 'Start', href: '/docs/start' }],
+  },
+  {
+    id: 'examples',
+    title: 'Examples',
+    children: [{ id: 'example', title: 'Example', href: '/docs/example' }],
+  },
+  {
+    id: 'api',
+    title: 'API',
+    children: [
+      { id: 'reference', title: 'Reference', href: '/docs/reference' },
+    ],
+  },
+];
+
+function mobileNavigation(
+  route: string,
+  props: Parameters<typeof DocsMobileNavigation.Root>[0] = {},
+) {
+  return createElement(DocsMobileNavigation.Root, {
+    nav: navigation,
+    page: {
+      id: route,
+      route,
+      title: route,
+      slug: [],
+      path: route,
+      frontmatter: {},
+    },
+    ...props,
+  });
+}
+
+function button(label: string): HTMLButtonElement {
+  const result = [...document.querySelectorAll('button')].find((node) => {
+    const accessibleContent = node.cloneNode(true) as HTMLElement;
+    accessibleContent
+      .querySelectorAll('[aria-hidden="true"]')
+      .forEach((child) => child.remove());
+    return (
+      node.getAttribute('aria-label') === label ||
+      accessibleContent.textContent?.trim() === label
+    );
+  });
+  expect(result, `Button ${label}`).toBeDefined();
+  return result as HTMLButtonElement;
+}
+
+async function click(element: HTMLElement) {
+  await act(async () => element.click());
+}
+
+describe('DocsMobileNavigation interactions', () => {
+  it('closes on route changes by default and respects closeOnNavigate=false', async () => {
+    const onOpenChange = vi.fn();
+    await render(
+      mobileNavigation('/docs/start', {
+        defaultOpen: true,
+        closeOnNavigate: false,
+        onOpenChange,
+      }),
+    );
+    await render(
+      mobileNavigation('/docs/example', {
+        closeOnNavigate: false,
+        onOpenChange,
+      }),
+    );
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      document.querySelector('[role="dialog"]')?.getAttribute('data-state'),
+    ).toBe('open');
+
+    // Enabling dismissal should not treat an already-observed route as new.
+    await render(mobileNavigation('/docs/example', { onOpenChange }));
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await render(mobileNavigation('/docs/reference', { onOpenChange }));
+    expect(onOpenChange).toHaveBeenCalledExactlyOnceWith({ open: false });
+  });
+
+  it.each([true, false])(
+    'honors closeOnNavigate=%s on link selection',
+    async (closeOnNavigate) => {
+      const onOpenChange = vi.fn();
+      await render(
+        mobileNavigation('/docs/start', {
+          defaultOpen: true,
+          closeOnNavigate,
+          onOpenChange,
+        }),
+      );
+      const link = document.querySelector<HTMLAnchorElement>(
+        'a[href="/docs/start"]',
+      );
+      expect(link).not.toBeNull();
+      // Cancel jsdom's browser navigation after React's click handler has run.
+      const cancelNavigation = (event: Event) => event.preventDefault();
+      document.addEventListener('click', cancelNavigation, { once: true });
+      await click(link as HTMLAnchorElement);
+      if (closeOnNavigate) {
+        expect(onOpenChange).toHaveBeenCalledExactlyOnceWith({ open: false });
+      } else {
+        expect(onOpenChange).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it('preserves manual expansion and opens the new active branch while closed', async () => {
+    const onOpenChange = vi.fn();
+    await render(mobileNavigation('/docs/start', { onOpenChange }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    await click(button('Open navigation'));
+    expect(button('Examples').getAttribute('aria-expanded')).toBe('false');
+    await click(button('Examples'));
+    expect(button('Examples').getAttribute('aria-expanded')).toBe('true');
+    await click(button('Close navigation'));
+    expect(
+      document.querySelector('[role="dialog"]')?.getAttribute('data-state'),
+    ).toBe('closed');
+    onOpenChange.mockClear();
+    await render(mobileNavigation('/docs/reference', { onOpenChange }));
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await click(button('Open navigation'));
+    expect(
+      document.querySelector('[role="dialog"]')?.getAttribute('data-state'),
+    ).toBe('open');
+    expect(button('Examples').getAttribute('aria-expanded')).toBe('true');
+    expect(button('API').getAttribute('aria-expanded')).toBe('true');
+    expect(button('Guide').getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('leaves controlled expansion owned by the consumer', async () => {
+    const onExpandedChange = vi.fn();
+    await render(
+      mobileNavigation('/docs/start', {
+        defaultOpen: true,
+        sidebarProps: { expandedIds: ['guide'], onExpandedChange },
+      }),
+    );
+    await click(button('Examples'));
+    expect(onExpandedChange).toHaveBeenCalledWith(['guide', 'examples']);
+    expect(button('Examples').getAttribute('aria-expanded')).toBe('false');
+    await render(
+      mobileNavigation('/docs/start', {
+        sidebarProps: { expandedIds: ['guide', 'examples'], onExpandedChange },
+      }),
+    );
+    expect(button('Examples').getAttribute('aria-expanded')).toBe('true');
+  });
 });
 
 afterEach(async () => {
