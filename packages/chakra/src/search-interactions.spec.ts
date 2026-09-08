@@ -6,7 +6,13 @@ import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as ChakraRuntime from '@chakra-ui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CodeBlock, DocsProvider, DocsSearch } from './index.js';
+import {
+  CodeBlock,
+  DocsHeadingPermalink,
+  DocsPageFeedback,
+  DocsProvider,
+  DocsSearch,
+} from './index.js';
 
 // DOM mounting and focus effects need headroom when coverage and builds share
 // a CI worker. Keep the broader unit-test timeout unchanged.
@@ -150,6 +156,27 @@ async function typeQuery(input: HTMLInputElement, value: string) {
 }
 
 describe('CodeBlock copy analytics', () => {
+  it('does not classify ordinary code as package commands', async () => {
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal(
+      'navigator',
+      Object.create(navigator, { clipboard: { value: { writeText } } }),
+    );
+    const onCodeCopy = vi.fn();
+    const onPackageCommandCopy = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        {
+          config: { analytics: { onCodeCopy, onPackageCommandCopy } },
+        },
+        createElement(CodeBlock, { code: 'npm install example' }),
+      ),
+    );
+    await act(async () => button('Copy code').click());
+    expect(onCodeCopy).toHaveBeenCalledTimes(1);
+    expect(onPackageCommandCopy).not.toHaveBeenCalled();
+  });
   it('emits successful code and explicit package command copies alongside slot callbacks', async () => {
     const writeText = vi.fn(async () => undefined);
     vi.stubGlobal(
@@ -184,6 +211,62 @@ describe('CodeBlock copy analytics', () => {
       manager: 'pnpm',
     });
     expect(onCopy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('heading and feedback analytics', () => {
+  it('preserves provider analytics alongside heading clipboard status observers', async () => {
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal(
+      'navigator',
+      Object.create(navigator, { clipboard: { value: { writeText } } }),
+    );
+    const onHeadingLinkCopy = vi.fn();
+    const onStatusChange = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onHeadingLinkCopy } } },
+        createElement(DocsHeadingPermalink, {
+          headingId: 'install',
+          title: 'Install',
+          slotProps: { onStatusChange },
+        }),
+      ),
+    );
+    expect(onHeadingLinkCopy).not.toHaveBeenCalled();
+    await act(async () => required(container.querySelector('button')).click());
+    expect(onHeadingLinkCopy).toHaveBeenCalledExactlyOnceWith({
+      headingId: 'install',
+      title: 'Install',
+      href: '#install',
+    });
+    expect(onStatusChange).toHaveBeenCalledExactlyOnceWith({ copied: true });
+  });
+
+  it('does not turn successful feedback into an error when analytics throws', async () => {
+    const onSubmit = vi.fn(async () => undefined);
+    const onPageFeedback = vi.fn(() => {
+      throw new Error('Analytics unavailable');
+    });
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onPageFeedback } } },
+        createElement(DocsPageFeedback.Root, {
+          onSubmit,
+          defaultValue: 'helpful',
+        }),
+      ),
+    );
+    await act(async () =>
+      required(container.querySelector('form')).dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      ),
+    );
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onPageFeedback).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain('Thanks for your feedback');
   });
 });
 

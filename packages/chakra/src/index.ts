@@ -2022,6 +2022,7 @@ export function DocsHeadingPermalink(
     ChakraClipboard.Root,
     {
       value: href,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
       onStatusChange: (details: { copied: boolean }) => {
         if (details.copied) {
           emitAnalytics(config.analytics?.onHeadingLinkCopy, {
@@ -2030,8 +2031,11 @@ export function DocsHeadingPermalink(
             title: props.title,
           });
         }
+        (
+          props.slotProps?.onStatusChange as
+            ((details: { copied: boolean }) => void) | undefined
+        )?.(details);
       },
-      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     createElement(
       ChakraClipboard.Trigger,
