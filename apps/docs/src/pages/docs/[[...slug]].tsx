@@ -1,6 +1,7 @@
 import type { DocsNavItem, DocsPage } from '@chakra-docs/core';
 import {
   DocsArticle,
+  DocsApiTable,
   DocsLayout,
   DocsPageActions,
   DocsPagination,
@@ -85,6 +86,25 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
             ) : (
               <MarkdownContent source={props.page.body ?? ''} />
             )}
+            {props.page.route === '/docs/components' ? (
+              <DocsApiTable
+                caption="Responsive API table example"
+                items={[
+                  {
+                    name: 'sidebarCollapsible',
+                    type: 'boolean',
+                    defaultValue: 'false',
+                    description: 'Enables collapsible sidebar navigation.',
+                  },
+                  {
+                    name: 'onSidebarExpandedChange',
+                    type: '(expandedIds: readonly string[]) => void',
+                    description:
+                      'Receives the expanded section IDs when navigation changes.',
+                  },
+                ]}
+              />
+            ) : null}
             <DocsPagination nav={props.nav} page={props.page} />
           </DocsArticle>
         </DocsLayout>

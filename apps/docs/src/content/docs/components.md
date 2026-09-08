@@ -257,6 +257,19 @@ Compose the parts directly to remove the comment, introduce different choices, o
 
 Cards, steps, synchronized tabs, API tables, and badges provide common MDX building blocks without imposing a site palette. Every part uses its own slot recipe and accepts matching per-instance slot props.
 
+`DocsApiTable` keeps wide content in a horizontally scrollable, keyboard-focusable
+region by default. Table headers and captions retain native table semantics.
+Customize the scroll container through the `chakraDocsApiTable` recipe's `root`
+slot or `slotProps` (including an `aria-label` override); use `tableSlotProps` for
+the table itself. `DocsLayout` and `DocsArticle` constrain their content widths
+without clipping menus or making the whole article scroll horizontally.
+`DocsArticle` also supplies horizontal scrolling for bare tables emitted by custom
+Markdown renderers. If a renderer already wraps its table in a scroll container,
+set `data-chakra-docs-table-scroll="external"` on the table to opt out of that
+fallback (`DocsApiTable` does this automatically). The fallback is customizable
+through the `chakraDocsArticle` recipe's `root` slot. An outer host flex/grid item
+should also use `min-width: 0` so it can shrink.
+
 ```tsx
 <DocsCards.Root>
   <DocsCards.Card

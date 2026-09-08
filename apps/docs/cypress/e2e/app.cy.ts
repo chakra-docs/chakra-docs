@@ -12,6 +12,67 @@ describe('docs', () => {
     cy.get('@consoleError').should('not.have.been.called');
   });
 
+  function registerResponsiveTableTests() {
+    for (const width of [320, 375, 768, 1440]) {
+      it(`contains wide API and Postkit tables at ${width}px without page overflow`, () => {
+        cy.viewport(width, 900);
+        for (const route of ['/docs/components', '/docs/postkit']) {
+          visit(route);
+          // Wait for interactive hydration before mutating a server-rendered cell.
+          cy.contains('button', 'Search').click();
+          cy.get('[role="dialog"]').should('be.visible');
+          cy.get('[role="combobox"]').type('{esc}');
+          cy.get('[role="dialog"]').should('not.be.visible');
+          const table =
+            route === '/docs/components'
+              ? 'table'
+              : '[data-postkit-prose-element="table"]';
+          // Stress intrinsic sizing with an unbreakable identifier, regardless
+          // of which example content happens to be documented on the page.
+          cy.get(table)
+            .find('td')
+            .first()
+            .invoke('text', 'LongIdentifier'.repeat(30));
+          cy.get('html').should(($element) => {
+            expect($element[0].scrollWidth).to.be.at.most(
+              $element[0].clientWidth + 1,
+            );
+          });
+          cy.get('body').should(($element) => {
+            expect($element[0].scrollWidth).to.be.at.most(width + 1);
+          });
+          const scroller =
+            route === '/docs/components'
+              ? '[role="region"][aria-label="Responsive API table example"]'
+              : table;
+          cy.get(scroller)
+            .should(($element) => {
+              const element = $element[0];
+              expect(element.scrollWidth).to.be.greaterThan(
+                element.clientWidth,
+              );
+              expect(element.getBoundingClientRect().right).to.be.at.most(
+                width,
+              );
+            })
+            .scrollTo('right');
+          cy.get(scroller).should(($element) => {
+            expect($element[0].scrollLeft).to.be.greaterThan(0);
+          });
+          if (route === '/docs/components') {
+            cy.get(scroller)
+              .should('have.attr', 'role', 'region')
+              .and('have.attr', 'aria-label', 'Responsive API table example')
+              .focus();
+            cy.get(scroller).should('be.focused');
+            cy.get(table).should('have.css', 'display', 'table');
+          }
+          cy.get('@consoleError').should('not.have.been.called');
+        }
+      });
+    }
+  }
+
   it('renders the product shell with one main landmark and security headers', () => {
     visit('/');
 
@@ -312,4 +373,6 @@ describe('docs', () => {
     cy.get('meta[name="robots"]').should('have.attr', 'content', 'noindex');
     cy.contains('a', 'Return home').should('have.attr', 'href', '/');
   });
+  // These open search to await hydration; run after the cold-cache prefetch test.
+  registerResponsiveTableTests();
 });

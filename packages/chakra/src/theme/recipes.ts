@@ -175,7 +175,15 @@ export const chakraDocsApiTableSlotRecipe = defineSlotRecipe({
       borderRadius: 'md',
       borderWidth: '1px',
       my: 6,
+      minW: 0,
+      maxW: 'full',
+      w: 'full',
       overflowX: 'auto',
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'border.emphasized',
+        outlineOffset: '2px',
+      },
     },
     table: { borderCollapse: 'collapse', textAlign: 'start', w: 'full' },
     caption: { color: 'fg.muted', fontSize: 'sm', p: 3, textAlign: 'start' },
@@ -229,6 +237,7 @@ export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
   base: {
     root: {
       maxW: '7xl',
+      minW: 0,
       px: { base: 4, md: 8 },
       py: 8,
     },
@@ -243,6 +252,8 @@ export const chakraDocsLayoutSlotRecipe = defineSlotRecipe({
     content: {
       flex: '1',
       minW: 0,
+      maxW: 'full',
+      w: 'full',
     },
   },
 });
@@ -361,12 +372,25 @@ export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
     'actions',
   ],
   base: {
-    root: { maxW: '3xl' },
+    root: {
+      maxW: '3xl',
+      minW: 0,
+      w: 'full',
+      // Custom Markdown renderers may emit bare tables. Contain those locally;
+      // tables with an external scroll area keep their native table layout.
+      '& :where(table:not([data-chakra-docs-table-scroll="external"]))': {
+        display: 'block',
+        maxW: 'full',
+        overflowX: 'auto',
+        w: 'full',
+      },
+    },
     header: { mb: 8 },
     breadcrumbs: { mb: 4 },
     heading: {
       alignItems: 'flex-start',
       display: 'flex',
+      flexWrap: 'wrap',
       gap: 4,
       justifyContent: 'space-between',
     },
@@ -1040,7 +1064,7 @@ export const chakraDocsMarkdownContentSlotRecipe = defineSlotRecipe({
     'codeBlock',
   ],
   base: {
-    root: { gap: 4 },
+    root: { gap: 4, minW: 0, maxW: 'full' },
     paragraph: { color: 'fg.muted', fontSize: 'md' },
     list: { color: 'fg.muted', ps: 6 },
     listItem: { mt: 1 },

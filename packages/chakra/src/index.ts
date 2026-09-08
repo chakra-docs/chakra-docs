@@ -2633,11 +2633,20 @@ export function DocsApiTable(props: DocsApiTableProps): ReactNode {
 
   return createElement(
     Box,
-    mergeSlotStyleProps(styles.root, props.slotProps),
+    {
+      role: 'region',
+      'aria-label':
+        typeof props.caption === 'string'
+          ? props.caption
+          : 'API reference table',
+      tabIndex: 0,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
     createElement(
       Box,
       {
         as: 'table',
+        'data-chakra-docs-table-scroll': 'external',
         ...mergeSlotStyleProps(styles.table, props.tableSlotProps),
       },
       props.caption

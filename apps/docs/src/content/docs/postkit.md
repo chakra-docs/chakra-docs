@@ -99,6 +99,16 @@ Use that renderer as the child of `DocsArticle`. A production integration should
 
 ## Author rich Markdown
 
+GFM tables use Postkit's table renderer within the width-constrained Chakra Docs
+article. Wide rows scroll horizontally inside the table rather than widening
+the page on mobile.
+
+| Layer               | Package                 | Responsibility                              |
+| ------------------- | ----------------------- | ------------------------------------------- |
+| Documentation shell | `@chakra-docs/chakra`   | Navigation, article width, and page actions |
+| Markdown body       | `@postkit/react`        | Prose, tables, and rich content components  |
+| Markdown pipeline   | `@postkit/react/remark` | GFM and non-executable directives           |
+
 Postkit's Remark preset adds GFM, frontmatter recognition, and portable directives. Authors can keep rich components in plain Markdown rather than coupling content files to a framework-specific MDX compiler.
 
 ```markdown

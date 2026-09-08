@@ -1504,7 +1504,7 @@ describe('Docs content primitives', () => {
   });
 
   it('renders an API reference as a semantic table', () => {
-    const markup = render(
+    const markup = renderWithStyles(
       createElement(DocsApiTable, {
         caption: 'DocsLayout props',
         items: [
@@ -1525,6 +1525,52 @@ describe('Docs content primitives', () => {
     expect(markup).toContain('>sidebarCollapsible<');
     expect(markup).toContain('>Required<');
     expect(markup).toContain('>boolean<');
+    expect(markup).toContain('role="region"');
+    expect(markup).toContain('aria-label="DocsLayout props"');
+    expect(markup).toContain('tabindex="0"');
+    expect(markup).toContain('overflow-x:auto');
+    expect(markup).toContain('data-chakra-docs-table-scroll="external"');
+  });
+
+  it('bounds table and article widths without clipping the article or changing table semantics', () => {
+    const recipes = chakraDocsSlotRecipes;
+    expect(recipes[chakraDocsRecipeKeys.apiTable].base.root).toMatchObject({
+      minW: 0,
+      maxW: 'full',
+      w: 'full',
+      overflowX: 'auto',
+    });
+    expect(recipes[chakraDocsRecipeKeys.layout].base.content).toMatchObject({
+      minW: 0,
+      maxW: 'full',
+      w: 'full',
+    });
+    expect(recipes[chakraDocsRecipeKeys.article].base.root).toMatchObject({
+      minW: 0,
+      maxW: '3xl',
+      w: 'full',
+      '& :where(table:not([data-chakra-docs-table-scroll="external"]))': {
+        display: 'block',
+        maxW: 'full',
+        overflowX: 'auto',
+        w: 'full',
+      },
+    });
+    expect(recipes[chakraDocsRecipeKeys.article].base.heading).toHaveProperty(
+      'flexWrap',
+      'wrap',
+    );
+    expect(
+      recipes[chakraDocsRecipeKeys.apiTable].base.table,
+    ).not.toHaveProperty('display', 'block');
+    const markup = renderWithStyles(
+      createElement(DocsApiTable, {
+        items: [],
+        slotProps: { 'aria-label': 'Custom table', maxW: '20rem' },
+      }),
+    );
+    expect(markup).toContain('aria-label="Custom table"');
+    expect(markup).toContain('max-width:20rem');
   });
 
   it('renders badges from a neutral default with an opt-in accent tone', () => {
