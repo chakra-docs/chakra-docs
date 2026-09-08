@@ -6,7 +6,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as ChakraRuntime from '@chakra-ui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DocsProvider, DocsSearch } from './index.js';
+import { CodeBlock, DocsProvider, DocsSearch } from './index.js';
 
 // DOM mounting and focus effects need headroom when coverage and builds share
 // a CI worker. Keep the broader unit-test timeout unchanged.
@@ -148,6 +148,44 @@ async function typeQuery(input: HTMLInputElement, value: string) {
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
+
+describe('CodeBlock copy analytics', () => {
+  it('emits successful code and explicit package command copies alongside slot callbacks', async () => {
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal(
+      'navigator',
+      Object.create(navigator, { clipboard: { value: { writeText } } }),
+    );
+    const onCodeCopy = vi.fn(() => {
+      throw new Error('Analytics offline');
+    });
+    const onPackageCommandCopy = vi.fn();
+    const onCopy = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        {
+          config: { analytics: { onCodeCopy, onPackageCommandCopy } },
+        },
+        createElement(CodeBlock, {
+          code: 'pnpm add @chakra-docs/chakra',
+          language: 'sh',
+          packageManager: 'pnpm',
+          slotProps: { onCopy },
+        }),
+      ),
+    );
+    expect(onPackageCommandCopy).not.toHaveBeenCalled();
+    await act(async () => button('Copy code').click());
+    expect(writeText).toHaveBeenCalledWith('pnpm add @chakra-docs/chakra');
+    expect(onCodeCopy).toHaveBeenCalledTimes(1);
+    expect(onPackageCommandCopy).toHaveBeenCalledExactlyOnceWith({
+      command: 'pnpm add @chakra-docs/chakra',
+      manager: 'pnpm',
+    });
+    expect(onCopy).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('DocsSearch keyboard interactions', () => {
   beforeEach(() => {

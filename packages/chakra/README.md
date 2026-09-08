@@ -197,9 +197,21 @@ context changes invisibly to these props. Only ship authorized suggestions.
 
 - `linkComponent` — a `DocsLinkComponent` used for internal navigation, including Markdown, sidebar, pagination, and search-result links (for example `DocsLink` from `@chakra-docs/next/link`). External URLs continue to render as ordinary anchors.
 - `labels` — `Partial<DocsLabels>` overrides for UI copy (`search`, `searchPlaceholder`, `searchLoading`, `searchError`, `previousPage`, `nextPage`, `onThisPage`, `copyCode`, ...).
-- `analytics` — `DocsAnalyticsCallbacks` (`onSearchOpen`, `onSearch`, `onSearchResultSelect`, `onCodeCopy`, `onPackageCommandCopy`).
+- `analytics` — `DocsAnalyticsCallbacks` for search, code/package copies,
+  page actions/copies, heading-link copies, and feedback. Callbacks are optional,
+  provider-neutral observers; thrown errors and rejected promises are isolated
+  from the UI. Report integration failures inside your callback if needed.
 - `codeBlock` — shared `CodeBlock` defaults. `adapter` configures syntax highlighting; `copy`, `lineNumbers`, `size`, `variant`, and `wrap` configure every nested code block unless an instance overrides them.
 - `layout` — `ChakraDocsLayoutConfig` sticky offsets (`stickyTop`, `sidebarStickyTop`, `tocStickyTop`, `scrollMarginTop`), each accepting responsive Chakra values.
+
+Code-copy events fire after a successful clipboard write, not on click. Use
+`<CodeBlock code="pnpm add @chakra-docs/chakra" packageManager="pnpm" />` to
+emit `onPackageCommandCopy({ command, manager })` as well as `onCodeCopy`.
+The manager is explicit metadata; ordinary shell blocks are not guessed to be
+package commands. A root `slotProps.onCopy` observer runs alongside analytics.
+Standalone Postkit components have their own callbacks; this provider does not
+automatically instrument another renderer. Only forward query/content fields
+to your analytics service when appropriate for your privacy and consent policy.
 
 ### Theming and recipes
 

@@ -36,6 +36,7 @@ import type {
   DocsSearchResult,
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
+import { emitAnalytics } from './analytics.js';
 import { getDefaultSearchResults } from './default-search-results.js';
 import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
@@ -1432,7 +1433,7 @@ export function DocsPageActionsItem(
         }
 
         props.onSelect?.();
-        context.config.analytics?.onPageAction?.({
+        emitAnalytics(context.config.analytics?.onPageAction, {
           action,
           page: context.page,
         });
@@ -1556,7 +1557,7 @@ function createCopyPageAction(props: {
       value: props.value,
       onStatusChange: (details: { copied: boolean }) => {
         if (details.copied) {
-          context.config.analytics?.onPageCopy?.({
+          emitAnalytics(context.config.analytics?.onPageCopy, {
             format: props.format,
             page: context.page,
             value: props.value,
@@ -1603,7 +1604,7 @@ function createPageActionLink(props: {
         }
 
         props.onSelect?.();
-        props.context.config.analytics?.onPageAction?.({
+        emitAnalytics(props.context.config.analytics?.onPageAction, {
           action: props.action,
           href: props.href,
           page: props.context.page,
@@ -2015,7 +2016,7 @@ export function DocsHeadingPermalink(
       value: href,
       onStatusChange: (details: { copied: boolean }) => {
         if (details.copied) {
-          config.analytics?.onHeadingLinkCopy?.({
+          emitAnalytics(config.analytics?.onHeadingLinkCopy, {
             headingId: props.headingId,
             href,
             title: props.title,
@@ -2121,7 +2122,7 @@ export function DocsPageFeedbackRoot(
 
     try {
       await props.onSubmit?.(details);
-      config.analytics?.onPageFeedback?.(details);
+      emitAnalytics(config.analytics?.onPageFeedback, details);
       setStatus('submitted');
     } catch {
       setStatus('error');
@@ -3823,7 +3824,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       ).document;
       if (!open) returnFocusRef.current = document?.activeElement ?? null;
       setOpen(true);
-      config.analytics?.onSearchOpen?.();
+      emitAnalytics(config.analytics?.onSearchOpen);
     }
 
     target.addEventListener?.('keydown', onKeyDown);
@@ -3856,7 +3857,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
 
   useEffect(() => {
     if (normalizedQuery) {
-      config.analytics?.onSearch?.(normalizedQuery);
+      emitAnalytics(config.analytics?.onSearch, normalizedQuery);
     }
   }, [config.analytics, normalizedQuery]);
 
@@ -3867,7 +3868,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
 
   function selectResult(record: DocsSearchResult) {
     props.onResultSelect?.(record);
-    config.analytics?.onSearchResultSelect?.(record);
+    emitAnalytics(config.analytics?.onSearchResultSelect, record);
     closeSearch();
   }
 
@@ -3946,7 +3947,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
 
         if (details.open) {
           returnFocusRef.current = null;
-          config.analytics?.onSearchOpen?.();
+          emitAnalytics(config.analytics?.onSearchOpen);
         } else {
           setQuery('');
         }
@@ -4364,6 +4365,8 @@ export function Callout(props: CalloutProps): ReactNode {
 
 export interface CodeBlockProps extends DocsComponentProps {
   code?: string;
+  /** Marks this block as a package command for successful-copy analytics. */
+  packageManager?: string;
   copy?: boolean;
   highlightLines?: number[] | string;
   language?: string;
@@ -4413,16 +4416,24 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
         wordWrap: wrap,
       },
       size,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
       onCopy:
         code && copy
-          ? () =>
-              config.analytics?.onCodeCopy?.({
+          ? () => {
+              emitAnalytics(config.analytics?.onCodeCopy, {
                 code,
                 language: props.language,
                 title: props.title,
-              })
+              });
+              if (props.packageManager) {
+                emitAnalytics(config.analytics?.onPackageCommandCopy, {
+                  command: code,
+                  manager: props.packageManager,
+                });
+              }
+              (props.slotProps?.onCopy as (() => void) | undefined)?.();
+            }
           : undefined,
-      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     hasHeader
       ? createElement(
