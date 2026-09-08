@@ -213,6 +213,21 @@ Standalone Postkit components have their own callbacks; this provider does not
 automatically instrument another renderer. Only forward query/content fields
 to your analytics service when appropriate for your privacy and consent policy.
 
+Search callbacks include `onSearchOpen`, `onSearchClose({ reason })`,
+`onSearch(query)`, `onSearchResults(event)`, `onSearchError(context)`, and
+`onSearchResultSelect(result, context)`. Result context identifies the query,
+collection scope, source (`curated`/`local`/`remote`), mode (`default`/`query`),
+and result count; selection adds one-based `position` and `interaction`.
+Result-list events include ordered `resultIds` and represent list exposure,
+not viewport-level impressions. Zero results are distinct from provider errors.
+Background prefetching stays silent. Repeated shortcuts, arrow movements, and
+equivalent rerenders do not duplicate events. Selection-close events run before
+navigation; unmount alone is not reported as dismissal. Modified/prevented link
+clicks preserve native behavior without selecting the current dialog.
+`DocsSearch.analyticsDebounceMs` optionally coalesces query-change callbacks
+(default `0`); pending events are cancelled on clear, close, or unmount.
+The existing one-argument selection callback remains compatible.
+
 ### Theming and recipes
 
 Every visual Chakra Docs component uses a package-owned Chakra slot recipe. The

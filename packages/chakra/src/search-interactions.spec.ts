@@ -194,6 +194,198 @@ describe('DocsSearch keyboard interactions', () => {
       { width: 100, height: 30 },
     ] as unknown as DOMRectList);
   });
+  it('tracks displayed recommendations and keyboard selection once, even with repeated shortcuts and callback identity changes', async () => {
+    const onSearchOpen = vi.fn();
+    const onSearchClose = vi.fn();
+    const onSearchResults = vi.fn();
+    const onSearchResultSelect = vi.fn(() => {
+      throw new Error('Analytics offline');
+    });
+    const onNavigate = vi.fn();
+    const tree = () =>
+      createElement(
+        StrictMode,
+        null,
+        createElement(
+          DocsProvider,
+          {
+            config: {
+              analytics: {
+                onSearchOpen,
+                onSearchClose,
+                onSearchResults,
+                onSearchResultSelect,
+              },
+            },
+          },
+          createElement(DocsSearch, {
+            defaultResults: [searchRecords[2], searchRecords[1]],
+            onNavigate,
+          }),
+        ),
+      );
+    await render(tree());
+    expect(onSearchResults).not.toHaveBeenCalled();
+    await press(document.body, 'k', { metaKey: true });
+    await press(document.body, 'k', { metaKey: true });
+    await render(tree());
+    expect(onSearchOpen).toHaveBeenCalledTimes(1);
+    expect(onSearchResults).toHaveBeenCalledExactlyOnceWith({
+      query: '',
+      collectionIds: undefined,
+      source: 'curated',
+      mode: 'default',
+      resultCount: 2,
+      resultIds: ['page-2', 'page-1'],
+    });
+    const input = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    await press(input, 'ArrowDown');
+    expect(onSearchResults).toHaveBeenCalledTimes(1);
+    await press(input, 'Enter');
+    expect(onSearchResultSelect).toHaveBeenCalledExactlyOnceWith(
+      searchRecords[1],
+      {
+        query: '',
+        collectionIds: undefined,
+        source: 'curated',
+        mode: 'default',
+        resultCount: 2,
+        position: 2,
+        interaction: 'keyboard',
+      },
+    );
+    expect(onNavigate).toHaveBeenCalledWith(
+      searchRecords[1].route,
+      searchRecords[1],
+    );
+    expect(onSearchClose).toHaveBeenCalledExactlyOnceWith({
+      reason: 'selection',
+    });
+    await press(document.body, 'k', { metaKey: true });
+    expect(onSearchResults).toHaveBeenCalledTimes(2);
+    await press(
+      required(document.querySelector<HTMLInputElement>('[role="combobox"]')),
+      'Escape',
+    );
+    expect(onSearchClose).toHaveBeenLastCalledWith({ reason: 'dismiss' });
+  });
+
+  it('reports typed local results, zero results and pointer selection with query and position', async () => {
+    const onSearch = vi.fn();
+    const onSearchResults = vi.fn();
+    const onSearchResultSelect = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            analytics: { onSearch, onSearchResults, onSearchResultSelect },
+          },
+        },
+        createElement(DocsSearch, {
+          records: searchRecords,
+          onNavigate: vi.fn(),
+        }),
+      ),
+    );
+    await press(document.body, 'k', { metaKey: true });
+    const input = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    await typeQuery(input, ' No matches here ');
+    expect(onSearch).toHaveBeenLastCalledWith('no matches here');
+    expect(onSearchResults).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        query: 'No matches here',
+        resultCount: 0,
+        resultIds: [],
+        source: 'local',
+        mode: 'query',
+      }),
+    );
+    await typeQuery(input, 'Page 01');
+    const link = required(
+      document.querySelector<HTMLAnchorElement>('a[role="option"]'),
+    );
+    await act(async () => link.click());
+    expect(onSearchResultSelect).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        query: 'Page 01',
+        position: 1,
+        interaction: 'pointer',
+        source: 'local',
+        mode: 'query',
+      }),
+    );
+  });
+
+  it('reports foreground errors but not background prefetch failures or aborted requests', async () => {
+    const onSearchError = vi.fn();
+    const onSearchResults = vi.fn();
+    const searchProvider = vi.fn(async () => {
+      throw new Error('Private provider details');
+    });
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onSearchError, onSearchResults } } },
+        createElement(DocsSearch, { searchProvider, prefetch: 'mount' }),
+      ),
+    );
+    expect(onSearchError).not.toHaveBeenCalled();
+    await press(document.body, 'k', { metaKey: true });
+    expect(onSearchError).toHaveBeenCalledExactlyOnceWith({
+      query: '',
+      collectionIds: undefined,
+      source: 'remote',
+      mode: 'default',
+      resultCount: 0,
+    });
+    expect(onSearchResults).not.toHaveBeenCalled();
+    const input = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    await typeQuery(input, 'cancelled');
+    await press(input, 'Escape');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 180));
+    });
+    expect(onSearchError).toHaveBeenCalledTimes(1);
+  });
+
+  it('optionally debounces query analytics and cancels pending events on close', async () => {
+    const onSearch = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onSearch } } },
+        createElement(DocsSearch, {
+          records: searchRecords,
+          analyticsDebounceMs: 100,
+        }),
+      ),
+    );
+    await press(document.body, 'k', { metaKey: true });
+    const input = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    await typeQuery(input, 'p');
+    await typeQuery(input, 'page');
+    expect(onSearch).not.toHaveBeenCalled();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    expect(onSearch).toHaveBeenCalledExactlyOnceWith('page');
+    await typeQuery(input, 'cancelled');
+    await press(input, 'Escape');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    expect(onSearch).toHaveBeenCalledTimes(1);
+  });
   it('prefetches on mount without analytics and reuses fresh defaults on repeated opening', async () => {
     const searchProvider = vi.fn(async () => ({
       query: '',
@@ -201,6 +393,7 @@ describe('DocsSearch keyboard interactions', () => {
     }));
     const onSearchOpen = vi.fn();
     const onSearch = vi.fn();
+    const onSearchResults = vi.fn();
     await render(
       createElement(
         StrictMode,
@@ -208,7 +401,7 @@ describe('DocsSearch keyboard interactions', () => {
         createElement(
           DocsProvider,
           {
-            config: { analytics: { onSearchOpen, onSearch } },
+            config: { analytics: { onSearchOpen, onSearch, onSearchResults } },
           },
           createElement(DocsSearch, { searchProvider, prefetch: 'mount' }),
         ),
@@ -218,6 +411,7 @@ describe('DocsSearch keyboard interactions', () => {
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(onSearchOpen).not.toHaveBeenCalled();
     expect(onSearch).not.toHaveBeenCalled();
+    expect(onSearchResults).not.toHaveBeenCalled();
     await press(document.body, 'k', { metaKey: true });
     const input = required(
       document.querySelector<HTMLInputElement>('[role="combobox"]'),
@@ -227,9 +421,17 @@ describe('DocsSearch keyboard interactions', () => {
     );
     expect(document.querySelector('[role="status"]')).toBeNull();
     expect(onSearchOpen).toHaveBeenCalledTimes(1);
+    expect(onSearchResults).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        source: 'remote',
+        mode: 'default',
+        resultIds: ['page-2', 'page-1'],
+      }),
+    );
     await press(input, 'Escape');
     await press(document.body, 'k', { ctrlKey: true });
     expect(searchProvider).toHaveBeenCalledTimes(1);
+    expect(onSearchResults).toHaveBeenCalledTimes(2);
   });
 
   it.each(['focus', 'hover'])(

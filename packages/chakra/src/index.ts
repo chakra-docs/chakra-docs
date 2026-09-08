@@ -37,6 +37,15 @@ import type {
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
 import { emitAnalytics } from './analytics.js';
+import { useSearchAnalytics } from './search-analytics.js';
+import type { DocsSearchAnalyticsCallbacks } from './search-analytics.js';
+export type {
+  DocsSearchAnalyticsCallbacks,
+  DocsSearchAnalyticsContext,
+  DocsSearchResultsEvent,
+  DocsSearchSelectionContext,
+  DocsSearchCloseEvent,
+} from './search-analytics.js';
 import { getDefaultSearchResults } from './default-search-results.js';
 import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
@@ -221,10 +230,7 @@ export interface DocsLabels {
   feedbackError: string;
 }
 
-export interface DocsAnalyticsCallbacks {
-  onSearchOpen?: () => void;
-  onSearch?: (query: string) => void;
-  onSearchResultSelect?: (result: DocsSearchResult) => void;
+export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
   onCodeCopy?: (event: {
     code: string;
     language?: string;
@@ -718,6 +724,8 @@ export interface DocsSearchProps {
   /** Cache freshness in milliseconds; defaults to 60,000. Stale results stay visible during refresh. */
   prefetchStaleTimeMs?: number;
   debounceMs?: number;
+  /** Coalesce onSearch query-change events; default 0 preserves immediate reporting. */
+  analyticsDebounceMs?: number;
   collectionId?: string;
   collectionIds?: readonly string[];
   limit?: number;
@@ -3696,7 +3704,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   ]);
   const remoteContext = useMemo(
     () => ({}),
-    [props.searchProvider, prefetchScope, searchQuery.query, prefetchCache],
+    [
+      props.searchProvider,
+      prefetchScope,
+      searchQuery.query,
+      prefetchCache,
+      open,
+    ],
   );
   const cachedDefaults = !normalizedQuery
     ? prefetchCache?.peek()?.results
@@ -3727,6 +3741,25 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     isRemote &&
     !showDefaultResults &&
     (remoteSearch.status === 'loading' || remoteSearch.status === 'error');
+  const trackSelection = useSearchAnalytics({
+    callbacks: config.analytics,
+    open,
+    context: {
+      query: searchQuery.query,
+      collectionIds: collectionIds?.slice().sort(),
+      source: showDefaultResults ? 'curated' : isRemote ? 'remote' : 'local',
+      mode: normalizedQuery ? 'query' : 'default',
+      resultCount: results.length,
+    },
+    results,
+    status:
+      !isRemote || showDefaultResults
+        ? 'success'
+        : remoteSearch.status === 'idle'
+          ? 'loading'
+          : remoteSearch.status,
+    debounceMs: props.analyticsDebounceMs,
+  });
   const selectedIndex = Math.min(activeIndex, results.length - 1);
   const activeResultId =
     open && !resultsUnavailable && selectedIndex >= 0
@@ -3824,12 +3857,11 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       ).document;
       if (!open) returnFocusRef.current = document?.activeElement ?? null;
       setOpen(true);
-      emitAnalytics(config.analytics?.onSearchOpen);
     }
 
     target.addEventListener?.('keydown', onKeyDown);
     return () => target.removeEventListener?.('keydown', onKeyDown);
-  }, [config.analytics, open, searchAvailable]);
+  }, [open, searchAvailable]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -3855,21 +3887,9 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     }
   }, [activeResultId, results, selectedIndex]);
 
-  useEffect(() => {
-    if (normalizedQuery) {
-      emitAnalytics(config.analytics?.onSearch, normalizedQuery);
-    }
-  }, [config.analytics, normalizedQuery]);
-
   function closeSearch() {
     setOpen(false);
     setQuery('');
-  }
-
-  function selectResult(record: DocsSearchResult) {
-    props.onResultSelect?.(record);
-    emitAnalytics(config.analytics?.onSearchResultSelect, record);
-    closeSearch();
   }
 
   function navigateToLocation(href: string) {
@@ -3896,7 +3916,11 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       event,
       navigate: navigateToLocation,
       onNavigate: props.onNavigate,
-      onSelect: selectResult,
+      onSelect: (selected) => {
+        props.onResultSelect?.(selected);
+        trackSelection(selected, event ? 'pointer' : 'keyboard');
+        closeSearch();
+      },
     });
   }
 
@@ -3942,19 +3966,22 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
         returnFocusRef.current?.isConnected
           ? returnFocusRef.current
           : undefined,
+      placement: 'top',
+      ...props.slotProps,
       onOpenChange: (details: { open: boolean }) => {
         setOpen(details.open);
 
         if (details.open) {
           returnFocusRef.current = null;
-          emitAnalytics(config.analytics?.onSearchOpen);
         } else {
           setQuery('');
         }
+        (
+          props.slotProps?.onOpenChange as
+            ((details: { open: boolean }) => void) | undefined
+        )?.(details);
       },
       open,
-      placement: 'top',
-      ...props.slotProps,
     },
     createElement(
       Dialog.Trigger,
@@ -4540,8 +4567,14 @@ function SearchResult(props: SearchResultProps): ReactNode {
       DocsLink,
       {
         href: props.record.route,
-        onClick: props.onSelect,
         ...mergeSlotStyleProps(styles.resultLink, props.resultLinkSlotProps),
+        onClick: (event: DocsAnchorClickEvent) => {
+          (
+            props.resultLinkSlotProps?.onClick as
+              ((event: DocsAnchorClickEvent) => void) | undefined
+          )?.(event);
+          props.onSelect?.(event);
+        },
         id: props.id,
         role: 'option',
         'aria-selected': props.active,

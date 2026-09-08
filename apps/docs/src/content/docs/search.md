@@ -194,6 +194,63 @@ The demo search listens for `Command+K` and `Ctrl+K`. When the dialog opens, the
 
 Heading results use the same route contract as page results, so selecting one can deep-link directly to a section such as `/docs/components#docslayout`.
 
+## Analytics integration
+
+Use `DocsProvider.config.analytics` to connect your own analytics service. No
+SDK, network transport, cookies, or analytics storage are installed by Chakra Docs.
+
+```tsx
+<DocsProvider
+  config={{
+    analytics: {
+      onSearchOpen: () => track('docs_search_open'),
+      onSearchClose: ({ reason }) => track('docs_search_close', { reason }),
+      onSearch: (query) => track('docs_search_query', { query }),
+      onSearchResults: (event) => track('docs_search_results', { ...event }),
+      onSearchError: (event) => track('docs_search_error', { ...event }),
+      onSearchResultSelect: (result, context) =>
+        track('docs_search_select', { id: result.id, ...context }),
+    },
+  }}
+>
+  <DocsSearch
+    searchProvider={searchProvider}
+    defaultResults={featuredPages}
+    analyticsDebounceMs={250}
+  />
+</DocsProvider>
+```
+
+`track` is your application's consent-aware analytics adapter. Existing
+one-argument `onSearchResultSelect(result)` handlers remain compatible.
+
+- `onSearchOpen` fires once per opening, including trigger and keyboard activation.
+  Repeating Command/Ctrl+K while open does not emit another event.
+- `onSearchClose` distinguishes `selection` from `dismiss` (Escape, outside
+  interaction, or a close control). Unmount alone is not a dismissal event.
+- `onSearchResults` reports the displayed list, including empty results. It
+  includes ordered `resultIds`, `resultCount`, trimmed `query`, `collectionIds`,
+  `source` (`curated`, `local`, or `remote`), and `mode` (`default` or `query`).
+  This is list exposure, **not a claim that every row was visible in the viewport**.
+  Arrow movement and equivalent rerenders do not emit duplicate lists; reopening
+  does. Cached defaults are reported only when displayed in the open dialog.
+- `onSearchResultSelect` adds the same context plus one-based `position` and
+  `interaction` (`keyboard` for combobox Enter, `pointer` for handled link clicks).
+  Modified/new-tab clicks retain native behavior and do not count as selection
+  of the current dialog. Prevented clicks also do not count.
+- `onSearchError` reports foreground failure without exposing provider error
+  messages. It is separate from a successful empty result set. Aborted requests,
+  background prefetches, and background refresh failures emit no events.
+- `onSearch` retains lowercase, trimmed query-change reporting. Optional
+  `analyticsDebounceMs` coalesces typing independently of request `debounceMs`;
+  the default is `0` for compatibility. Clearing, closing, or unmounting cancels
+  pending query events. Use `onSearchResults` for settled-result metrics.
+
+Analytics callback failures cannot break navigation or the UI. Catch/report SDK
+failures within your adapter if needed. Queries may contain sensitive information;
+omit or redact them as appropriate rather than forwarding every field by default.
+Callbacks do not fire during SSR or merely because a provider prefetch ran.
+
 ## Search record shape
 
 Each source record has enough data to index a page or section without asking the renderer to parse the page again.
