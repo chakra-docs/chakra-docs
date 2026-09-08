@@ -797,6 +797,11 @@ type DocsKeyboardEvent = {
   key: string;
   metaKey?: boolean;
   ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  defaultPrevented?: boolean;
+  isComposing?: boolean;
+  nativeEvent?: { isComposing?: boolean };
   preventDefault: () => void;
 };
 
@@ -3588,6 +3593,22 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   const config = useDocsConfig();
   const labels = config.labels ?? defaultLabels;
   const inputRef = useRef<{ focus: () => void } | null>(null);
+  const returnFocusRef = useRef<{
+    focus: () => void;
+    isConnected: boolean;
+  } | null>(null);
+  const searchId = useId();
+  const resultsId = `${searchId}-results`;
+  const resultsLabelId = `${searchId}-results-label`;
+  const resultsRef = useRef<{
+    scrollTop: number;
+    clientTop: number;
+    clientHeight: number;
+    getBoundingClientRect: () => { top: number };
+    querySelector: (selector: string) => {
+      getBoundingClientRect: () => { top: number; bottom: number };
+    } | null;
+  } | null>(null);
   const remoteRequesterRef = useRef<ReturnType<
     typeof createRemoteSearchRequester
   > | null>(null);
@@ -3624,6 +3645,14 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     [searchEngine, searchQuery],
   );
   const results = isRemote ? remoteSearch.results : localResults;
+  const resultsUnavailable =
+    isRemote &&
+    (remoteSearch.status === 'loading' || remoteSearch.status === 'error');
+  const selectedIndex = Math.min(activeIndex, results.length - 1);
+  const activeResultId =
+    open && !resultsUnavailable && selectedIndex >= 0
+      ? `${searchId}-result-${selectedIndex}`
+      : undefined;
   const recipe = useChakraDocsSlotRecipe(
     chakraDocsRecipeKeys.search,
     chakraDocsSearchSlotRecipe,
@@ -3672,7 +3701,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       const isSearchShortcut =
         event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
 
-      if (!isSearchShortcut) {
+      if (
+        !isSearchShortcut ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.altKey ||
+        event.shiftKey
+      ) {
         return;
       }
 
@@ -3681,25 +3716,43 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       }
 
       event.preventDefault();
+      const document = (
+        globalThis as unknown as {
+          document?: { activeElement: typeof returnFocusRef.current };
+        }
+      ).document;
+      if (!open) returnFocusRef.current = document?.activeElement ?? null;
       setOpen(true);
       config.analytics?.onSearchOpen?.();
     }
 
     target.addEventListener?.('keydown', onKeyDown);
     return () => target.removeEventListener?.('keydown', onKeyDown);
-  }, [config.analytics, searchAvailable]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    globalThis.setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
+  }, [config.analytics, open, searchAvailable]);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [open, results]);
+
+  useEffect(() => {
+    const scroller = resultsRef.current;
+    if (!activeResultId || !scroller) return;
+    const row = scroller.querySelector(
+      `[data-search-result-index="${selectedIndex}"]`,
+    );
+    if (!row) return;
+
+    // Scroll only the results pane, not the dialog or the host document. Keep
+    // the whole row visible without smooth-scroll lag during key repeat.
+    const top = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const bottom = top + scroller.clientHeight;
+    const bounds = row.getBoundingClientRect();
+    if (bounds.top < top) {
+      scroller.scrollTop += bounds.top - top;
+    } else if (bounds.bottom > bottom) {
+      scroller.scrollTop += Math.min(bounds.bottom - bottom, bounds.top - top);
+    }
+  }, [activeResultId, results, selectedIndex]);
 
   useEffect(() => {
     if (normalizedQuery) {
@@ -3747,7 +3800,17 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   }
 
   function onInputKeyDown(event: DocsKeyboardEvent) {
-    if (results.length === 0) {
+    if (
+      resultsUnavailable ||
+      results.length === 0 ||
+      event.defaultPrevented ||
+      event.isComposing ||
+      event.nativeEvent?.isComposing ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      event.shiftKey
+    ) {
       return;
     }
 
@@ -3763,9 +3826,9 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       return;
     }
 
-    if (event.key === 'Enter' && results[activeIndex]) {
+    if (event.key === 'Enter' && results[selectedIndex]) {
       event.preventDefault();
-      activateResult(results[activeIndex]);
+      activateResult(results[selectedIndex]);
     }
   }
 
@@ -3773,10 +3836,16 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     Dialog.Root,
     {
       lazyMount: true,
+      initialFocusEl: () => inputRef.current,
+      finalFocusEl: () =>
+        returnFocusRef.current?.isConnected
+          ? returnFocusRef.current
+          : undefined,
       onOpenChange: (details: { open: boolean }) => {
         setOpen(details.open);
 
         if (details.open) {
+          returnFocusRef.current = null;
           config.analytics?.onSearchOpen?.();
         } else {
           setQuery('');
@@ -3837,6 +3906,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
             createElement(Input, {
               ref: inputRef,
               'aria-label': labels.search,
+              role: 'combobox',
+              'aria-autocomplete': 'list',
+              'aria-haspopup': 'listbox',
+              'aria-expanded': open,
+              'aria-controls': resultsId,
+              'aria-activedescendant': activeResultId,
+              autoComplete: 'off',
               onChange: (event: DocsInputChangeEvent) =>
                 setQuery(event.currentTarget.value),
               onKeyDown: onInputKeyDown,
@@ -3846,65 +3922,81 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
             }),
             createElement(
               Box,
-              mergeSlotStyleProps(styles.results, props.resultsSlotProps),
+              {
+                ...mergeSlotStyleProps(styles.results, props.resultsSlotProps),
+                ref: resultsRef,
+              },
               createElement(
                 Text,
-                mergeSlotStyleProps(
-                  styles.sectionLabel,
-                  props.sectionLabelSlotProps,
-                ),
+                {
+                  ...mergeSlotStyleProps(
+                    styles.sectionLabel,
+                    props.sectionLabelSlotProps,
+                  ),
+                  id: resultsLabelId,
+                },
                 normalizedQuery
                   ? (labels.searchResults ?? defaultLabels.searchResults)
                   : (labels.searchPopular ?? defaultLabels.searchPopular),
               ),
               createElement(
                 Stack,
-                mergeSlotStyleProps(
-                  styles.resultList,
-                  props.resultListSlotProps,
-                ),
-                isRemote && remoteSearch.status === 'loading'
+                {
+                  ...mergeSlotStyleProps(
+                    styles.resultList,
+                    props.resultListSlotProps,
+                  ),
+                  id: resultsId,
+                  role: 'listbox',
+                  'aria-labelledby': resultsLabelId,
+                  'aria-busy': isRemote && remoteSearch.status === 'loading',
+                },
+                !resultsUnavailable
+                  ? results.map((record, index) =>
+                      createElement(SearchResult, {
+                        active: index === selectedIndex,
+                        id: `${searchId}-result-${index}`,
+                        index,
+                        key: record.id,
+                        onActivate: () => setActiveIndex(index),
+                        onSelect: (event: DocsAnchorClickEvent) =>
+                          activateResult(record, event),
+                        recipe,
+                        record,
+                        resultBadgeSlotProps: props.resultBadgeSlotProps,
+                        resultContentSlotProps: props.resultContentSlotProps,
+                        resultDescriptionSlotProps:
+                          props.resultDescriptionSlotProps,
+                        resultLinkSlotProps: props.resultLinkSlotProps,
+                        resultRowSlotProps: props.resultRowSlotProps,
+                        slotProps: props.resultSlotProps,
+                        resultTitleSlotProps: props.resultTitleSlotProps,
+                      }),
+                    )
+                  : null,
+              ),
+              isRemote && remoteSearch.status === 'loading'
+                ? createSearchStatus(
+                    labels.searchLoading ?? defaultLabels.searchLoading,
+                    'status',
+                    styles.status,
+                    props.statusSlotProps,
+                  )
+                : isRemote && remoteSearch.status === 'error'
                   ? createSearchStatus(
-                      labels.searchLoading ?? defaultLabels.searchLoading,
-                      'status',
+                      labels.searchError ?? defaultLabels.searchError,
+                      'alert',
                       styles.status,
                       props.statusSlotProps,
                     )
-                  : isRemote && remoteSearch.status === 'error'
-                    ? createSearchStatus(
-                        labels.searchError ?? defaultLabels.searchError,
-                        'alert',
+                  : results.length > 0
+                    ? null
+                    : createSearchStatus(
+                        labels.searchNoResults ?? defaultLabels.searchNoResults,
+                        'status',
                         styles.status,
                         props.statusSlotProps,
-                      )
-                    : results.length > 0
-                      ? results.map((record, index) =>
-                          createElement(SearchResult, {
-                            active: index === activeIndex,
-                            key: record.id,
-                            onSelect: (event: DocsAnchorClickEvent) =>
-                              activateResult(record, event),
-                            recipe,
-                            record,
-                            resultBadgeSlotProps: props.resultBadgeSlotProps,
-                            resultContentSlotProps:
-                              props.resultContentSlotProps,
-                            resultDescriptionSlotProps:
-                              props.resultDescriptionSlotProps,
-                            resultLinkSlotProps: props.resultLinkSlotProps,
-                            resultRowSlotProps: props.resultRowSlotProps,
-                            slotProps: props.resultSlotProps,
-                            resultTitleSlotProps: props.resultTitleSlotProps,
-                          }),
-                        )
-                      : createSearchStatus(
-                          labels.searchNoResults ??
-                            defaultLabels.searchNoResults,
-                          'status',
-                          styles.status,
-                          props.statusSlotProps,
-                        ),
-              ),
+                      ),
             ),
           ),
         ),
@@ -4282,6 +4374,9 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
 
 interface SearchResultProps {
   active: boolean;
+  id: string;
+  index: number;
+  onActivate: () => void;
   onSelect: (event: DocsAnchorClickEvent) => void;
   recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
   record: DocsSearchResult;
@@ -4302,13 +4397,27 @@ function SearchResult(props: SearchResultProps): ReactNode {
 
   return createElement(
     Box,
-    mergeSlotStyleProps(styles.result, props.slotProps),
+    {
+      ...mergeSlotStyleProps(styles.result, props.slotProps),
+      'data-search-result-index': props.index,
+      role: 'presentation',
+    },
     createElement(
       DocsLink,
       {
         href: props.record.route,
         onClick: props.onSelect,
         ...mergeSlotStyleProps(styles.resultLink, props.resultLinkSlotProps),
+        id: props.id,
+        role: 'option',
+        'aria-selected': props.active,
+        tabIndex: -1,
+        onPointerMove: props.onActivate,
+        onMouseDown: (event: DocsAnchorClickEvent) => {
+          // Keep typing focus in the combobox, including when a modified
+          // click opens a result in another tab. Do not cancel the click.
+          if (event.button === 0) event.preventDefault();
+        },
       },
       createElement(
         HStack,

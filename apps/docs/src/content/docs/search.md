@@ -82,6 +82,27 @@ Small or static-only sites can keep the existing browser mode. It uses the same 
 <DocsSearch records={manifest.search} />
 ```
 
+## Keyboard access
+
+Open search with **Command+K** on macOS or **Ctrl+K** on other platforms, or
+focus the Search button and press Enter or Space. The search field receives
+focus automatically.
+
+- **Up/Down arrows** highlight results and scroll the active row into view.
+- **Enter** opens the highlighted result.
+- **Escape** closes search and returns focus to the control used to open it.
+- **Tab/Shift+Tab** remain inside the modal; individual results are not extra
+  tab stops. Screen readers follow selection through the field's combobox and
+  listbox relationships while typing focus stays in the field.
+- Text-editing shortcuts, Home/End, and input-method composition retain their
+  normal behavior. Loading, error, and empty states have no selectable result.
+
+The dialog fits the available viewport height. Its results pane scrolls
+independently, including on short screens. Customize its appearance through
+the existing `chakraDocsSearch` slot recipe or per-instance slot props; preserve
+the component's roles, IDs, focus handlers, and scroll container when composing
+overrides.
+
 ## Collection scoping
 
 `DocsSearch` can scope records to one collection or a set of collections. This lets a version selector drive search when versions are represented as collections.

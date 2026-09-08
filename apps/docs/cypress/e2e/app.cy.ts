@@ -165,6 +165,68 @@ describe('docs', () => {
     });
   });
 
+  it('scrolls the active search result within a short viewport using only the keyboard', () => {
+    cy.viewport(800, 480);
+    cy.intercept('GET', '**/api/docs/search?q=keyboard-scroll-fixture*', {
+      body: {
+        query: 'keyboard-scroll-fixture',
+        results: Array.from({ length: 12 }, (_, index) => ({
+          id: `keyboard-${index}`,
+          title: `Keyboard result ${index}`,
+          description: 'A result with enough content to exercise scrolling.',
+          route: '/docs/installation',
+        })),
+      },
+    }).as('keyboardSearch');
+    visit('/docs');
+    cy.contains('button', 'Search').focus();
+    cy.contains('button', 'Search').type('{ctrl}k');
+    cy.get('[role="combobox"]')
+      .should('be.focused')
+      .type('keyboard-scroll-fixture');
+    cy.wait('@keyboardSearch');
+    cy.get('[role="option"]').should('have.length', 12);
+    cy.get('[role="combobox"]').as('searchInput').should('be.focused');
+
+    function activeRowIsVisible() {
+      cy.get('@searchInput')
+        .should(($input) => {
+          const input = $input[0];
+          const option = input.ownerDocument.getElementById(
+            input.getAttribute('aria-activedescendant') ?? '',
+          );
+          expect(option?.getAttribute('aria-selected')).to.equal('true');
+          const row = option?.parentElement;
+          const scroller = row?.parentElement?.parentElement;
+          if (!row || !scroller) throw new Error('Missing active result row');
+          const bounds = row.getBoundingClientRect();
+          const viewport = scroller.getBoundingClientRect();
+          expect(bounds.top).to.be.at.least(viewport.top);
+          expect(bounds.bottom).to.be.at.most(viewport.bottom);
+        })
+        .and('be.focused');
+    }
+
+    for (let index = 1; index < 12; index++) {
+      cy.get('@searchInput').type('{downarrow}', { scrollBehavior: false });
+      activeRowIsVisible();
+    }
+    cy.get('[role="listbox"]')
+      .parent()
+      .should(($pane) => {
+        expect($pane.scrollTop()).to.be.greaterThan(0);
+      });
+    for (let index = 10; index >= 0; index--) {
+      cy.get('@searchInput').type('{uparrow}', { scrollBehavior: false });
+      activeRowIsVisible();
+    }
+    cy.get('[role="dialog"]').should(($dialog) => {
+      expect($dialog[0].getBoundingClientRect().bottom).to.be.at.most(480);
+    });
+    cy.get('@searchInput').type('{esc}');
+    cy.contains('button', 'Search').should('be.focused');
+  });
+
   it('uses the configured Next link component for docs navigation', () => {
     cy.viewport(1280, 720);
     visit('/docs/installation');
