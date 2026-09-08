@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"pretendToBeVisual":true}
 
-import { act, createElement } from 'react';
+import { act, createElement, StrictMode } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as ChakraRuntime from '@chakra-ui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DocsSearch } from './index.js';
+import { DocsProvider, DocsSearch } from './index.js';
 
 // DOM mounting and focus effects need headroom when coverage and builds share
 // a CI worker. Keep the broader unit-test timeout unchanged.
@@ -155,6 +155,222 @@ describe('DocsSearch keyboard interactions', () => {
     vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([
       { width: 100, height: 30 },
     ] as unknown as DOMRectList);
+  });
+  it('prefetches on mount without analytics and reuses fresh defaults on repeated opening', async () => {
+    const searchProvider = vi.fn(async () => ({
+      query: '',
+      results: [searchRecords[2], searchRecords[1]],
+    }));
+    const onSearchOpen = vi.fn();
+    const onSearch = vi.fn();
+    await render(
+      createElement(
+        StrictMode,
+        null,
+        createElement(
+          DocsProvider,
+          {
+            config: { analytics: { onSearchOpen, onSearch } },
+          },
+          createElement(DocsSearch, { searchProvider, prefetch: 'mount' }),
+        ),
+      ),
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(onSearchOpen).not.toHaveBeenCalled();
+    expect(onSearch).not.toHaveBeenCalled();
+    await press(document.body, 'k', { metaKey: true });
+    const input = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 02',
+    );
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(onSearchOpen).toHaveBeenCalledTimes(1);
+    await press(input, 'Escape');
+    await press(document.body, 'k', { ctrlKey: true });
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['focus', 'hover'])(
+    'prefetches on %s intent and composes consumer trigger handlers',
+    async (intent) => {
+      const searchProvider = vi.fn(async () => ({
+        query: '',
+        results: [searchRecords[0]],
+      }));
+      const onFocus = vi.fn();
+      const onPointerEnter = vi.fn();
+      await render(
+        createElement(DocsSearch, {
+          searchProvider,
+          prefetch: 'intent',
+          triggerSlotProps: { onFocus, onPointerEnter },
+        }),
+      );
+      expect(searchProvider).not.toHaveBeenCalled();
+      const trigger = required(container.querySelector('button'));
+      await act(async () => {
+        if (intent === 'focus') trigger.focus();
+        else
+          trigger.dispatchEvent(
+            new MouseEvent('pointerover', { bubbles: true }),
+          );
+      });
+      expect(
+        intent === 'focus' ? onFocus : onPointerEnter,
+      ).toHaveBeenCalledTimes(1);
+      expect(searchProvider).toHaveBeenCalledTimes(1);
+      await press(trigger, 'k', { metaKey: true });
+      expect(searchProvider).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('[role="option"]')?.textContent).toBe(
+        'Page 00',
+      );
+    },
+  );
+
+  it('joins in-flight prefetching and keeps cached selection stable during a stale refresh', async () => {
+    let now = 0;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    let resolveInitial!: (value: {
+      query: string;
+      results: typeof searchRecords;
+    }) => void;
+    let resolveRefresh!: (value: {
+      query: string;
+      results: typeof searchRecords;
+    }) => void;
+    const searchProvider = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveInitial = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      );
+    const input = await openSearch({
+      searchProvider,
+      prefetch: 'mount',
+      prefetchStaleTimeMs: 100,
+    });
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      resolveInitial({
+        query: '',
+        results: [searchRecords[0], searchRecords[1]],
+      }),
+    );
+    await press(input, 'Escape');
+    now = 101;
+    await press(document.body, 'k', { metaKey: true });
+    expect(searchProvider).toHaveBeenCalledTimes(2);
+    const reopened = required(
+      document.querySelector<HTMLInputElement>('[role="combobox"]'),
+    );
+    await press(reopened, 'ArrowDown');
+    await act(async () =>
+      resolveRefresh({
+        query: '',
+        results: [searchRecords[8], searchRecords[9]],
+      }),
+    );
+    expect(document.querySelector('[aria-selected="true"]')?.textContent).toBe(
+      'Page 01',
+    );
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    await press(reopened, 'Escape');
+    await press(document.body, 'k', { metaKey: true });
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 08',
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(2);
+  });
+
+  it('invalidates prefetched results on scope or provider changes and aborts on unmount', async () => {
+    const signals: AbortSignal[] = [];
+    const searchProvider = vi.fn(async (query, options) => {
+      signals.push(options.signal);
+      return {
+        query: '',
+        results: [searchRecords[query.collectionIds[0] === 'v1' ? 0 : 1]],
+      };
+    });
+    await render(
+      createElement(DocsSearch, {
+        searchProvider,
+        prefetch: 'mount',
+        collectionIds: ['v1'],
+      }),
+    );
+    await render(
+      createElement(DocsSearch, {
+        searchProvider,
+        prefetch: 'mount',
+        collectionIds: ['v1'],
+      }),
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+    await render(
+      createElement(DocsSearch, {
+        searchProvider,
+        prefetch: 'mount',
+        collectionIds: ['v2'],
+      }),
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(2);
+    await press(document.body, 'k', { metaKey: true });
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 01',
+    );
+    const otherProvider = vi.fn((_query, options) => {
+      signals.push(options.signal);
+      return new Promise<never>(() => undefined);
+    });
+    await render(
+      createElement(DocsSearch, {
+        searchProvider: otherProvider,
+        prefetch: 'mount',
+        collectionIds: ['v2'],
+      }),
+    );
+    expect(document.querySelector('[role="option"]')).toBeNull();
+    await render(null);
+    expect(signals.at(-1)?.aborted).toBe(true);
+  });
+
+  it('does not prefetch by default or when curated defaults take precedence, and retries failures on open', async () => {
+    const searchProvider = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({ query: '', results: [searchRecords[0]] });
+    await render(createElement(DocsSearch, { searchProvider }));
+    expect(searchProvider).not.toHaveBeenCalled();
+    await render(
+      createElement(DocsSearch, {
+        searchProvider,
+        prefetch: 'mount',
+        defaultResults: [],
+      }),
+    );
+    expect(searchProvider).not.toHaveBeenCalled();
+    await render(
+      createElement(DocsSearch, { searchProvider, prefetch: 'mount' }),
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="alert"]')).toBeNull();
+    await press(document.body, 'k', { metaKey: true });
+    expect(searchProvider).toHaveBeenCalledTimes(2);
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 00',
+    );
   });
   it('shows curated defaults immediately, searches when typing, and restores them on clear', async () => {
     const searchProvider = vi.fn(async () => ({

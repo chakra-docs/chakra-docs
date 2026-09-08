@@ -72,6 +72,37 @@ describe('getRemoteSearchDelayMs', () => {
 });
 
 describe('createRemoteSearchRequester', () => {
+  it('uses a cached snapshot without a loading flash or replacing its selected ordering', async () => {
+    const scheduler = createScheduler();
+    const states: RemoteSearchState[] = [];
+    const requester = createRemoteSearchRequester(
+      (state) => states.push(state),
+      scheduler.schedule,
+      scheduler.cancel,
+    );
+    const results = [createResult('old')];
+    requester.request(
+      async () => createResponse('refreshed'),
+      { query: '' },
+      0,
+      results,
+    );
+    expect(states).toEqual([{ results, status: 'success' }]);
+    scheduler.run(scheduler.pending()[0][0]);
+    await flushMicrotasks();
+    expect(states.at(-1)?.results).toBe(results);
+    requester.request(
+      async () => {
+        throw new Error('offline');
+      },
+      { query: '' },
+      0,
+      results,
+    );
+    scheduler.run(scheduler.pending()[0][0]);
+    await flushMicrotasks();
+    expect(states.at(-1)).toEqual({ results, status: 'success' });
+  });
   it('reports loading and then returns provider results after the delay', async () => {
     const scheduler = createScheduler();
     const states: RemoteSearchState[] = [];

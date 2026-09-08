@@ -1209,6 +1209,24 @@ describe('DocsSearch (SSR)', () => {
     createSearchRecord({ id: 'install', title: 'Install', text: 'install it' }),
   ];
 
+  it('does not fetch during server rendering and accepts display-only curated defaults', () => {
+    const searchProvider = vi.fn<DocsSearchProvider>(async () => ({
+      query: '',
+      results: [],
+    }));
+    render(createElement(DocsSearch, { searchProvider, prefetch: 'mount' }));
+    expect(searchProvider).not.toHaveBeenCalled();
+    const markup = render(
+      createElement(DocsSearch, {
+        defaultResults: [
+          { id: 'featured', title: 'Featured', route: '/docs/featured' },
+        ],
+      }),
+    );
+    expect(markup).not.toMatch(/<button[^>]*disabled/);
+    expect(markup).not.toContain('role="dialog"');
+  });
+
   it('renders the closed search trigger without crashing', () => {
     const markup = render(createElement(DocsSearch, { records }));
 

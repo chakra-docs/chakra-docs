@@ -37,6 +37,7 @@ import type {
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
 import { getDefaultSearchResults } from './default-search-results.js';
+import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
 import { createDocsBreadcrumbItems } from './breadcrumbs.js';
 import type { DocsBreadcrumbItem } from './breadcrumbs.js';
@@ -164,6 +165,7 @@ const ChakraCodeBlock = Chakra.CodeBlock as unknown as Record<
   ElementType
 >;
 const emptySearchRecords: readonly DocsSearchRecord[] = [];
+const emptyRemoteSearchResults: DocsSearchResult[] = [];
 
 export interface DocsLinkProps {
   href: string;
@@ -710,6 +712,10 @@ export interface DocsSearchProps {
   defaultResults?: readonly DocsSearchResult[];
   /** Heading for curated results. Defaults to "Recommended". */
   defaultResultsLabel?: string;
+  /** Warm the provider's empty-query response on mount or trigger hover/focus. Disabled by default. */
+  prefetch?: false | 'intent' | 'mount';
+  /** Cache freshness in milliseconds; defaults to 60,000. Stale results stay visible during refresh. */
+  prefetchStaleTimeMs?: number;
   debounceMs?: number;
   collectionId?: string;
   collectionIds?: readonly string[];
@@ -3620,7 +3626,10 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [remoteSearch, setRemoteSearch] = useState<RemoteSearchState>({
+  const remoteContextRef = useRef<object | undefined>(undefined);
+  const [remoteSnapshot, setRemoteSnapshot] = useState<
+    RemoteSearchState & { context?: object }
+  >({
     results: [],
     status: 'idle',
   });
@@ -3653,6 +3662,53 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     }),
     [collectionIds, props.limit, props.popularLimit, query],
   );
+  // Semantic scope keys avoid resetting the cache for equivalent array props.
+  const prefetchScope = JSON.stringify([
+    collectionIds?.slice().sort(),
+    props.limit,
+    props.popularLimit,
+  ]);
+  const prefetchEnabled =
+    Boolean(props.prefetch) && props.defaultResults === undefined;
+  const prefetchCache = useMemo(() => {
+    if (!prefetchEnabled || !props.searchProvider) return undefined;
+    const [scope, limit, popularLimit] = JSON.parse(prefetchScope) as [
+      string[] | null,
+      number | null,
+      number | null,
+    ];
+    return createSearchPrefetch(
+      props.searchProvider,
+      {
+        query: '',
+        collectionIds: scope ?? undefined,
+        limit: limit ?? undefined,
+        popularLimit: popularLimit ?? undefined,
+      },
+      props.prefetchStaleTimeMs,
+    );
+  }, [
+    prefetchEnabled,
+    prefetchScope,
+    props.searchProvider,
+    props.prefetchStaleTimeMs,
+  ]);
+  const remoteContext = useMemo(
+    () => ({}),
+    [props.searchProvider, prefetchScope, searchQuery.query, prefetchCache],
+  );
+  const cachedDefaults = !normalizedQuery
+    ? prefetchCache?.peek()?.results
+    : undefined;
+  const remoteSearch: RemoteSearchState =
+    remoteSnapshot.context === remoteContext
+      ? remoteSnapshot
+      : cachedDefaults !== undefined
+        ? { results: cachedDefaults, status: 'success' }
+        : {
+            results: emptyRemoteSearchResults,
+            status: open ? 'loading' : 'idle',
+          };
   const searchEngine = useMemo(
     () => (isRemote ? undefined : createDocsSearchEngine(records)),
     [isRemote, records],
@@ -3682,7 +3738,21 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   const styles = recipe();
 
   if (!remoteRequesterRef.current) {
-    remoteRequesterRef.current = createRemoteSearchRequester(setRemoteSearch);
+    remoteRequesterRef.current = createRemoteSearchRequester((state) => {
+      setRemoteSnapshot({ ...state, context: remoteContextRef.current });
+    });
+  }
+
+  useEffect(() => () => prefetchCache?.dispose(), [prefetchCache]);
+
+  useEffect(() => {
+    if (props.prefetch === 'mount')
+      void prefetchCache?.prefetch().catch(() => undefined);
+  }, [prefetchCache, props.prefetch]);
+
+  function prefetchOnIntent() {
+    if (props.prefetch === 'intent')
+      void prefetchCache?.prefetch().catch(() => undefined);
   }
 
   useEffect(() => {
@@ -3696,8 +3766,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     // Popular results are useful immediately when the dialog opens. Typed
     // queries wait for the debounce interval to avoid unnecessary requests.
     const delayMs = getRemoteSearchDelayMs(searchQuery.query, props.debounceMs);
-
-    requester.request(props.searchProvider, searchQuery, delayMs);
+    remoteContextRef.current = remoteContext;
+    requester.request(
+      prefetchCache?.search ?? props.searchProvider,
+      searchQuery,
+      delayMs,
+      !searchQuery.query ? prefetchCache?.peek()?.results : undefined,
+    );
     return () => requester.cancel();
   }, [
     normalizedQuery,
@@ -3706,6 +3781,8 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     props.searchProvider,
     searchQuery,
     showDefaultResults,
+    prefetchCache,
+    remoteContext,
   ]);
 
   useEffect(() => {
@@ -3888,6 +3965,20 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
           size: 'sm',
           variant: 'outline',
           ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+          onPointerEnter: (event: unknown) => {
+            (
+              props.triggerSlotProps?.onPointerEnter as
+                ((event: unknown) => void) | undefined
+            )?.(event);
+            prefetchOnIntent();
+          },
+          onFocus: (event: unknown) => {
+            (
+              props.triggerSlotProps?.onFocus as
+                ((event: unknown) => void) | undefined
+            )?.(event);
+            prefetchOnIntent();
+          },
         },
         createElement(
           Text,

@@ -109,6 +109,44 @@ Only serialize suggestions the visitor may access—client-side filtering is not
 authorization. Your application owns editorial ordering, newest-page selection,
 and popularity analytics.
 
+## Prefetching default results
+
+When the provider decides which pages are popular or newly published, warm its
+empty-query response before opening the dialog:
+
+```tsx
+<DocsSearch
+  searchProvider={searchProvider}
+  prefetch="mount"
+  prefetchStaleTimeMs={60_000}
+/>
+```
+
+- `prefetch={false}` (the default) keeps the existing fetch-on-open behavior.
+- `prefetch="intent"` warms results on trigger hover or keyboard focus.
+- `prefetch="mount"` warms results after client mount, including for people
+  who open search directly with Command+K or Ctrl+K.
+
+Fresh results and in-flight requests are reused. Stale results remain visible
+while refreshing in the background; the refreshed ordering is used the next
+time search opens or its query is cleared. This avoids moving the highlighted
+result during keyboard navigation. A failed refresh retains usable cached
+results; a failed initial prefetch can retry when search opens.
+
+`prefetchStaleTimeMs` defaults to 60,000 milliseconds. Zero makes cached data
+immediately stale. Prefetching caches only one empty-query response per
+component, does no network work during server rendering, and does not fire
+search-open or search analytics. Changing the provider, collection/version
+scope, or result limits invalidates the cache and cancels obsolete work;
+unmounting aborts pending prefetches. Typed requests retain normal debouncing
+and cancellation.
+
+Curated `defaultResults` take precedence and disable empty-query prefetching.
+Keep provider function references stable. If authentication or tenant context
+changes without changing the provider or collection scope, remount `DocsSearch`
+with a context-specific React `key` to discard its cached results. Server-side
+authorization must still govern every response.
+
 ## Keyboard access
 
 Open search with **Command+K** on macOS or **Ctrl+K** on other platforms, or

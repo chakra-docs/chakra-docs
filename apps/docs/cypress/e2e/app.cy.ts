@@ -96,6 +96,48 @@ describe('docs', () => {
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
   });
 
+  it('warms default results on keyboard focus and reuses them when opening search', () => {
+    cy.intercept(
+      { method: 'GET', pathname: '/api/docs/search', query: { q: '' } },
+      {
+        headers: { 'cache-control': 'no-store' },
+        body: {
+          query: '',
+          results: [
+            {
+              id: 'prefetched-install',
+              title: 'Prefetched installation',
+              route: '/docs/installation',
+            },
+            {
+              id: 'prefetched-config',
+              title: 'Prefetched configuration',
+              route: '/docs/configuration',
+            },
+          ],
+        },
+      },
+    ).as('defaultSearch');
+    visit('/docs');
+    cy.contains('button', 'Search').focus();
+    cy.wait('@defaultSearch');
+    cy.get('[role="dialog"]').should('not.exist');
+    cy.contains('button', 'Search').type('{ctrl}k');
+    cy.get('[role="combobox"]').should('be.focused');
+    cy.get('[role="option"]')
+      .first()
+      .should('have.text', 'Prefetched installation');
+    cy.get('[role="combobox"]').type('{downarrow}');
+    cy.get('[role="option"][aria-selected="true"]').should(
+      'have.text',
+      'Prefetched configuration',
+    );
+    cy.get('[role="combobox"]').type('{esc}');
+    cy.contains('button', 'Search').should('be.focused').type('{ctrl}k');
+    cy.get('[role="option"]').should('have.length', 2);
+    cy.get('@defaultSearch.all').should('have.length', 1);
+  });
+
   it('supports pointer search navigation through the Next router', () => {
     visit('/');
     cy.intercept('GET', '**/api/docs/search?q=installation*').as(

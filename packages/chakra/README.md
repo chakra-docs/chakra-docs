@@ -173,6 +173,24 @@ If both `searchProvider` and `records` are passed, remote search takes
 precedence. Keep `records` mode for static deployments that do not have a
 search endpoint.
 
+For an immediate, curated opening list, pass `defaultResults={featuredPages}`
+and optionally `defaultResultsLabel="New this week"`. These display-only
+`DocsSearchResult` objects can come from server/build data. The empty-query list
+preserves supplied ordering, filters by collection scope, and respects
+`popularLimit` (default six). Typing uses the normal provider or local index;
+clearing restores the curated list. An explicit empty array suppresses provider
+defaults. The heading defaults to “Recommended.”
+
+Alternatively, set `prefetch="intent"` (trigger hover/focus) or
+`prefetch="mount"` (after client mount) to warm the provider's empty-query
+response. `prefetchStaleTimeMs` defaults to 60,000. Fresh responses and in-flight
+work are reused; stale results remain stable while refreshing and the next
+opening/query reset receives the new list. Prefetching is disabled by default,
+performs no SSR fetches or search analytics, and is skipped with curated
+`defaultResults`. Cache state is per component and invalidated on provider,
+scope, or limit changes. Remount with a context-specific `key` when auth/tenant
+context changes invisibly to these props. Only ship authorized suggestions.
+
 ### Configuration
 
 `DocsProvider` accepts a `ChakraDocsConfig` (`config` prop) that is merged down the tree and read via `useDocsConfig()`:
