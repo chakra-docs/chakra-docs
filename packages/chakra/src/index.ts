@@ -36,6 +36,7 @@ import type {
   DocsSearchResult,
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
+import { getDefaultSearchResults } from './default-search-results.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
 import { createDocsBreadcrumbItems } from './breadcrumbs.js';
 import type { DocsBreadcrumbItem } from './breadcrumbs.js';
@@ -705,6 +706,10 @@ export interface DocsBadgeProps {
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
+  /** Curated, ordered results shown only for an empty query. An empty array opts out of provider defaults. */
+  defaultResults?: readonly DocsSearchResult[];
+  /** Heading for curated results. Defaults to "Recommended". */
+  defaultResultsLabel?: string;
   debounceMs?: number;
   collectionId?: string;
   collectionIds?: readonly string[];
@@ -3622,11 +3627,23 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   const isRemote = props.searchProvider !== undefined;
   const normalizedQuery = query.trim().toLowerCase();
   const records = props.records ?? emptySearchRecords;
-  const searchAvailable = isRemote || records.length > 0;
   const collectionIds = useMemo(
     () => resolveSearchCollectionIds(props),
     [props.collectionId, props.collectionIds],
   );
+  const defaultResults = useMemo(
+    () =>
+      getDefaultSearchResults(
+        props.defaultResults,
+        collectionIds,
+        props.popularLimit,
+      ),
+    [props.defaultResults, collectionIds, props.popularLimit],
+  );
+  const showDefaultResults =
+    !normalizedQuery && props.defaultResults !== undefined;
+  const searchAvailable =
+    isRemote || records.length > 0 || defaultResults.length > 0;
   const searchQuery = useMemo<DocsSearchQuery>(
     () => ({
       collectionIds,
@@ -3644,9 +3661,14 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     () => searchEngine?.search(searchQuery).results ?? [],
     [searchEngine, searchQuery],
   );
-  const results = isRemote ? remoteSearch.results : localResults;
+  const results = showDefaultResults
+    ? defaultResults
+    : isRemote
+      ? remoteSearch.results
+      : localResults;
   const resultsUnavailable =
     isRemote &&
+    !showDefaultResults &&
     (remoteSearch.status === 'loading' || remoteSearch.status === 'error');
   const selectedIndex = Math.min(activeIndex, results.length - 1);
   const activeResultId =
@@ -3666,7 +3688,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   useEffect(() => {
     const requester = remoteRequesterRef.current;
 
-    if (!requester || !open || !props.searchProvider) {
+    if (!requester || !open || !props.searchProvider || showDefaultResults) {
       requester?.cancel();
       return;
     }
@@ -3683,6 +3705,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     props.debounceMs,
     props.searchProvider,
     searchQuery,
+    showDefaultResults,
   ]);
 
   useEffect(() => {
@@ -3935,9 +3958,11 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
                   ),
                   id: resultsLabelId,
                 },
-                normalizedQuery
-                  ? (labels.searchResults ?? defaultLabels.searchResults)
-                  : (labels.searchPopular ?? defaultLabels.searchPopular),
+                showDefaultResults
+                  ? (props.defaultResultsLabel ?? 'Recommended')
+                  : normalizedQuery
+                    ? (labels.searchResults ?? defaultLabels.searchResults)
+                    : (labels.searchPopular ?? defaultLabels.searchPopular),
               ),
               createElement(
                 Stack,
@@ -3949,7 +3974,10 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
                   id: resultsId,
                   role: 'listbox',
                   'aria-labelledby': resultsLabelId,
-                  'aria-busy': isRemote && remoteSearch.status === 'loading',
+                  'aria-busy':
+                    isRemote &&
+                    !showDefaultResults &&
+                    remoteSearch.status === 'loading',
                 },
                 !resultsUnavailable
                   ? results.map((record, index) =>
@@ -3975,14 +4003,18 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
                     )
                   : null,
               ),
-              isRemote && remoteSearch.status === 'loading'
+              isRemote &&
+                !showDefaultResults &&
+                remoteSearch.status === 'loading'
                 ? createSearchStatus(
                     labels.searchLoading ?? defaultLabels.searchLoading,
                     'status',
                     styles.status,
                     props.statusSlotProps,
                   )
-                : isRemote && remoteSearch.status === 'error'
+                : isRemote &&
+                    !showDefaultResults &&
+                    remoteSearch.status === 'error'
                   ? createSearchStatus(
                       labels.searchError ?? defaultLabels.searchError,
                       'alert',

@@ -156,6 +156,99 @@ describe('DocsSearch keyboard interactions', () => {
       { width: 100, height: 30 },
     ] as unknown as DOMRectList);
   });
+  it('shows curated defaults immediately, searches when typing, and restores them on clear', async () => {
+    const searchProvider = vi.fn(async () => ({
+      query: 'page',
+      results: [searchRecords[1]],
+    }));
+    const defaults = [searchRecords[8], searchRecords[3]];
+    const input = await openSearch({
+      defaultResults: defaults,
+      defaultResultsLabel: 'New this week',
+      searchProvider,
+      debounceMs: 0,
+    });
+    const titles = () =>
+      [...document.querySelectorAll('[role="option"]')].map(
+        (option) => option.textContent,
+      );
+    expect(titles()).toEqual(['Page 08', 'Page 03']);
+    expect(document.body.textContent).toContain('New this week');
+    expect(searchProvider).not.toHaveBeenCalled();
+    await press(input, 'ArrowDown');
+    await typeQuery(input, 'page');
+    await press(input, 'Shift');
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+    expect(titles()).toEqual(['Page 01']);
+    await typeQuery(input, '');
+    expect(titles()).toEqual(['Page 08', 'Page 03']);
+    expect(document.querySelector('[aria-selected="true"]')?.textContent).toBe(
+      'Page 08',
+    );
+    expect(searchProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters curated results on collection changes and lets an explicit empty list suppress provider defaults', async () => {
+    const searchProvider = vi.fn(async () => ({
+      query: '',
+      results: searchRecords,
+    }));
+    const defaults = [
+      { ...searchRecords[0], collectionId: 'v1' },
+      { ...searchRecords[1], collectionId: 'v2' },
+    ];
+    await openSearch({
+      defaultResults: defaults,
+      collectionId: 'v1',
+      searchProvider,
+    });
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 00',
+    );
+    await render(
+      createElement(DocsSearch, {
+        defaultResults: defaults,
+        collectionId: 'v2',
+        searchProvider,
+      }),
+    );
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(1);
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 01',
+    );
+    await render(
+      createElement(DocsSearch, { defaultResults: [], searchProvider }),
+    );
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(0);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(
+      'No results found',
+    );
+    expect(searchProvider).not.toHaveBeenCalled();
+  });
+
+  it('supports curated-only launchers and keeps local search separate from curated ordering', async () => {
+    const input = await openSearch({
+      records: [],
+      defaultResults: [searchRecords[3]],
+    });
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 03',
+    );
+    await render(
+      createElement(DocsSearch, {
+        records: searchRecords,
+        defaultResults: [searchRecords[3]],
+      }),
+    );
+    await typeQuery(input, 'Page 11');
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 11',
+    );
+    await typeQuery(input, '');
+    expect(document.querySelector('[role="option"]')?.textContent).toBe(
+      'Page 03',
+    );
+  });
   it('opens with either platform shortcut, focuses the combobox, and restores focus on Escape', async () => {
     await render(
       createElement(

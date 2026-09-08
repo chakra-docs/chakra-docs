@@ -82,6 +82,33 @@ Small or static-only sites can keep the existing browser mode. It uses the same 
 <DocsSearch records={manifest.search} />
 ```
 
+## Curated opening results
+
+Supply lightweight `DocsSearchResult` objects prepared by your server, build,
+or application to recommend pages before someone types:
+
+```tsx
+<DocsSearch
+  searchProvider={searchProvider}
+  defaultResults={featuredPages}
+  defaultResultsLabel="New this week"
+  popularLimit={6}
+/>
+```
+
+Curated results appear immediately for an empty query, preserve the supplied
+order, and return when the query is cleared. They override the provider's
+empty-query response, including when `defaultResults` is an explicit empty
+array. Typing uses `searchProvider` or the local `records` normally; curated
+metadata is not added to the search index.
+
+The heading defaults to “Recommended.” `popularLimit` defaults to six. Collection
+and version scopes filter the list before limiting it; scoped suggestions must
+include a matching `collectionId`. Unsafe routes and duplicate IDs are omitted.
+Only serialize suggestions the visitor may access—client-side filtering is not
+authorization. Your application owns editorial ordering, newest-page selection,
+and popularity analytics.
+
 ## Keyboard access
 
 Open search with **Command+K** on macOS or **Ctrl+K** on other platforms, or
