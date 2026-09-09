@@ -13,12 +13,14 @@ import {
 } from 'react';
 import type { ComponentType, ElementType, ReactNode } from 'react';
 import * as ChakraRuntime from '@chakra-ui/react';
+import ReactMarkdown from 'react-markdown';
+import type { Components as MarkdownComponents } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   createCollectionOptions,
-  createHeadingIdGenerator,
+  getDocsMarkdownHeadings,
   isSafeDocsRoute,
   isSafeLinkHref,
-  stripMarkdown,
 } from '@chakra-docs/core';
 import type {
   DocsCollection,
@@ -781,13 +783,6 @@ export interface DocsPaginationProps extends DocsComponentProps {
   linkSlotProps?: Record<string, unknown>;
 }
 
-type MarkdownBlock =
-  | { type: 'heading'; level: number; text: string }
-  | { type: 'paragraph'; text: string }
-  | { type: 'list'; items: string[] }
-  | { type: 'code'; code: string; language?: string }
-  | { type: 'quote'; text: string };
-
 export interface MarkdownContentProps {
   getHeadingHref?: (headingId: string) => string;
   headingPermalinkIndicatorSlotProps?: Record<string, unknown>;
@@ -805,6 +800,18 @@ export interface MarkdownContentProps {
   listSlotProps?: Record<string, unknown>;
   paragraphSlotProps?: Record<string, unknown>;
   quoteSlotProps?: Record<string, unknown>;
+  imageSlotProps?: Record<string, unknown>;
+  separatorSlotProps?: Record<string, unknown>;
+  tableContainerSlotProps?: Record<string, unknown>;
+  tableSlotProps?: Record<string, unknown>;
+  tableHeadSlotProps?: Record<string, unknown>;
+  tableBodySlotProps?: Record<string, unknown>;
+  tableRowSlotProps?: Record<string, unknown>;
+  tableHeaderSlotProps?: Record<string, unknown>;
+  tableCellSlotProps?: Record<string, unknown>;
+  taskCheckboxSlotProps?: Record<string, unknown>;
+  /** Accessible label for each keyboard-scrollable Markdown table. */
+  tableLabel?: string;
 }
 
 type DocsInputChangeEvent = {
@@ -4269,8 +4276,11 @@ export function createDocsVersionOptions(
 
 export function MarkdownContent(props: MarkdownContentProps): ReactNode {
   const config = useDocsConfig();
-  const blocks = parseMarkdown(props.source);
-  const createNextHeadingId = createHeadingIdGenerator();
+  const documentId = useId();
+  const headings = useMemo(
+    () => getDocsMarkdownHeadings(props.source),
+    [props.source],
+  );
   const scrollMarginTop =
     config.layout?.scrollMarginTop ?? config.layout?.stickyTop ?? 8;
   const recipe = useChakraDocsSlotRecipe(
@@ -4278,21 +4288,251 @@ export function MarkdownContent(props: MarkdownContentProps): ReactNode {
     chakraDocsMarkdownContentSlotRecipe,
   );
   const styles = recipe();
+  const styled =
+    (tag: string, slot: string, overrides?: Record<string, unknown>) =>
+    (input: { node?: unknown; children?: ReactNode }) => {
+      const { children, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        { as: tag, ...rest, ...mergeSlotStyleProps(styles[slot], overrides) },
+        children,
+      );
+    };
+  const heading: MarkdownComponents['h2'] = ({
+    node,
+    children,
+    id: suppliedId,
+    ...rest
+  }) => {
+    const entry = headings.find(
+      (item) => item.start === node?.position?.start.offset,
+    );
+    // The generated footnote heading has no source position; retain its a11y ID.
+    if (!entry)
+      return createElement(
+        Heading,
+        {
+          as: node?.tagName ?? 'h2',
+          id:
+            suppliedId === 'footnote-label'
+              ? `docs-${documentId}-footnote-label`
+              : suppliedId,
+          ...rest,
+        },
+        children,
+      );
+    const headingStyles = recipe({
+      headingLevel: entry.level <= 2 ? 'section' : 'subsection',
+    });
+    return createElement(
+      Heading,
+      {
+        as: `h${entry.level}`,
+        id: entry.id,
+        size: entry.level <= 2 ? '2xl' : 'xl',
+        scrollMarginTop,
+        ...mergeSlotStyleProps(headingStyles.heading, props.headingSlotProps),
+      },
+      children,
+      props.headingPermalinks
+        ? createElement(DocsHeadingPermalink, {
+            headingId: entry.id,
+            href: props.getHeadingHref?.(entry.id),
+            title: entry.title,
+            indicatorSlotProps: props.headingPermalinkIndicatorSlotProps,
+            slotProps: props.headingPermalinkSlotProps,
+            triggerSlotProps: props.headingPermalinkTriggerSlotProps,
+          })
+        : null,
+    );
+  };
+  const components: MarkdownComponents = {
+    h1: heading,
+    h2: heading,
+    h3: heading,
+    h4: heading,
+    h5: heading,
+    h6: heading,
+    p: styled('p', 'paragraph', props.paragraphSlotProps),
+    ul: styled('ul', 'list', props.listSlotProps),
+    ol: styled('ol', 'list', props.listSlotProps),
+    li: styled('li', 'listItem', props.listItemSlotProps),
+    hr: styled('hr', 'separator', props.separatorSlotProps),
+    thead: styled('thead', 'tableHead', props.tableHeadSlotProps),
+    tbody: styled('tbody', 'tableBody', props.tableBodySlotProps),
+    tr: styled('tr', 'tableRow', props.tableRowSlotProps),
+    th: (input) => {
+      const { children, style, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        {
+          as: 'th',
+          ...rest,
+          scope: 'col',
+          textAlign: style?.textAlign ?? 'start',
+          ...mergeSlotStyleProps(
+            styles.tableHeader,
+            props.tableHeaderSlotProps,
+          ),
+        },
+        children,
+      );
+    },
+    td: (input) => {
+      const { children, style, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        {
+          as: 'td',
+          ...rest,
+          textAlign: style?.textAlign ?? 'start',
+          ...mergeSlotStyleProps(styles.tableCell, props.tableCellSlotProps),
+        },
+        children,
+      );
+    },
+    table: ({ children }) =>
+      createElement(
+        Box,
+        {
+          role: 'region',
+          tabIndex: 0,
+          'aria-label': props.tableLabel ?? 'Markdown table',
+          ...mergeSlotStyleProps(
+            styles.tableContainer,
+            props.tableContainerSlotProps,
+          ),
+        },
+        createElement(
+          Box,
+          {
+            as: 'table',
+            'data-chakra-docs-table-scroll': 'external',
+            ...mergeSlotStyleProps(styles.table, props.tableSlotProps),
+          },
+          children,
+        ),
+      ),
+    a: (input) => {
+      const { children, href, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        DocsLink,
+        {
+          href: href ?? '',
+          ...rest,
+          ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+          ...(rest['aria-describedby'] === 'footnote-label'
+            ? { 'aria-describedby': `docs-${documentId}-footnote-label` }
+            : {}),
+        },
+        children,
+      );
+    },
+    img: (input) => {
+      const { src, alt, ...rest } = withoutMarkdownNode(input);
+      return src
+        ? createElement(Box, {
+            as: 'img',
+            src,
+            alt: alt ?? '',
+            loading: 'lazy',
+            ...rest,
+            ...mergeSlotStyleProps(styles.image, props.imageSlotProps),
+          })
+        : createElement('span', null, alt);
+    },
+    input: ({ checked }) =>
+      createElement(Box, {
+        as: 'input',
+        ...mergeSlotStyleProps(
+          styles.taskCheckbox,
+          props.taskCheckboxSlotProps,
+        ),
+        type: 'checkbox',
+        checked: Boolean(checked),
+        disabled: true,
+        'aria-label': checked ? 'Completed task' : 'Incomplete task',
+      }),
+    blockquote: ({ children }) =>
+      createElement(
+        Callout,
+        {
+          title: 'Note',
+          slotProps: mergeSlotStyleProps(styles.quote, props.quoteSlotProps),
+        },
+        children,
+      ),
+    code: ({ children }) =>
+      createElement(
+        Code,
+        {
+          variant: 'subtle',
+          ...mergeSlotStyleProps(styles.inlineCode, props.inlineCodeSlotProps),
+        },
+        children,
+      ),
+    pre: ({ node }) => {
+      const code = node?.children.find(
+        (child) => child.type === 'element' && child.tagName === 'code',
+      );
+      if (!code || code.type !== 'element') return null;
+      const classes = code.properties.className;
+      const language = Array.isArray(classes)
+        ? classes.find(
+            (value) =>
+              typeof value === 'string' && value.startsWith('language-'),
+          )
+        : undefined;
+      const value = code.children
+        .map((child) => (child.type === 'text' ? child.value : ''))
+        .join('');
+      return createElement(CodeBlock, {
+        ...props.codeBlockProps,
+        code: value.replace(/\n$/, ''),
+        language: normalizeCodeLanguage(
+          typeof language === 'string' ? language.slice(9) : undefined,
+        ),
+        slotProps: mergeComponentSlotProps(
+          styles.codeBlock,
+          props.codeBlockProps?.slotProps,
+          props.codeBlockSlotProps,
+        ),
+      });
+    },
+  };
 
   return createElement(
     Stack,
     mergeSlotStyleProps(styles.root, props.slotProps),
-    blocks.map((block, index) =>
-      renderMarkdownBlock(
-        block,
-        index,
-        createNextHeadingId,
-        scrollMarginTop,
-        recipe,
-        props,
-      ),
-    ),
+    createElement(ReactMarkdown, {
+      children: props.source,
+      components,
+      remarkPlugins: [remarkGfm],
+      remarkRehypeOptions: { clobberPrefix: `docs-${documentId}-` },
+      urlTransform: (url, key) => {
+        if (!url || !isSafeLinkHref(url)) return undefined;
+        // Reject malformed scheme-like prefixes, including NULs normalized by
+        // CommonMark into an encoded replacement character.
+        if (/^[^/?#]*:/.test(url) && !/^(https?|mailto|tel):/i.test(url))
+          return undefined;
+        if (
+          key === 'src' &&
+          /^[a-z][a-z\d+.-]*:/i.test(url) &&
+          !/^https?:/i.test(url)
+        )
+          return undefined;
+        return url;
+      },
+    }),
   );
+}
+
+function withoutMarkdownNode<T extends { node?: unknown }>(
+  input: T,
+): Omit<T, 'node'> {
+  const { node, ...rest } = input;
+  void node;
+  return rest;
 }
 
 export function DocsPagination(props: DocsPaginationProps): ReactNode {
@@ -4689,275 +4929,6 @@ function normalizeCollectionIds(
 ): Set<string> | undefined {
   const ids = collectionIds?.filter(Boolean) ?? [];
   return ids.length > 0 ? new Set(ids) : undefined;
-}
-
-function renderMarkdownBlock(
-  block: MarkdownBlock,
-  index: number,
-  createNextHeadingId: (title: string) => string,
-  scrollMarginTop: ChakraDocsStickyTop,
-  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
-  slotProps: MarkdownContentProps,
-): ReactNode {
-  const styles = recipe({
-    headingLevel:
-      block.type === 'heading' && block.level === 2 ? 'section' : 'subsection',
-  });
-
-  if (block.type === 'heading') {
-    const headingTitle = stripMarkdown(block.text);
-    const headingId = createNextHeadingId(headingTitle);
-
-    return createElement(
-      Heading,
-      {
-        as: headingElement(block.level),
-        id: headingId,
-        key: `${block.type}-${index}`,
-        size: block.level === 2 ? '2xl' : 'xl',
-        scrollMarginTop,
-        ...mergeSlotStyleProps(styles.heading, slotProps.headingSlotProps),
-      },
-      renderInlineMarkdown(block.text, recipe, slotProps),
-      slotProps.headingPermalinks
-        ? createElement(DocsHeadingPermalink, {
-            headingId,
-            href: slotProps.getHeadingHref?.(headingId),
-            indicatorSlotProps: slotProps.headingPermalinkIndicatorSlotProps,
-            slotProps: slotProps.headingPermalinkSlotProps,
-            title: headingTitle,
-            triggerSlotProps: slotProps.headingPermalinkTriggerSlotProps,
-          })
-        : null,
-    );
-  }
-
-  if (block.type === 'paragraph') {
-    return createElement(
-      Text,
-      {
-        key: `${block.type}-${index}`,
-        ...mergeSlotStyleProps(styles.paragraph, slotProps.paragraphSlotProps),
-      },
-      renderInlineMarkdown(block.text, recipe, slotProps),
-    );
-  }
-
-  if (block.type === 'list') {
-    return createElement(
-      Box,
-      {
-        as: 'ul',
-        key: `${block.type}-${index}`,
-        ...mergeSlotStyleProps(styles.list, slotProps.listSlotProps),
-      },
-      block.items.map((item) =>
-        createElement(
-          Box,
-          {
-            as: 'li',
-            key: item,
-            ...mergeSlotStyleProps(
-              styles.listItem,
-              slotProps.listItemSlotProps,
-            ),
-          },
-          renderInlineMarkdown(item, recipe, slotProps),
-        ),
-      ),
-    );
-  }
-
-  if (block.type === 'quote') {
-    return createElement(
-      Callout,
-      {
-        key: `${block.type}-${index}`,
-        slotProps: mergeSlotStyleProps(styles.quote, slotProps.quoteSlotProps),
-        title: 'Note',
-      },
-      renderInlineMarkdown(block.text, recipe, slotProps),
-    );
-  }
-
-  return createElement(CodeBlock, {
-    ...slotProps.codeBlockProps,
-    code: block.code,
-    key: `${block.type}-${index}`,
-    language: normalizeCodeLanguage(block.language),
-    slotProps: mergeComponentSlotProps(
-      styles.codeBlock,
-      slotProps.codeBlockProps?.slotProps,
-      slotProps.codeBlockSlotProps,
-    ),
-  });
-}
-
-function parseMarkdown(source: string): MarkdownBlock[] {
-  const blocks: MarkdownBlock[] = [];
-  const lines = source.trim().split(/\r?\n/);
-  let index = 0;
-
-  while (index < lines.length) {
-    const line = lines[index];
-
-    if (!line.trim()) {
-      index += 1;
-      continue;
-    }
-
-    const fence = /^(```|~~~)(.*)$/.exec(line);
-
-    if (fence) {
-      const marker = fence[1];
-      const language = fence[2].trim() || undefined;
-      const codeLines: string[] = [];
-      index += 1;
-
-      while (index < lines.length && !lines[index].startsWith(marker)) {
-        codeLines.push(lines[index]);
-        index += 1;
-      }
-
-      if (index < lines.length) {
-        index += 1;
-      }
-
-      blocks.push({ type: 'code', language, code: codeLines.join('\n') });
-      continue;
-    }
-
-    const headingMatch = /^(#{2,6})\s+(.+)$/.exec(line);
-
-    if (headingMatch) {
-      const title = stripMarkdown(headingMatch[2]).trim();
-
-      if (!title) {
-        blocks.push({ type: 'paragraph', text: line });
-        index += 1;
-        continue;
-      }
-
-      blocks.push({
-        type: 'heading',
-        level: headingMatch[1].length,
-        text: headingMatch[2],
-      });
-      index += 1;
-      continue;
-    }
-
-    if (/^-\s+/.test(line)) {
-      const items: string[] = [];
-
-      while (index < lines.length && /^-\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^-\s+/, ''));
-        index += 1;
-      }
-
-      blocks.push({ type: 'list', items });
-      continue;
-    }
-
-    if (/^>\s?/.test(line)) {
-      const quoteLines: string[] = [];
-
-      while (index < lines.length && /^>\s?/.test(lines[index])) {
-        quoteLines.push(lines[index].replace(/^>\s?/, ''));
-        index += 1;
-      }
-
-      blocks.push({ type: 'quote', text: quoteLines.join(' ') });
-      continue;
-    }
-
-    const paragraphLines: string[] = [];
-
-    while (index < lines.length && isParagraphLine(lines[index])) {
-      paragraphLines.push(lines[index]);
-      index += 1;
-    }
-
-    blocks.push({ type: 'paragraph', text: paragraphLines.join(' ') });
-  }
-
-  return blocks;
-}
-
-function isParagraphLine(line: string): boolean {
-  return (
-    Boolean(line.trim()) &&
-    !/^(```|~~~)/.test(line) &&
-    !/^(#{2,6})\s+/.test(line) &&
-    !/^-\s+/.test(line) &&
-    !/^>\s?/.test(line)
-  );
-}
-
-function renderInlineMarkdown(
-  text: string,
-  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
-  slotProps: MarkdownContentProps,
-): ReactNode[] {
-  return text
-    .split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g)
-    .filter(Boolean)
-    .map((part, index) =>
-      renderInlineMarkdownPart(part, index, recipe, slotProps),
-    );
-}
-
-function renderInlineMarkdownPart(
-  part: string,
-  index: number,
-  recipe: (props?: Record<string, unknown>) => Record<string, unknown>,
-  slotProps: MarkdownContentProps,
-): ReactNode {
-  const key = `${part}-${index}`;
-  const styles = recipe();
-
-  if (part.startsWith('`') && part.endsWith('`')) {
-    return createElement(
-      Code,
-      {
-        key,
-        variant: 'subtle',
-        ...mergeSlotStyleProps(
-          styles.inlineCode,
-          slotProps.inlineCodeSlotProps,
-        ),
-      },
-      part.slice(1, -1),
-    );
-  }
-
-  if (part.startsWith('**') && part.endsWith('**')) {
-    return createElement('strong', { key }, part.slice(2, -2));
-  }
-
-  const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
-
-  if (linkMatch) {
-    return createElement(
-      DocsLink,
-      {
-        href: linkMatch[2],
-        key,
-        ...mergeSlotStyleProps(styles.link, slotProps.linkSlotProps),
-      },
-      linkMatch[1],
-    );
-  }
-
-  return part;
-}
-
-function headingElement(level: number): string {
-  if (level === 2) return 'h2';
-  if (level === 3) return 'h3';
-  if (level === 4) return 'h4';
-  if (level === 5) return 'h5';
-  return 'h6';
 }
 
 function normalizeCodeLanguage(

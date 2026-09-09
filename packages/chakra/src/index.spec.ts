@@ -141,13 +141,13 @@ describe('MarkdownContent', () => {
     expect(linked).toContain('>#<');
   });
 
-  it('treats single-# lines as paragraphs, not headings', () => {
+  it('renders level-one headings', () => {
     const markup = render(
       createElement(MarkdownContent, { source: '# Top Level' }),
     );
 
-    expect(markup).not.toContain('<h1');
-    expect(markup).toContain('># Top Level</p>');
+    expect(markup).toContain('<h1 id="top-level"');
+    expect(markup).toContain('>Top Level</h1>');
   });
 
   it('renders plain paragraphs and joins wrapped lines', () => {
@@ -157,7 +157,7 @@ describe('MarkdownContent', () => {
       }),
     );
 
-    expect(markup).toContain('>First line second line.</p>');
+    expect(markup).toContain('>First line\nsecond line.</p>');
     expect(markup).toContain('>Another paragraph.</p>');
   });
 
@@ -221,14 +221,14 @@ describe('MarkdownContent', () => {
     expect(markup).toContain('>After list.</p>');
   });
 
-  it('renders ordered-list syntax as a paragraph (not supported as a list)', () => {
+  it('renders ordered lists', () => {
     const markup = render(
       createElement(MarkdownContent, { source: '1. one\n2. two' }),
     );
 
-    expect(markup).not.toContain('<ol');
-    expect(markup).not.toContain('<li');
-    expect(markup).toContain('>1. one 2. two</p>');
+    expect(markup).toContain('<ol');
+    expect(markup).toMatch(/<li[^>]*>one<\/li>/);
+    expect(markup).toMatch(/<li[^>]*>two<\/li>/);
   });
 
   it('renders blockquotes as a Note callout with joined lines', () => {
@@ -239,7 +239,7 @@ describe('MarkdownContent', () => {
     );
 
     expect(markup).toContain('>Note</p>');
-    expect(markup).toContain('Careful with this across two lines.');
+    expect(markup).toContain('Careful with this\nacross two lines.');
     expect(markup).not.toContain('<blockquote');
   });
 
@@ -259,13 +259,12 @@ describe('MarkdownContent', () => {
     );
   });
 
-  it('passes unsupported single-asterisk emphasis through as plain text', () => {
+  it('renders emphasis', () => {
     const markup = render(
       createElement(MarkdownContent, { source: 'This is *emphasis* text.' }),
     );
 
-    expect(markup).toContain('>This is *emphasis* text.</p>');
-    expect(markup).not.toContain('<em>');
+    expect(markup).toContain('>This is <em>emphasis</em> text.</p>');
   });
 
   it('strips inline markdown from generated heading ids', () => {
@@ -288,14 +287,14 @@ describe('MarkdownContent', () => {
     expect(markup).toContain('<h2 id="foobar"');
   });
 
-  it('does not create headings that manifest extraction would discard', () => {
+  it('does not allocate anchor IDs to punctuation-only headings', () => {
     const markup = render(
       createElement(MarkdownContent, { source: '## ***\n\n## Valid' }),
     );
 
-    expect(markup.match(/<h2/g)).toHaveLength(1);
+    expect(markup.match(/<h2/g)).toHaveLength(2);
     expect(markup).toContain('<h2 id="valid"');
-    expect(markup).toContain('>## ***</p>');
+    expect(markup).toContain('>***</h2>');
   });
 
   it('supports tilde-fenced code without rendering headings inside it', () => {
@@ -382,7 +381,7 @@ describe('MarkdownContent', () => {
       }),
     );
 
-    expect(markup).toContain('>unsafe</span>');
+    expect(markup).toContain('unsafe');
     expect(markup).not.toContain('href=');
   });
 
@@ -401,6 +400,151 @@ describe('MarkdownContent', () => {
     );
 
     expect(markup).toContain(`href="${href}"`);
+  });
+});
+
+describe('MarkdownContent CommonMark and GFM', () => {
+  it('renders aligned semantic tables with inline formatting and escaped pipes', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: '| Name | Value |\n| :--- | ---: |\n| **Bold** | `a\\|b` |',
+        tableLabel: 'Configuration options',
+        tableContainerSlotProps: { 'data-scroll': 'table' },
+        tableHeaderSlotProps: { 'data-heading': 'cell' },
+        tableCellSlotProps: { 'data-body': 'cell' },
+      }),
+    );
+    expect(markup).toContain('role="region"');
+    expect(markup).toContain('tabindex="0"');
+    expect(markup).toContain('aria-label="Configuration options"');
+    expect(markup).toContain('data-chakra-docs-table-scroll="external"');
+    expect(markup).toContain('<thead');
+    expect(markup).toContain('<tbody');
+    expect(markup).toContain('scope="col"');
+    expect(markup).toContain('<strong>Bold</strong>');
+    expect(markup).toContain('>a|b</code>');
+    expect(markup).toContain('data-heading="cell"');
+    expect(markup).toContain('data-body="cell"');
+    const styled = renderWithStyles(
+      createElement(MarkdownContent, {
+        source: '| A | B |\n| :--- | ---: |\n| a | b |',
+      }),
+    );
+    expect(styled).toContain('overflow-x:auto');
+    expect(styled).toContain('text-align:right');
+  });
+
+  it('leaves invalid table delimiters as paragraphs', () => {
+    const markup = render(
+      createElement(MarkdownContent, { source: '| A | B |\n| nope | nope |' }),
+    );
+    expect(markup).not.toContain('<table');
+    expect(markup).toContain('| A | B |');
+  });
+
+  it('renders nested lists, ordered starts and read-only tasks', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: '3. Third\n   * Nested\n\n- [x] Done\n- [ ] Pending',
+      }),
+    );
+    expect(markup).toContain('start="3"');
+    expect(markup).toMatch(/<li[^>]*>Third\n<ul/);
+    expect(markup).toContain('>Nested</li>');
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(markup.match(/disabled=""/g)).toHaveLength(2);
+    expect(markup).toContain('aria-label="Completed task"');
+    expect(markup).toContain('aria-label="Incomplete task"');
+  });
+
+  it('handles nested emphasis, strikethrough, escapes, entities and hard breaks', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: '**Bold and _italic_** ~~removed~~ \\*literal\\* &amp;  \nnext',
+      }),
+    );
+    expect(markup).toContain('<strong>Bold and <em>italic</em></strong>');
+    expect(markup).toContain('<del>removed</del>');
+    expect(markup).toContain('*literal* &amp;');
+    expect(markup).toContain('<br/>');
+  });
+
+  it('renders reference links, titles, literal autolinks and images', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source:
+          '[Guide][guide]\n\n[guide]: /docs/guide "Guide title"\n\nhttps://example.com\n\n![Diagram][image]\n\n[image]: /diagram.png "Diagram title"',
+        imageSlotProps: { 'data-image': 'custom' },
+      }),
+    );
+    expect(markup).toContain('href="/docs/guide"');
+    expect(markup).toContain('title="Guide title"');
+    expect(markup).toContain('href="https://example.com"');
+    expect(markup).toContain('src="/diagram.png"');
+    expect(markup).toContain('alt="Diagram"');
+    expect(markup).toContain('loading="lazy"');
+    expect(markup).toContain('data-image="custom"');
+  });
+
+  it('escapes HTML and JSX and rejects dangerous link and image protocols', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source:
+          '<script>alert(1)</script>\n\n<Button onClick={run}>Click</Button>\n\n[bad](javascript:run) ![unsafe](data:image/svg+xml,evil) ![mail](mailto:test@example.com)\n\n[ref][danger]\n\n[danger]: javascript:run',
+      }),
+    );
+    expect(markup).not.toContain('<script');
+    expect(markup).not.toContain('<Button');
+    expect(markup).not.toContain('href=');
+    expect(markup).not.toContain('<img');
+    expect(markup).toContain('&lt;script&gt;');
+    expect(markup).toContain('&lt;Button');
+  });
+
+  it('supports Setext, indented and closing-hash headings with stable IDs', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: 'Page\n====\n\nSection\n-------\n\n  ## Next ##\n\n## Section',
+      }),
+    );
+    expect(markup).toContain('<h1 id="page"');
+    expect(markup).toContain('<h2 id="section"');
+    expect(markup).toContain('<h2 id="next"');
+    expect(markup).toContain('<h2 id="section-2"');
+  });
+
+  it('handles indented code, longer fences and thematic breaks', () => {
+    const markup = render(
+      createElement(MarkdownContent, {
+        source: '    ## literal\n\n````ts\n```\n## still code\n````\n\n---',
+      }),
+    );
+    expect(markup).not.toContain('<h2');
+    expect(markup).toContain('## literal');
+    expect(markup).toContain('## still code');
+    expect(markup).toContain('<hr');
+  });
+
+  it('renders footnotes with accessible references and unique IDs per instance', () => {
+    const source = 'Note[^one].\n\n[^one]: A footnote.';
+    const markup = render(
+      createElement(
+        'div',
+        null,
+        createElement(MarkdownContent, { source }),
+        createElement(MarkdownContent, { source }),
+      ),
+    );
+    const ids = [...markup.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(markup).toContain('data-footnote-ref="true"');
+    expect(markup).toContain('data-footnote-backref=""');
+    const hrefs = [...markup.matchAll(/href="#([^"]+)"/g)].map(
+      (match) => match[1],
+    );
+    for (const href of hrefs) expect(ids).toContain(href);
+    for (const match of markup.matchAll(/aria-describedby="([^"]+)"/g))
+      expect(ids).toContain(match[1]);
   });
 });
 

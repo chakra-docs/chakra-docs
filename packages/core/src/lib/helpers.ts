@@ -4,14 +4,14 @@ import type {
   DocsCollectionOption,
   DocsConfig,
   DocsFeedEntry,
-  DocsHeading,
   DocsManifest,
   DocsPage,
   DocsRepository,
   DocsSearchRecord,
   DocsSitemapEntry,
 } from './types.js';
-import { createHeadingIdGenerator, normalizeRoute, slugToKey } from './slug.js';
+import { normalizeRoute, slugToKey } from './slug.js';
+import { getDocsMarkdownHeadings } from './markdown-headings.js';
 
 export function createDocsManifest(
   options: CreateDocsManifestOptions,
@@ -267,97 +267,16 @@ function createHeadingSearchRecords(page: DocsPage): DocsSearchRecord[] {
 }
 
 function createSectionTextByHeadingId(body: string): Map<string, string> {
-  const sections = new Map<string, string[]>();
-  const createNextHeadingId = createHeadingIdGenerator();
-  let currentHeadingId: string | undefined;
-  let fence: MarkdownFence | undefined;
-
-  for (const line of body.split(/\r?\n/)) {
-    const fenceChange = updateMarkdownFence(line, fence);
-
-    if (fenceChange.matched) {
-      fence = fenceChange.fence;
-      pushSectionLine(sections, currentHeadingId, line);
-      continue;
-    }
-
-    if (!fence) {
-      const heading = parseMarkdownHeading(line);
-
-      if (heading) {
-        currentHeadingId = createNextHeadingId(heading.title);
-        sections.set(currentHeadingId, [heading.title]);
-        continue;
-      }
-    }
-
-    pushSectionLine(sections, currentHeadingId, line);
-  }
-
+  const headings = getDocsMarkdownHeadings(body);
   return new Map(
-    [...sections.entries()].map(([headingId, lines]) => [
-      headingId,
-      joinSearchText(lines.map((line) => stripMarkdown(line))),
+    headings.map((heading, index) => [
+      heading.id,
+      joinSearchText([
+        heading.title,
+        stripMarkdown(body.slice(heading.end, headings[index + 1]?.start)),
+      ]),
     ]),
   );
-}
-
-interface MarkdownFence {
-  character: '`' | '~';
-  length: number;
-}
-
-function updateMarkdownFence(
-  line: string,
-  current: MarkdownFence | undefined,
-): { matched: boolean; fence: MarkdownFence | undefined } {
-  const match = /^ {0,3}(`+|~+)(.*)$/.exec(line);
-
-  if (!match || match[1].length < 3) {
-    return { matched: false, fence: current };
-  }
-
-  const character = match[1][0] as '`' | '~';
-
-  if (!current) {
-    return {
-      matched: true,
-      fence: { character, length: match[1].length },
-    };
-  }
-
-  if (
-    character === current.character &&
-    match[1].length >= current.length &&
-    match[2].trim().length === 0
-  ) {
-    return { matched: true, fence: undefined };
-  }
-
-  return { matched: false, fence: current };
-}
-
-function pushSectionLine(
-  sections: Map<string, string[]>,
-  headingId: string | undefined,
-  line: string,
-) {
-  if (!headingId) {
-    return;
-  }
-
-  sections.get(headingId)?.push(line);
-}
-
-function parseMarkdownHeading(line: string): Pick<DocsHeading, 'title'> | null {
-  const match = /^(#{2,6})\s+(.+)$/.exec(line);
-
-  if (!match) {
-    return null;
-  }
-
-  const title = stripMarkdown(match[2]).trim();
-  return title ? { title } : null;
 }
 
 export function stripMarkdown(value: string): string {

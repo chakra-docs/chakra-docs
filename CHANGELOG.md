@@ -4,6 +4,7 @@
 
 ### 🚀 Features
 
+- **chakra:** render CommonMark and GFM content, including responsive tables, nested/ordered/task lists, images, reference links, footnotes, emphasis, and Setext headings. Share heading discovery with filesystem manifests and section search; keep raw HTML and executable MDX inert.
 - **chakra:** expose sidebar badge styling ([ff0653f](https://github.com/chakra-docs/chakra-docs/commit/ff0653f))
 - **chakra:** add collapsible docs sidebar ([e673a99](https://github.com/chakra-docs/chakra-docs/commit/e673a99))
 - **chakra:** add composable page actions ([9bdc57d](https://github.com/chakra-docs/chakra-docs/commit/9bdc57d))

@@ -14,19 +14,36 @@ describe('docs', () => {
 
   function registerResponsiveTableTests() {
     for (const width of [320, 375, 768, 1440]) {
-      it(`contains wide API and Postkit tables at ${width}px without page overflow`, () => {
+      it(`contains wide API, Markdown and Postkit tables at ${width}px without page overflow`, () => {
         cy.viewport(width, 900);
-        for (const route of ['/docs/components', '/docs/postkit']) {
+        for (const { route, table, scroller, label } of [
+          {
+            route: '/docs/components',
+            table:
+              '[role="region"][aria-label="Responsive API table example"] table',
+            scroller:
+              '[role="region"][aria-label="Responsive API table example"]',
+            label: 'Responsive API table example',
+          },
+          {
+            route: '/docs/components',
+            table: '[role="region"][aria-label="Markdown table"] table',
+            scroller: '[role="region"][aria-label="Markdown table"]',
+            label: 'Markdown table',
+          },
+          {
+            route: '/docs/postkit',
+            table: '[data-postkit-prose-element="table"]',
+            scroller: '[data-postkit-prose-element="table"]',
+            label: undefined,
+          },
+        ]) {
           visit(route);
           // Wait for interactive hydration before mutating a server-rendered cell.
           cy.contains('button', 'Search').click();
           cy.get('[role="dialog"]').should('be.visible');
           cy.get('[role="combobox"]').type('{esc}');
           cy.get('[role="dialog"]').should('not.be.visible');
-          const table =
-            route === '/docs/components'
-              ? 'table'
-              : '[data-postkit-prose-element="table"]';
           // Stress intrinsic sizing with an unbreakable identifier, regardless
           // of which example content happens to be documented on the page.
           cy.get(table)
@@ -41,10 +58,6 @@ describe('docs', () => {
           cy.get('body').should(($element) => {
             expect($element[0].scrollWidth).to.be.at.most(width + 1);
           });
-          const scroller =
-            route === '/docs/components'
-              ? '[role="region"][aria-label="Responsive API table example"]'
-              : table;
           cy.get(scroller)
             .should(($element) => {
               const element = $element[0];
@@ -59,10 +72,10 @@ describe('docs', () => {
           cy.get(scroller).should(($element) => {
             expect($element[0].scrollLeft).to.be.greaterThan(0);
           });
-          if (route === '/docs/components') {
+          if (label) {
             cy.get(scroller)
               .should('have.attr', 'role', 'region')
-              .and('have.attr', 'aria-label', 'Responsive API table example')
+              .and('have.attr', 'aria-label', label)
               .focus();
             cy.get(scroller).should('be.focused');
             cy.get(table).should('have.css', 'display', 'table');

@@ -374,6 +374,18 @@ Use `records={manifest.search}` instead for small, local-only sites. When a resu
 
 `Callout` and `CodeBlock` are small content primitives used by Markdown or MDX renderers. Code blocks copy their contents by default, while line numbers and wrapping remain opt-in.
 
+### Built-in Markdown rendering
+
+`MarkdownContent` supports CommonMark and GitHub-flavored Markdown without requiring Postkit: tables, nested and ordered lists, read-only task lists, images, reference links, autolinks, emphasis, strikethrough, footnotes, headings, thematic breaks, and fenced or indented code. Raw HTML and JSX remain escaped text, not executable content. Use a separate Postkit or MDX renderer for directives and custom components.
+
+| Feature    | Default behavior                                                |
+| :--------- | :-------------------------------------------------------------- |
+| **Tables** | Keyboard-focusable horizontal scrolling without page overflow   |
+| `image`    | Responsive sizing with alt text and safe URLs                   |
+| Headings   | Shared anchor IDs for the article, search and table of contents |
+
+Use `tableLabel` to label a table's scroll region. Customize tables with `tableContainerSlotProps`, `tableSlotProps`, `tableHeadSlotProps`, `tableBodySlotProps`, `tableRowSlotProps`, `tableHeaderSlotProps`, and `tableCellSlotProps`, or their matching `chakraDocsMarkdownContent` recipe slots. `imageSlotProps`, `separatorSlotProps`, and `taskCheckboxSlotProps` style the other content elements.
+
 ```tsx
 <Callout type="info" title="Server-only">
   Build the filesystem manifest from getStaticProps or another server context.

@@ -5,7 +5,7 @@ import { globSync } from 'tinyglobby';
 import { JSON_SCHEMA, load as parseYaml } from 'js-yaml';
 import {
   createDocsManifest,
-  createHeadingIdGenerator,
+  getDocsMarkdownHeadings,
   encodeRouteSegment,
   getPageBySlug,
   getPagesByCollection,
@@ -936,106 +936,18 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function extractHeadings(body: string): DocsHeading[] {
-  const headings: DocsHeading[] = [];
-  const createNextHeadingId = createHeadingIdGenerator();
-  let fence: MarkdownFence | undefined;
-
-  for (const line of body.split(/\r?\n/)) {
-    const fenceChange = updateMarkdownFence(line, fence);
-
-    if (fenceChange.matched) {
-      fence = fenceChange.fence;
-      continue;
-    }
-
-    if (fence) {
-      continue;
-    }
-
-    const match = /^(#{2,6})\s+(.+)$/.exec(line);
-
-    if (!match) {
-      continue;
-    }
-
-    const title = stripMarkdown(match[2]).trim();
-
-    if (!title) {
-      continue;
-    }
-
-    headings.push({
-      id: createNextHeadingId(title),
-      title,
-      level: match[1].length,
-    });
-  }
-
-  return headings;
+  return getDocsMarkdownHeadings(body)
+    .filter((heading) => heading.level > 1)
+    .map(({ id, title, level }) => ({ id, title, level }));
 }
 
 function extractFirstHeadingTitle(
   body: string,
   level: number,
 ): string | undefined {
-  let fence: MarkdownFence | undefined;
-
-  for (const line of body.split(/\r?\n/)) {
-    const fenceChange = updateMarkdownFence(line, fence);
-
-    if (fenceChange.matched) {
-      fence = fenceChange.fence;
-      continue;
-    }
-
-    if (fence) {
-      continue;
-    }
-
-    const match = /^(#{1,6})\s+(.+)$/.exec(line);
-
-    if (match?.[1].length === level) {
-      const title = stripMarkdown(match[2]).trim();
-      return title || undefined;
-    }
-  }
-
-  return undefined;
-}
-
-interface MarkdownFence {
-  character: '`' | '~';
-  length: number;
-}
-
-function updateMarkdownFence(
-  line: string,
-  current: MarkdownFence | undefined,
-): { matched: boolean; fence: MarkdownFence | undefined } {
-  const match = /^ {0,3}(`+|~+)(.*)$/.exec(line);
-
-  if (!match || match[1].length < 3) {
-    return { matched: false, fence: current };
-  }
-
-  const character = match[1][0] as '`' | '~';
-
-  if (!current) {
-    return {
-      matched: true,
-      fence: { character, length: match[1].length },
-    };
-  }
-
-  if (
-    character === current.character &&
-    match[1].length >= current.length &&
-    match[2].trim().length === 0
-  ) {
-    return { matched: true, fence: undefined };
-  }
-
-  return { matched: false, fence: current };
+  return getDocsMarkdownHeadings(body).find(
+    (heading) => heading.level === level,
+  )?.title;
 }
 
 function extractDescription(body: string, title: string): string | undefined {
