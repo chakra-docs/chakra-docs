@@ -829,6 +829,80 @@ describe('DocsPageActions', () => {
     expect(markup).not.toContain('viewBox="0 0 16 16"');
   });
 
+  it('owns page-action appearance independently of generic Chakra recipes', () => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        recipes: {
+          button: { base: { minH: '97px', bg: '#fe0099' } },
+          link: { base: { color: '#fe0098' } },
+        },
+        slotRecipes: {
+          clipboard: {
+            base: {
+              root: { p: '91px' },
+              trigger: { minH: '93px', bg: '#fe0097' },
+            },
+          },
+        },
+      },
+    });
+    const markup = renderWithStyles(
+      createElement(
+        DocsPageActions.Root,
+        { markdown: '# Page', variant: 'split' },
+        createElement(DocsPageActions.CopyPage),
+        createElement(DocsPageActions.Item, { label: 'Action' }),
+        createElement(DocsPageActions.Item, { href: '/docs', label: 'Link' }),
+        createElement(DocsPageActions.Menu, { label: 'More' }),
+      ),
+      system,
+    );
+    for (const unwanted of [
+      '97px',
+      '93px',
+      '91px',
+      '#fe0099',
+      '#fe0098',
+      '#fe0097',
+    ]) {
+      expect(markup).not.toContain(unwanted);
+    }
+    expect(markup).toContain('background:var(--chakra-colors-transparent)');
+    expect(markup).toContain(
+      'min-height:var(--chakra-docs-page-actions-height)',
+    );
+    expect(markup).toContain('border-inline-end-width:0');
+    expect(markup).not.toContain('margin-inline-start:-');
+  });
+
+  it('retains page-action theme and per-instance overrides', () => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        slotRecipes: {
+          [chakraDocsRecipeKeys.pageActions]: {
+            base: { trigger: { bg: '#123abc' } },
+          },
+        },
+      },
+    });
+    const themed = renderWithStyles(
+      createElement(DocsPageActions.Root, { markdown: '# Page' }),
+      system,
+    );
+    expect(themed).toContain('background:#123abc');
+    const instance = renderWithStyles(
+      createElement(
+        DocsPageActions.Root,
+        { markdown: '# Page' },
+        createElement(DocsPageActions.CopyPage, {
+          slotProps: { bg: '#456def' },
+        }),
+      ),
+      system,
+    );
+    expect(instance).toContain('background:#456def');
+  });
+
   it('supports composing only the actions an application wants', () => {
     const markup = render(
       createElement(
@@ -1778,6 +1852,32 @@ describe('DocsTableOfContents (SSR)', () => {
 });
 
 describe('Chakra Docs slot recipes', () => {
+  it('provides neutral page-action surfaces and visible interaction states', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
+    expect(recipe.base).toMatchObject({
+      trigger: {
+        bg: 'transparent',
+        color: 'fg',
+        borderColor: 'border',
+        borderWidth: '1px',
+        _hover: { bg: 'bg.subtle' },
+        _focusVisible: { outlineColor: 'fg', outlineOffset: '2px' },
+        _disabled: { cursor: 'not-allowed' },
+      },
+      menuContent: { bg: 'bg', color: 'fg' },
+      submenuContent: { bg: 'bg', color: 'fg' },
+      menuItem: {
+        _highlighted: { bg: 'bg.subtle', color: 'fg' },
+        _focusVisible: { outlineColor: 'fg' },
+      },
+    });
+    expect(recipe.variants?.variant.split).toMatchObject({
+      root: { flexWrap: 'nowrap', gap: 0 },
+      primaryTrigger: { borderEndRadius: 0, borderEndWidth: 0 },
+      menuTrigger: { borderStartRadius: 0 },
+    });
+  });
+
   it('exports one configured slot recipe for every public recipe key', () => {
     expect(Object.keys(chakraDocsSlotRecipes).sort()).toEqual(
       Object.values(chakraDocsRecipeKeys).sort(),

@@ -36,7 +36,10 @@ export function mergeSlotStyleProps(
   const { css, ...props } = slotProps ?? {};
 
   return {
-    css: [styles, css],
+    // Chakra components wrap `css` again and only flatten a single level.
+    // Flatten composed slots here, while leaving responsive arrays inside
+    // style objects untouched.
+    css: [styles, css].flat(Infinity),
     ...props,
   };
 }

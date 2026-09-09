@@ -1285,6 +1285,7 @@ function usePageActionsDisclosure(
           Button,
           {
             type: 'button',
+            unstyled: true,
             ...triggerProps,
             'aria-label': props.ariaLabel,
           },
@@ -1439,6 +1440,7 @@ export function DocsPageActionsItem(
     Button,
     {
       type: 'button',
+      unstyled: true,
       ...slotProps,
       onClick: (event: PageActionClickEvent) => {
         callPageActionClickHandler(onClick, event);
@@ -1523,6 +1525,7 @@ function createCopyPageAction(props: {
       createElement(
         ChakraClipboard.Indicator,
         {
+          as: 'span',
           copied: props.copiedLabel,
           ...mergeSlotStyleProps(
             context.styles.indicator,
@@ -1569,6 +1572,7 @@ function createCopyPageAction(props: {
   return createElement(
     ChakraClipboard.Root,
     {
+      unstyled: true,
       value: props.value,
       onStatusChange: (details: { copied: boolean }) => {
         if (details.copied) {
@@ -1609,6 +1613,7 @@ function createPageActionLink(props: {
   const link = createElement(
     DocsLink,
     {
+      unstyled: true,
       href: props.href,
       ...slotProps,
       onClick: (event: PageActionClickEvent) => {

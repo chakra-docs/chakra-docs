@@ -561,8 +561,9 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     trigger: {
       alignItems: 'center',
       appearance: 'none',
-      bg: 'bg',
+      bg: 'transparent',
       borderColor: 'border',
+      borderStyle: 'solid',
       borderWidth: '1px',
       color: 'fg',
       cursor: 'pointer',
@@ -570,12 +571,26 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       fontSize: 'var(--chakra-docs-page-actions-font-size)',
       fontWeight: 'medium',
       gap: 'var(--chakra-docs-page-actions-gap)',
+      justifyContent: 'center',
+      lineHeight: 'short',
       minH: 'var(--chakra-docs-page-actions-height)',
+      position: 'relative',
       px: 'var(--chakra-docs-page-actions-trigger-padding)',
+      py: 1,
       textDecoration: 'none',
       borderRadius: 'var(--chakra-docs-page-actions-radius)',
       _hover: { bg: 'bg.subtle', textDecoration: 'none' },
-      _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'fg',
+        outlineOffset: '2px',
+        zIndex: 1,
+      },
+      _disabled: {
+        cursor: 'not-allowed',
+        opacity: 0.5,
+        _hover: { bg: 'transparent' },
+      },
     },
     primaryTrigger: {},
     icon: { display: 'inline-flex', flexShrink: 0 },
@@ -595,7 +610,8 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     menuPositioner: { zIndex: 'dropdown' },
     menuContent: {
-      bg: 'bg.panel',
+      bg: 'bg',
+      color: 'fg',
       borderColor: 'border',
       borderRadius: 'md',
       borderWidth: '1px',
@@ -622,7 +638,13 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       textDecoration: 'none',
       w: 'full',
       _hover: { bg: 'bg.subtle', textDecoration: 'none' },
-      _focusVisible: { outline: '2px solid', outlineColor: 'fg' },
+      _highlighted: { bg: 'bg.subtle', color: 'fg' },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'fg',
+        outlineOffset: '-2px',
+      },
+      _disabled: { cursor: 'not-allowed', opacity: 0.5 },
     },
     menuGroup: { display: 'flex', flexDirection: 'column', gap: 1 },
     menuGroupLabel: {
@@ -653,7 +675,8 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     submenuPositioner: { zIndex: 'dropdown' },
     submenuContent: {
-      bg: 'bg.panel',
+      bg: 'bg',
+      color: 'fg',
       borderColor: 'border',
       borderRadius: 'md',
       borderWidth: '1px',
@@ -692,7 +715,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     variant: {
       default: {},
       split: {
-        root: { gap: 0 },
+        root: { alignItems: 'stretch', flexWrap: 'nowrap', gap: 0 },
         primaryTrigger: {
           borderEndWidth: 0,
           borderEndRadius: 0,

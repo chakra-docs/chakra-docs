@@ -151,6 +151,23 @@ describe('docs', () => {
     cy.get('button[aria-label="More page action examples"]').as(
       'pageActionsMenu',
     );
+    cy.get('button[aria-label="Copy page"]').first().as('primaryAction');
+    cy.get('@primaryAction')
+      .should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+      .and('have.css', 'border-right-width', '0px')
+      .and('have.css', 'border-top-right-radius', '0px');
+    cy.get('@pageActionsMenu')
+      .should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+      .and('have.css', 'border-left-width', '1px')
+      .and('have.css', 'border-top-left-radius', '0px');
+    cy.get('@primaryAction').then(($primary) => {
+      cy.get('@pageActionsMenu').should(($menu) => {
+        const primary = $primary[0].getBoundingClientRect();
+        const menu = $menu[0].getBoundingClientRect();
+        expect(primary.height).to.equal(menu.height);
+        expect(primary.right).to.be.closeTo(menu.left, 0.5);
+      });
+    });
     cy.get('@pageActionsMenu').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'true');
     cy.contains('[role="menuitem"]', 'Open in another chat').as('chatSubmenu');

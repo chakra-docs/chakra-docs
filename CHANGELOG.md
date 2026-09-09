@@ -31,6 +31,7 @@
 
 ### 🩹 Fixes
 
+- **chakra:** default page actions to transparent `fg` triggers and `bg` menus, with consistent recipe-owned sizing, a single split divider, and visible hover/keyboard-focus states. Flatten composed slot styles so Chakra applies them, and prevent generic Button, Clipboard and Link recipes from overriding page-action defaults.
 - **chakra:** honor mobile navigation dismissal preferences and preserve manual sidebar expansion across drawer reopenings and navigation.
 - **chakra:** use Chakra Tabs for keyboard navigation, roving focus, and unique tab/panel relationships while retaining recipes and synchronized selection.
 - **search:** match MiniSearch synonyms at punctuation boundaries without matching inside identifiers.

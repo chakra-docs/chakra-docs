@@ -123,6 +123,8 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
 
 `DocsPageActions` provides composable copy and link actions. `CopyPage` copies the Markdown source, while `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their URLs are available.
 
+Page actions default to transparent triggers using `fg` text/icons, a `border` outline, and `bg` menu surfaces. The split preset joins the exterior border with one divider and square adjoining corners. Hover, keyboard-highlight, focus and disabled states are included. Use `size="sm" | "md" | "lg"` and the `chakraDocsPageActions` slot recipe to customize the controls; the generic Chakra Button/Clipboard/Link recipes do not supply their visual defaults.
+
 The common split-button composition needs no explicit children. It renders Copy page as the primary action and a compact, accessible menu containing the available Copy page, Copy link, View Markdown, and Edit actions:
 
 ```tsx
