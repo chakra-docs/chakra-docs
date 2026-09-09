@@ -6,7 +6,7 @@ pull request. `.github/workflows/release.yml` then builds and publishes that
 exact default-branch commit; it never versions, commits, tags, pushes, or
 creates a GitHub release.
 
-All eleven public packages use one fixed version.
+All twelve public packages use one fixed version.
 
 ## Pending 0.2.0 prerequisite: reproducible Postkit dependencies
 
@@ -18,7 +18,7 @@ the release gate.
 Before merging the release branch:
 
 1. Publish the compatible Postkit package set used by the docs application
-   (`@postkit/core`, `@postkit/react`, `@postkit/shiki`, and `@postkit/unfurl`).
+   (`@postkit/core`, `@postkit/react`, and `@postkit/unfurl`). The docs site uses the first-party `@chakra-docs/shiki` workspace package for highlighting.
    The development artifacts currently identify themselves as `0.1.1`; verify
    the actual published versions and APIs rather than assuming the older
    registry packages provide them.
@@ -129,7 +129,7 @@ The workflow requires a successful CI push run for the exact dispatch commit.
 Immediately before publishing, it also confirms the default branch has not
 advanced. It then validates the committed fixed version, builds the packages,
 checks npm for versions that already exist, publishes the missing versions, and
-verifies that all eleven versions and `latest` tags are public. The registry
+verifies that all twelve versions and `latest` tags are public. The registry
 check remains enabled during bootstrap so the exact run can safely resume after
 a partial publish.
 

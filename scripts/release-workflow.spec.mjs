@@ -29,7 +29,7 @@ const versions = new Set(publicPackages.map(({ version }) => version));
 const [committedVersion] = versions;
 
 test('all public packages form one fixed, committed release group', () => {
-  assert.equal(publicPackages.length, 11);
+  assert.equal(publicPackages.length, 12);
   assert.deepEqual(
     [...releaseProjects].sort(),
     publicPackages.map(({ name }) => name).sort(),
@@ -64,7 +64,7 @@ test('release version validation accepts only the committed stable version', () 
   assert.match(
     valid.stdout,
     new RegExp(
-      `Validated 11 committed packages at ${escapeRegex(committedVersion)}`,
+      `Validated ${publicPackages.length} committed packages at ${escapeRegex(committedVersion)}`,
     ),
   );
 

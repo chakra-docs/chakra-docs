@@ -87,7 +87,8 @@
       "@chakra-docs/react-router",
       "@chakra-docs/search",
       "@chakra-docs/search-pagefind",
-      "@chakra-docs/feed"
+      "@chakra-docs/feed",
+      "@chakra-docs/shiki"
     ],
     "releaseTag": {
       "pattern": "v{version}",

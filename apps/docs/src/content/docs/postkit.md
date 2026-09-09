@@ -16,13 +16,13 @@ The body you are reading is rendered by `Prose`, `react-markdown`, and Postkit's
 Install Postkit alongside the Chakra Docs packages and the Markdown runtime used by this example.
 
 ```bash
-npm install @chakra-docs/chakra @chakra-docs/core @chakra-docs/next @postkit/react @postkit/shiki react-markdown
+npm install @chakra-docs/chakra @chakra-docs/core @chakra-docs/next @chakra-docs/shiki @postkit/react react-markdown
 ```
 
 When developing both libraries locally, link the unpublished Postkit builds from yalc instead:
 
 ```bash
-yalc link --no-pure @postkit/react @postkit/shiki @postkit/unfurl
+yalc link --no-pure @postkit/core @postkit/react @postkit/unfurl
 ```
 
 ## Share the Chakra system
@@ -35,10 +35,10 @@ import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
 import { NextLink } from '@chakra-docs/next/link';
 import { createSystem, defaultConfig } from '@chakra-ui/react';
 import { PostkitProvider } from '@postkit/react';
-import { createPostkitShikiAdapter } from '@postkit/shiki';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 
 const system = createSystem(defaultConfig, chakraDocsThemeConfig);
-const codeBlockAdapter = createPostkitShikiAdapter();
+const codeBlockAdapter = createChakraDocsShikiAdapter();
 
 export function App({ children }: { children: React.ReactNode }) {
   return (
@@ -59,6 +59,8 @@ export function App({ children }: { children: React.ReactNode }) {
 Pass `postkitDefaultTheme` as the provider's `preset` only when the host does not already supply the visual defaults you want.
 
 The adapter is supplied to both providers intentionally. Each library owns its own code-block component and behavior defaults, while the shared adapter keeps language support and highlighting themes consistent. Chakra Docs defaults line numbers and wrapping to off; applications can change those globally through `DocsProvider.config.codeBlock` or per built-in Markdown renderer through `MarkdownContent.codeBlockProps`.
+
+`@chakra-docs/shiki` is the first-party adapter and does not depend on Postkit. Existing applications can optionally keep using `createPostkitShikiAdapter()` from `@postkit/shiki` with the same `DocsProvider` configuration.
 
 ## Render the article body
 

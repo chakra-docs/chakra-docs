@@ -20,6 +20,7 @@ if (!['current', 'minimum'].includes(peerProfile)) {
 
 const publicPackages = [
   '@chakra-docs/core',
+  '@chakra-docs/shiki',
   '@chakra-docs/search',
   '@chakra-docs/source-filesystem',
   '@chakra-docs/source-git',
@@ -34,6 +35,7 @@ const publicPackages = [
 
 const packageRoots = new Map([
   ['@chakra-docs/core', 'packages/core'],
+  ['@chakra-docs/shiki', 'packages/shiki'],
   ['@chakra-docs/search', 'packages/search'],
   ['@chakra-docs/source-filesystem', 'packages/source-filesystem'],
   ['@chakra-docs/source-git', 'packages/source-git'],
@@ -483,6 +485,14 @@ const { createElement } = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { ChakraProvider, defaultSystem } = await import('@chakra-ui/react');
 const { Callout, CodeBlock, DocsProvider } = await import('@chakra-docs/chakra');
+const { createChakraDocsShikiAdapter } = await import('@chakra-docs/shiki');
+const shikiAdapter = createChakraDocsShikiAdapter({ languages: ['typescript'] });
+const shikiContext = await shikiAdapter.loadContext();
+const shikiResult = shikiAdapter.getHighlighter(shikiContext)({ code: 'const packed = true;', language: 'ts' });
+if (!shikiResult.highlighted || !shikiResult.code.includes('data-line="1"')) {
+  throw new Error('Packed Shiki adapter did not highlight code.');
+}
+shikiAdapter.dispose();
 const { chakraDocsThemeConfig } = await import('@chakra-docs/chakra/theme');
 if (!chakraDocsThemeConfig?.theme?.slotRecipes?.chakraDocsLayout) {
   throw new Error('Packed Chakra theme entry point is incomplete.');
@@ -548,6 +558,7 @@ import {
 } from '@chakra-docs/chakra/theme';
 import type { DocsManifest } from '@chakra-docs/core';
 import { createFeedArtifacts } from '@chakra-docs/feed';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 import { createGenerateStaticParams } from '@chakra-docs/next/app';
 import { NextLink } from '@chakra-docs/next/link';
 import { createGetStaticPaths } from '@chakra-docs/next/pages';
@@ -577,7 +588,7 @@ createAppRouterSearchHandler(searchEngine);
 createFeedArtifacts(manifest.feeds, { title: 'Docs', siteUrl: 'https://example.com', updated: '2026-01-01' });
 
 const tree = (
-  <DocsProvider config={{ linkComponent: NextLink }}>
+  <DocsProvider config={{ linkComponent: NextLink, codeBlock: { adapter: createChakraDocsShikiAdapter() } }}>
     <DocsSearch records={manifest.search} />
   </DocsProvider>
 );

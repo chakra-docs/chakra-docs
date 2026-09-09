@@ -4,6 +4,7 @@
 
 ### 🚀 Features
 
+- **shiki:** add an optional first-party Shiki adapter with lazy/preloaded initialization, configurable grammars and light/dark themes, safe fallbacks, and Chakra code-line metadata. The docs site uses it for both Chakra Docs and Postkit rendering; Postkit's adapter remains compatible.
 - **chakra:** render CommonMark and GFM content, including responsive tables, nested/ordered/task lists, images, reference links, footnotes, emphasis, and Setext headings. Share heading discovery with filesystem manifests and section search; keep raw HTML and executable MDX inert.
 - **chakra:** expose sidebar badge styling ([ff0653f](https://github.com/chakra-docs/chakra-docs/commit/ff0653f))
 - **chakra:** add collapsible docs sidebar ([e673a99](https://github.com/chakra-docs/chakra-docs/commit/e673a99))

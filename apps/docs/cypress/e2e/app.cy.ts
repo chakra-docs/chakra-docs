@@ -12,6 +12,18 @@ describe('docs', () => {
     cy.get('@consoleError').should('not.have.been.called');
   });
 
+  it('lazily highlights Chakra Docs and Postkit code with the first-party adapter', () => {
+    for (const route of ['/docs/components', '/docs/postkit']) {
+      visit(route);
+      cy.get('pre code .line[data-line="1"] span[style*="color:"]').should(
+        'have.length.greaterThan',
+        0,
+      );
+      cy.get('pre pre, code code').should('not.exist');
+      cy.get('@consoleError').should('not.have.been.called');
+    }
+  });
+
   function registerResponsiveTableTests() {
     for (const width of [320, 375, 768, 1440]) {
       it(`contains wide API, Markdown and Postkit tables at ${width}px without page overflow`, () => {

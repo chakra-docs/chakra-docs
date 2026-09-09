@@ -115,6 +115,7 @@ Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [
 | [`@chakra-docs/search`](packages/search)                       | Framework-neutral server search, HTTP handlers, and a lightweight remote client.         |
 | [`@chakra-docs/search-pagefind`](packages/search-pagefind)     | Pagefind record generation for static search.                                            |
 | [`@chakra-docs/feed`](packages/feed)                           | RSS, Atom, and JSON Feed generation.                                                     |
+| [`@chakra-docs/shiki`](packages/shiki)                         | Optional, lazy Shiki syntax highlighting with light/dark themes; no Postkit dependency.  |
 
 ## Development
 

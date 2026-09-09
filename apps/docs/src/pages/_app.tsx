@@ -3,12 +3,12 @@ import { DocsProvider } from '@chakra-docs/chakra';
 import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
 import { NextLink } from '@chakra-docs/next/link';
 import { PostkitProvider } from '@postkit/react';
-import { createPostkitShikiAdapter } from '@postkit/shiki';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 import type { AppProps } from 'next/app';
 import { Analytics } from '../components/analytics';
 
 const docsSystem = createSystem(defaultConfig, chakraDocsThemeConfig);
-const shikiAdapter = createPostkitShikiAdapter();
+const shikiAdapter = createChakraDocsShikiAdapter();
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (

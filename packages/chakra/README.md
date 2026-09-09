@@ -16,6 +16,21 @@ Peer dependencies: `@chakra-ui/react` (>=3.36 <4), `@emotion/react` (>=11 <12),
 `react` (>=18 <20), and `react-dom` (>=18 <20). Emotion is a direct peer
 because Chakra UI requires the host application to provide it.
 
+## Syntax highlighting
+
+Install the optional `@chakra-docs/shiki` package to highlight both `CodeBlock` and Markdown code fences without Postkit:
+
+```tsx
+import { DocsProvider } from '@chakra-docs/chakra';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
+
+const adapter = createChakraDocsShikiAdapter();
+
+<DocsProvider config={{ codeBlock: { adapter } }}>{children}</DocsProvider>;
+```
+
+Create the adapter once at module scope. It lazily loads Shiki and accepts `languages` and `themes: { light, dark }` options. The code-block shell remains styled by Chakra recipes. Existing Chakra UI and Postkit adapters remain supported; no adapter means plain-text code rendering. See the [Shiki package](../shiki/README.md) for defaults, preloading, and resource lifecycle guidance.
+
 ## Usage
 
 Wrap your docs pages in your app's `ChakraProvider`, add a `DocsProvider` for shared configuration, and compose a page from `DocsLayout`, `DocsArticle`, and friends. Pages, nav, and headings come from a Chakra Docs manifest (built with `@chakra-docs/source-filesystem` or the `@chakra-docs/cli` generated output):

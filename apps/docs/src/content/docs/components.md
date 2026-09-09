@@ -406,26 +406,18 @@ Use `wrap` for commands or other content that should reflow instead of scrolling
 
 ## CodeBlock highlighting
 
-Chakra Docs uses Chakra UI's `CodeBlock` component internally. Syntax highlighting is configured once through `DocsProvider` by passing a Chakra code block adapter.
+Install the optional first-party `@chakra-docs/shiki` package for syntax highlighting. Configure it once through `DocsProvider`; it works with standalone code blocks and the built-in Markdown renderer without requiring Postkit.
+
+```bash
+npm install @chakra-docs/shiki
+```
 
 ```tsx
-import { createShikiAdapter } from '@chakra-ui/react'
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki'
 import { DocsProvider } from '@chakra-docs/chakra'
 
-const shikiAdapter = createShikiAdapter({
-  theme: {
-    light: 'github-light',
-    dark: 'github-dark',
-  },
-  async load() {
-    const { createHighlighter } = await import('shiki')
-
-    return createHighlighter({
-      langs: ['bash', 'tsx', 'ts', 'json', 'markdown', 'text'],
-      themes: ['github-light', 'github-dark'],
-    })
-  },
-})
+// Create once at module scope. Shiki loads lazily when a code block mounts.
+const shikiAdapter = createChakraDocsShikiAdapter()
 
 <DocsProvider
   config={{
@@ -451,6 +443,8 @@ Direct `CodeBlock` props override these provider defaults. The built-in `Markdow
   codeBlockProps={{ lineNumbers: false, wrap: true }}
 />
 ```
+
+Use the adapter's `languages` and `themes: { light, dark }` options to customize grammars and token colors. Unknown or unloaded languages remain safely escaped plain text. Existing Chakra UI adapters and `createPostkitShikiAdapter()` from `@postkit/shiki` remain supported alternatives.
 
 If no adapter is provided, Chakra UI's code block falls back to plain text rendering. The Chakra Docs recipe uses semantic background, foreground, border, success, and error tokens, so code shells adapt to the host system without requiring a brand palette.
 

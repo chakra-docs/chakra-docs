@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "yalc:link": "yalc link --no-pure @postkit/core @postkit/react @postkit/shiki @postkit/unfurl"
+    "yalc:link": "yalc link --no-pure @postkit/core @postkit/react @postkit/unfurl"
   },
   "nx": {
     "targets": {
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@chakra-docs/chakra": "*",
+    "@chakra-docs/shiki": "*",
     "@chakra-docs/core": "*",
     "@chakra-docs/next": "*",
     "@chakra-docs/search": "*",
