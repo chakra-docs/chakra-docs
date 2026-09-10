@@ -10,6 +10,7 @@ import {
   CodeBlock,
   DocsHeadingPermalink,
   DocsPageFeedback,
+  DocsPageActions,
   DocsProvider,
   DocsSearch,
 } from './index.js';
@@ -154,6 +155,85 @@ async function typeQuery(input: HTMLInputElement, value: string) {
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
+
+describe('DocsPageActions copy confirmation', () => {
+  it.each([
+    { action: 'page', expected: 'Copied!' },
+    { action: 'link', expected: 'Copied!' },
+    { action: 'page', providerLabel: 'Page copied', expected: 'Page copied' },
+    { action: 'link', providerLabel: 'Link copied', expected: 'Link copied' },
+    {
+      action: 'page',
+      providerLabel: 'Global',
+      copiedLabel: 'Done!',
+      expected: 'Done!',
+    },
+    {
+      action: 'link',
+      providerLabel: 'Global',
+      copiedLabel: 'Saved!',
+      expected: 'Saved!',
+    },
+  ])(
+    'shows and resets $action confirmation: $expected',
+    async ({ action, providerLabel, copiedLabel, expected }) => {
+      const writeText = vi.fn(async () => undefined);
+      vi.stubGlobal(
+        'navigator',
+        Object.create(navigator, { clipboard: { value: { writeText } } }),
+      );
+      vi.useFakeTimers();
+      try {
+        const label = action === 'page' ? 'Copy page' : 'Copy link';
+        await render(
+          createElement(
+            DocsProvider,
+            {
+              config: {
+                labels: {
+                  copiedPage: providerLabel,
+                  copiedLink: providerLabel,
+                },
+              },
+            },
+            createElement(
+              DocsPageActions.Root,
+              { markdown: '# Page', pageUrl: '/docs/page' },
+              createElement(
+                action === 'page'
+                  ? DocsPageActions.CopyPage
+                  : DocsPageActions.CopyLink,
+                {
+                  copiedLabel,
+                  icon: createElement(
+                    'span',
+                    { 'data-copy-icon': true },
+                    'icon',
+                  ),
+                },
+              ),
+            ),
+          ),
+        );
+        const trigger = button(label);
+        expect(trigger.textContent).toContain(label);
+        await act(async () => trigger.click());
+        expect(writeText).toHaveBeenCalledWith(
+          action === 'page' ? '# Page' : '/docs/page',
+        );
+        expect(trigger.textContent).toContain(expected);
+        expect(trigger.querySelector('[data-copy-icon]')).not.toBeNull();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(4000);
+        });
+        expect(trigger.textContent).toContain(label);
+        expect(trigger.textContent).not.toContain(expected);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+});
 
 describe('CodeBlock copy analytics', () => {
   it('does not classify ordinary code as package commands', async () => {

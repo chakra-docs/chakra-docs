@@ -32,6 +32,10 @@
 
 ### 🩹 Fixes
 
+- **chakra:** keep copy confirmation text visible, default to “Copied!”, and preserve provider/per-action copied-label overrides with polite live feedback.
+
+- **chakra:** refine page-action defaults with 44px minimum-height buttons, panel hover states, muted inset focus outlines, 16px chevrons, and roomier rounded menus and items.
+
 - **chakra:** stack page-action labels and descriptions vertically in a themeable `actionContent` slot, keeping icons alongside the text.
 
 - **chakra:** default page actions to transparent `fg` triggers and `bg` menus, with consistent recipe-owned sizing, a single split divider, and visible hover/keyboard-focus states. Flatten composed slot styles so Chakra applies them, and prevent generic Button, Clipboard and Link recipes from overriding page-action defaults.

@@ -166,10 +166,16 @@ describe('docs', () => {
     cy.get('button[aria-label="Copy page"]').first().as('primaryAction');
     cy.get('@primaryAction')
       .should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+      .and('have.css', 'min-height', '44px')
+      .and('have.css', 'padding-left', '16px')
+      .and('have.css', 'padding-right', '16px')
       .and('have.css', 'border-right-width', '0px')
       .and('have.css', 'border-top-right-radius', '0px');
     cy.get('@pageActionsMenu')
       .should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+      .and('have.css', 'min-width', '44px')
+      .and('have.css', 'padding-left', '12px')
+      .and('have.css', 'padding-right', '12px')
       .and('have.css', 'border-left-width', '1px')
       .and('have.css', 'border-top-left-radius', '0px');
     cy.get('@primaryAction').then(($primary) => {
@@ -182,6 +188,15 @@ describe('docs', () => {
     });
     cy.get('@pageActionsMenu').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'true');
+    cy.get('[role="menu"]')
+      .filter(':visible')
+      .should('have.css', 'min-width', '288px')
+      .and('have.css', 'padding', '8px')
+      .and('have.css', 'border-radius', '12px');
+    cy.get('[role="menuitem"]')
+      .filter(':visible')
+      .first()
+      .should('have.css', 'padding', '12px');
     for (const description of [
       'Copy page as Markdown for LLMs',
       'Copy a link to this page',

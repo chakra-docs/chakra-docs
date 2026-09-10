@@ -856,10 +856,10 @@ const defaultLabels: DocsLabels = {
   copiedCode: 'Copied',
   copyPage: 'Copy page',
   copyPageDescription: 'Copy page as Markdown for LLMs',
-  copiedPage: 'Copied',
+  copiedPage: 'Copied!',
   copyLink: 'Copy link',
   copyLinkDescription: 'Copy a link to this page',
-  copiedLink: 'Copied',
+  copiedLink: 'Copied!',
   viewMarkdown: 'View as Markdown',
   viewMarkdownDescription: 'Open this page as plain text',
   moreActions: 'More page actions',
@@ -1523,13 +1523,27 @@ function createCopyPageAction(props: {
       Box,
       {
         as: 'span',
+        'aria-live': 'polite',
+        'aria-atomic': true,
         ...mergeSlotStyleProps(context.styles.actionContent, undefined),
       },
       createElement(
         ChakraClipboard.Indicator,
         {
           as: 'span',
-          copied: props.copiedLabel,
+          // Chakra forwards indicator content as a child element. A bare
+          // string disappears in the copied state, leaving only the icon.
+          copied: createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.label,
+                props.labelSlotProps,
+              ),
+            },
+            props.copiedLabel,
+          ),
           ...mergeSlotStyleProps(
             context.styles.indicator,
             props.indicatorSlotProps,

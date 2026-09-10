@@ -1895,15 +1895,48 @@ describe('Chakra Docs slot recipes', () => {
         color: 'fg',
         borderColor: 'border',
         borderWidth: '1px',
-        _hover: { bg: 'bg.subtle' },
-        _focusVisible: { outlineColor: 'fg', outlineOffset: '2px' },
+        _hover: { bg: 'bg.panel' },
+        _focusVisible: {
+          outline: '1px solid',
+          outlineColor: 'fg.muted',
+          outlineOffset: '-1px',
+        },
         _disabled: { cursor: 'not-allowed' },
       },
-      menuContent: { bg: 'bg', color: 'fg' },
-      submenuContent: { bg: 'bg', color: 'fg' },
+      root: {
+        '--chakra-docs-page-actions-height': 'sizes.11',
+        '--chakra-docs-page-actions-trigger-padding': 'spacing.4',
+        '--chakra-docs-page-actions-menu-padding': 'spacing.3',
+        '--chakra-docs-page-actions-font-size': 'fontSizes.sm',
+      },
+      menuTrigger: { minW: '44px' },
+      menuIndicator: { boxSize: '16px', fontSize: '16px' },
+      menuContent: {
+        bg: 'bg',
+        color: 'fg',
+        minW: '18rem',
+        p: 2,
+        borderRadius: 'xl',
+        boxShadow: 'xl',
+      },
+      submenuContent: {
+        bg: 'bg',
+        color: 'fg',
+        minW: '18rem',
+        p: 2,
+        borderRadius: 'xl',
+        boxShadow: 'xl',
+      },
       menuItem: {
-        _highlighted: { bg: 'bg.subtle', color: 'fg' },
-        _focusVisible: { outlineColor: 'fg' },
+        p: 3,
+        borderRadius: 'md',
+        _hover: { bg: 'bg.panel' },
+        _highlighted: { bg: 'bg.panel', color: 'fg' },
+        _focusVisible: {
+          outline: '1px solid',
+          outlineColor: 'fg.muted',
+          outlineOffset: '-1px',
+        },
       },
     });
     expect(recipe.variants?.variant.split).toMatchObject({
@@ -1965,14 +1998,14 @@ describe('Chakra Docs slot recipes', () => {
         size: {
           sm: {
             root: {
-              '--chakra-docs-page-actions-height': 'sizes.7',
+              '--chakra-docs-page-actions-height': 'sizes.11',
               '--chakra-docs-page-actions-radius': 'radii.sm',
             },
           },
           md: {},
           lg: {
             root: {
-              '--chakra-docs-page-actions-height': 'sizes.10',
+              '--chakra-docs-page-actions-height': 'sizes.12',
               '--chakra-docs-page-actions-radius': 'radii.lg',
             },
           },
