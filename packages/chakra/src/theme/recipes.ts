@@ -622,6 +622,11 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     menuPositioner: { zIndex: 'dropdown' },
     menuContent: {
+      _focusVisible: {
+        outline: '1px solid',
+        outlineColor: 'fg.muted',
+        outlineOffset: '-1px',
+      },
       bg: 'bg',
       color: 'fg',
       borderColor: 'border',
@@ -687,6 +692,11 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     submenuPositioner: { zIndex: 'dropdown' },
     submenuContent: {
+      _focusVisible: {
+        outline: '1px solid',
+        outlineColor: 'fg.muted',
+        outlineOffset: '-1px',
+      },
       bg: 'bg',
       color: 'fg',
       borderColor: 'border',

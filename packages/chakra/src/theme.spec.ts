@@ -6,6 +6,17 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('owns focus appearance for portaled menus and submenus', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
+    for (const slot of ['menuContent', 'submenuContent']) {
+      expect(recipe.base[slot]._focusVisible).toEqual({
+        outline: '1px solid',
+        outlineColor: 'fg.muted',
+        outlineOffset: '-1px',
+      });
+    }
+    expect(recipe.base.menuItem._highlighted.bg).toBe('bg.panel');
+  });
   it('stacks page-action text independently of the icon row', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
     expect(recipe.slots).toContain('actionContent');

@@ -32,6 +32,8 @@
 
 ### 🩹 Fixes
 
+- **chakra:** give page-action menus and submenus explicit muted inset keyboard-focus outlines.
+
 - **chakra:** keep copy confirmation text visible, default to “Copied!”, and preserve provider/per-action copied-label overrides with polite live feedback.
 
 - **chakra:** refine page-action defaults with 44px minimum-height buttons, panel hover states, muted inset focus outlines, 16px chevrons, and roomier rounded menus and items.
