@@ -28,6 +28,17 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let originalClipboard: PropertyDescriptor | undefined;
 
+function mockClipboard(writeText: Clipboard['writeText']) {
+  vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue(
+    Object.assign(new EventTarget(), {
+      read: async () => [],
+      readText: async () => '',
+      write: async () => undefined,
+      writeText,
+    }),
+  );
+}
+
 function required<T>(value: T | null | undefined): T {
   if (value == null) throw new Error('Expected a DOM node or attribute');
   return value;
@@ -243,9 +254,7 @@ describe('DocsPageActions copy confirmation', () => {
     'shows and resets $action confirmation: $expected',
     async ({ action, providerLabel, copiedLabel, expected }) => {
       const writeText = vi.fn(async () => undefined);
-      vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({
-        writeText,
-      } as Clipboard);
+      mockClipboard(writeText);
       vi.useFakeTimers();
       try {
         const label = action === 'page' ? 'Copy page' : 'Copy link';
@@ -302,9 +311,7 @@ describe('DocsPageActions copy confirmation', () => {
 describe('CodeBlock copy analytics', () => {
   it('does not classify ordinary code as package commands', async () => {
     const writeText = vi.fn(async () => undefined);
-    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({
-      writeText,
-    } as Clipboard);
+    mockClipboard(writeText);
     const onCodeCopy = vi.fn();
     const onPackageCommandCopy = vi.fn();
     await render(
@@ -322,9 +329,7 @@ describe('CodeBlock copy analytics', () => {
   });
   it('emits successful code and explicit package command copies alongside slot callbacks', async () => {
     const writeText = vi.fn(async () => undefined);
-    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({
-      writeText,
-    } as Clipboard);
+    mockClipboard(writeText);
     const onCodeCopy = vi.fn(() => {
       throw new Error('Analytics offline');
     });
@@ -359,9 +364,7 @@ describe('CodeBlock copy analytics', () => {
 describe('heading and feedback analytics', () => {
   it('preserves provider analytics alongside heading clipboard status observers', async () => {
     const writeText = vi.fn(async () => undefined);
-    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({
-      writeText,
-    } as Clipboard);
+    mockClipboard(writeText);
     const onHeadingLinkCopy = vi.fn();
     const onStatusChange = vi.fn();
     await render(

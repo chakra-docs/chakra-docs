@@ -1,10 +1,35 @@
 import { describe, expect, it } from 'vitest';
+import * as ChakraRuntime from '@chakra-ui/react';
+import { chakraDocsPageActionsSlotRecipe } from './recipes.js';
 import {
   extractSlotCssVariables,
   mergeSlotStyleProps,
 } from './use-slot-recipe.js';
 
 describe('extractSlotCssVariables', () => {
+  it.each([
+    ['sm', 'xs'],
+    ['md', 'sm'],
+    ['lg', 'md'],
+  ])('retains resolved %s recipe sizing', (size, token) => {
+    const system = (
+      ChakraRuntime as unknown as {
+        defaultSystem: {
+          sva: (recipe: unknown) => (props: unknown) => Record<string, unknown>;
+        };
+      }
+    ).defaultSystem;
+    const styles = system.sva(structuredClone(chakraDocsPageActionsSlotRecipe))(
+      { size, variant: 'split' },
+    );
+    const variables = extractSlotCssVariables(styles.root);
+    expect(variables).toMatchObject({
+      '@layer recipes': {
+        '--chakra-docs-page-actions-font-size': `var(--chakra-font-sizes-${token})`,
+      },
+    });
+    expect(JSON.stringify(variables)).not.toContain('flexWrap');
+  });
   it('preserves composed, conditional and responsive variables without root layout', () => {
     expect(
       extractSlotCssVariables([
