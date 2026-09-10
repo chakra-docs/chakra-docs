@@ -6,6 +6,37 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('gives standalone mobile controls 44px hit areas without enlarging inline links', () => {
+    const controls = {
+      tabs: ['trigger'],
+      sidebar: ['link', 'trigger'],
+      feedback: ['option', 'submit'],
+      search: ['trigger'],
+      versionSelect: ['select'],
+      codeBlock: ['copyTrigger'],
+    } as const;
+    for (const [key, slots] of Object.entries(controls)) {
+      const recipe =
+        chakraDocsSlotRecipes[
+          chakraDocsRecipeKeys[key as keyof typeof controls]
+        ];
+      for (const slot of slots)
+        expect(recipe.base[slot].minH.base, `${key}.${slot}`).toBe('44px');
+    }
+    const mobileNav =
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.mobileNavigation];
+    expect(mobileNav.base.trigger.minH).toBe('44px');
+    expect(mobileNav.base.closeTrigger).toMatchObject({ h: 11, w: 11 });
+    const mobileToc =
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.mobileTableOfContents];
+    expect(mobileToc.base.trigger.minH).toBe('44px');
+    expect(mobileToc.base.link.minH).toBe('44px');
+    for (const key of ['markdownContent', 'breadcrumbs'] as const) {
+      expect(
+        chakraDocsSlotRecipes[chakraDocsRecipeKeys[key]].base.link?.minH,
+      ).toBeUndefined();
+    }
+  });
   it('provides visible recipe-level keyboard focus for navigation and form controls', () => {
     const controls = {
       cards: ['card'],

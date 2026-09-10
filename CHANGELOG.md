@@ -32,6 +32,8 @@
 
 ### 🩹 Fixes
 
+- **chakra:** provide 44px mobile hit areas for standalone navigation, disclosure, tab, copy, search, feedback and version controls while retaining compact desktop and inline-link spacing.
+
 - **chakra:** give navigation links, cards, disclosure triggers, search and feedback controls explicit semantic keyboard-focus styles at the recipe level.
 
 - **chakra:** bound page-action menus to the available viewport, scroll tall menus, and wrap long labels and descriptions.
