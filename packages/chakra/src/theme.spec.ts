@@ -6,6 +6,30 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('provides visible recipe-level keyboard focus for navigation and form controls', () => {
+    const controls = {
+      cards: ['card'],
+      breadcrumbs: ['link'],
+      sidebar: ['link', 'trigger'],
+      tableOfContents: ['link'],
+      mobileTableOfContents: ['trigger', 'link'],
+      versionSelect: ['select'],
+      pagination: ['link'],
+      search: ['trigger', 'input', 'resultLink'],
+      feedback: ['option', 'comment', 'submit'],
+    } as const;
+    for (const [key, slots] of Object.entries(controls)) {
+      const recipe =
+        chakraDocsSlotRecipes[
+          chakraDocsRecipeKeys[key as keyof typeof controls]
+        ];
+      for (const slot of slots) {
+        expect(recipe.base[slot]._focusVisible, `${key}.${slot}`).toMatchObject(
+          { outline: '2px solid', outlineColor: 'fg' },
+        );
+      }
+    }
+  });
   it('bounds page-action menus while keeping long rows readable and scrollable', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
     for (const slot of ['menuContent', 'submenuContent']) {

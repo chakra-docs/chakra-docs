@@ -11,6 +11,12 @@ const { defineConfig, defineSlotRecipe } =
     defineSlotRecipe: <Recipe>(recipe: Recipe) => Recipe;
   };
 
+const interactiveFocus = {
+  outline: '2px solid',
+  outlineColor: 'fg',
+  outlineOffset: '2px',
+};
+
 export const chakraDocsRecipeKeys = {
   apiTable: 'chakraDocsApiTable',
   article: 'chakraDocsArticle',
@@ -57,6 +63,7 @@ export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
       p: 4,
       textDecoration: 'none',
       _hover: { bg: 'bg.subtle', textDecoration: 'none' },
+      _focusVisible: interactiveFocus,
     },
     icon: { color: 'fg.muted', flexShrink: 0, mt: 1 },
     content: { display: 'flex', flex: 1, flexDirection: 'column', gap: 1 },
@@ -419,6 +426,7 @@ export const chakraDocsBreadcrumbsSlotRecipe = defineSlotRecipe({
       color: 'fg.muted',
       textDecoration: 'none',
       _hover: { color: 'fg', textDecoration: 'underline' },
+      _focusVisible: interactiveFocus,
     },
     current: { color: 'fg', fontWeight: 'medium' },
     separator: { color: 'fg.subtle', userSelect: 'none' },
@@ -483,6 +491,7 @@ export const chakraDocsFeedbackSlotRecipe = defineSlotRecipe({
       minH: 8,
       px: 3,
       _hover: { bg: 'bg.subtle' },
+      _focusVisible: interactiveFocus,
     },
     comment: {
       bg: 'bg',
@@ -491,9 +500,10 @@ export const chakraDocsFeedbackSlotRecipe = defineSlotRecipe({
       fontSize: 'sm',
       minH: 24,
       resize: 'vertical',
+      _focusVisible: interactiveFocus,
     },
     actions: { display: 'flex', justifyContent: 'flex-end' },
-    submit: { minH: 8 },
+    submit: { minH: 8, _focusVisible: interactiveFocus },
     status: { color: 'fg.muted', fontSize: 'sm' },
   },
   variants: {
@@ -798,6 +808,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     },
     list: { listStyleType: 'none', m: 0, ps: 0 },
     item: { py: 1 },
+    link: { _focusVisible: interactiveFocus },
     sectionTitle: { fontWeight: 'semibold' },
     badge: { ms: 2 },
     children: { mt: 1, ps: 4 },
@@ -816,6 +827,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       p: 0,
       textAlign: 'start',
       w: 'full',
+      _focusVisible: interactiveFocus,
     },
     indicator: {
       display: 'inline-flex',
@@ -872,6 +884,7 @@ export const chakraDocsTableOfContentsSlotRecipe = defineSlotRecipe({
       position: 'relative',
       px: 2,
       py: 1,
+      _focusVisible: interactiveFocus,
       _hover: {
         color: 'fg',
         textDecoration: 'none',
@@ -931,6 +944,7 @@ export const chakraDocsMobileTableOfContentsSlotRecipe = defineSlotRecipe({
       justifyContent: 'space-between',
       listStyle: 'none',
       _marker: { display: 'none' },
+      _focusVisible: interactiveFocus,
     },
     triggerLabel: { color: 'fg' },
     current: {
@@ -954,6 +968,7 @@ export const chakraDocsMobileTableOfContentsSlotRecipe = defineSlotRecipe({
       py: 1,
       textDecoration: 'none',
       _hover: { color: 'fg', textDecoration: 'none' },
+      _focusVisible: interactiveFocus,
     },
     activeIndicator: {
       bg: 'transparent',
@@ -1004,6 +1019,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
     trigger: {
       justifyContent: 'space-between',
       minW: { base: 'full', md: '13rem' },
+      _focusVisible: interactiveFocus,
     },
     triggerLabel: { color: 'fg.muted', fontWeight: 'medium' },
     positioner: {
@@ -1031,6 +1047,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       flexShrink: 0,
       h: 14,
       _focus: { boxShadow: 'none' },
+      _focusVisible: { ...interactiveFocus, outlineOffset: '-2px' },
     },
     results: {
       borderTopWidth: '1px',
@@ -1061,6 +1078,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       alignItems: 'flex-start',
       justifyContent: 'space-between',
     },
+    resultLink: { _focusVisible: interactiveFocus },
     resultContent: { gap: 1 },
     resultTitle: { fontWeight: 'semibold' },
     resultDescription: { color: 'fg.muted', fontSize: 'sm' },
@@ -1114,6 +1132,7 @@ export const chakraDocsVersionSelectSlotRecipe = defineSlotRecipe({
       lineHeight: 1,
       minW: '7.5rem',
       px: 2,
+      _focusVisible: interactiveFocus,
     },
   },
 });
@@ -1210,6 +1229,7 @@ export const chakraDocsPaginationSlotRecipe = defineSlotRecipe({
       pt: 6,
     },
     label: { color: 'fg.muted', fontSize: 'sm' },
+    link: { _focusVisible: interactiveFocus },
   },
   variants: {
     direction: {
