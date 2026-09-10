@@ -1307,6 +1307,7 @@ function usePageActionsDisclosure(
         overflowPadding: 8,
         placement: 'right-start',
         slide: true,
+        strategy: 'fixed',
       }
     : {
         flip: true,
@@ -1314,6 +1315,7 @@ function usePageActionsDisclosure(
         overflowPadding: 8,
         placement: 'bottom-end',
         slide: true,
+        strategy: 'fixed',
       };
   const positioning = { ...defaultPositioning, ...props.positioning };
 

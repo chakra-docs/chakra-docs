@@ -659,6 +659,9 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     menuPositioner: { zIndex: 'dropdown' },
     menuContent: {
+      '--chakra-docs-page-actions-z-index': 'zIndex.popover',
+      zIndex:
+        'calc(var(--chakra-docs-page-actions-z-index) + var(--layer-index, 0))',
       _focusVisible: {
         outline: '1px solid',
         outlineColor: 'fg.muted',
@@ -678,6 +681,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       maxH: 'min(var(--available-height, 100dvh), calc(100dvh - 1rem))',
       overflowY: 'auto',
       overscrollBehavior: 'contain',
+      scrollPaddingBlock: 2,
       p: 2,
     },
     menuItem: {
@@ -744,6 +748,9 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
     },
     submenuPositioner: { zIndex: 'dropdown' },
     submenuContent: {
+      '--chakra-docs-page-actions-z-index': 'zIndex.popover',
+      zIndex:
+        'calc(var(--chakra-docs-page-actions-z-index) + var(--layer-index, 0))',
       _focusVisible: {
         outline: '1px solid',
         outlineColor: 'fg.muted',
@@ -763,6 +770,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       maxH: 'min(var(--available-height, 100dvh), calc(100dvh - 1rem))',
       overflowY: 'auto',
       overscrollBehavior: 'contain',
+      scrollPaddingBlock: 2,
       p: 2,
     },
     description: {

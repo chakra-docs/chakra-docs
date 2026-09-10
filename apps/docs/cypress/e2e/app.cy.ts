@@ -267,13 +267,21 @@ describe('docs', () => {
       expect(bounds.bottom).to.be.at.most(360);
       expect(menu.scrollWidth).to.be.at.most(menu.clientWidth + 1);
       expect(menu.scrollHeight).to.be.greaterThan(menu.clientHeight);
+      const hit = menu.ownerDocument.elementFromPoint(
+        bounds.left + 16,
+        bounds.top + 16,
+      );
+      expect(
+        hit && menu.contains(hit),
+        'menu is above the sticky site header',
+      ).to.equal(true);
     });
     cy.get('@boundedMenu').type('{end}');
     cy.get('@boundedMenu').should(($menu) => {
       const menu = $menu[0];
       const active = menu.querySelector('[data-highlighted]');
-      expect(active).not.to.be.null;
-      const bounds = active!.getBoundingClientRect();
+      if (!active) throw new Error('Expected a highlighted menu item');
+      const bounds = active.getBoundingClientRect();
       const menuBounds = menu.getBoundingClientRect();
       expect(bounds.top).to.be.at.least(menuBounds.top);
       expect(bounds.bottom).to.be.at.most(menuBounds.bottom);
@@ -477,12 +485,16 @@ describe('docs', () => {
     cy.get('button[aria-label="Open navigation"]')
       .should('be.visible')
       .and('contain.text', 'Menu')
+      .and('have.css', 'min-height', '44px')
       .click();
 
     cy.get('[role="dialog"]')
       .should('be.visible')
       .and('contain.text', 'Browse');
-    cy.get('button[aria-label="Close navigation"]').should('be.visible');
+    cy.get('button[aria-label="Close navigation"]')
+      .should('be.visible')
+      .and('have.css', 'width', '44px')
+      .and('have.css', 'height', '44px');
     cy.get('[role="dialog"]')
       .contains('a[href="/docs/configuration"]', 'Configuration')
       .click();

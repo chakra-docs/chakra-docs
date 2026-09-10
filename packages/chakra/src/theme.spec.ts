@@ -124,6 +124,9 @@ describe('Chakra Docs theme entry point', () => {
         maxH: 'min(var(--available-height, 100dvh), calc(100dvh - 1rem))',
         overflowY: 'auto',
         overscrollBehavior: 'contain',
+        scrollPaddingBlock: 2,
+        zIndex:
+          'calc(var(--chakra-docs-page-actions-z-index) + var(--layer-index, 0))',
       });
     }
     expect(recipe.base.menuItem).toMatchObject({
