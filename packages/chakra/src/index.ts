@@ -1521,7 +1521,10 @@ function createCopyPageAction(props: {
       : null,
     createElement(
       Box,
-      { as: 'span' },
+      {
+        as: 'span',
+        ...mergeSlotStyleProps(context.styles.actionContent, undefined),
+      },
       createElement(
         ChakraClipboard.Indicator,
         {
@@ -1709,7 +1712,10 @@ function createPageActionContent(
       : null,
     createElement(
       Box,
-      { as: 'span' },
+      {
+        as: 'span',
+        ...mergeSlotStyleProps(context.styles.actionContent, undefined),
+      },
       createElement(
         Box,
         {

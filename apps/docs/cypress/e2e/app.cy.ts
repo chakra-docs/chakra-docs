@@ -182,6 +182,30 @@ describe('docs', () => {
     });
     cy.get('@pageActionsMenu').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'true');
+    for (const description of [
+      'Copy page as Markdown for LLMs',
+      'Copy a link to this page',
+    ]) {
+      cy.get('[role="menuitem"] span')
+        .filter((_, element) => Cypress.$(element).text() === description)
+        .should('have.length', 1)
+        .should(($description) => {
+          const stack = $description.parent();
+          expect(stack.css('display')).to.equal('flex');
+          expect(stack.css('flex-direction')).to.equal('column');
+          const label = stack.children().first();
+          const labelOffset = label.offset();
+          const detailsOffset = $description.offset();
+          const labelHeight = label.outerHeight();
+          if (!labelOffset || !detailsOffset || labelHeight === undefined) {
+            throw new Error('Page-action text must have measurable bounds');
+          }
+          expect(detailsOffset.top).to.be.at.least(
+            labelOffset.top + labelHeight,
+          );
+          expect(detailsOffset.left).to.be.closeTo(labelOffset.left, 0.5);
+        });
+    }
     cy.contains('[role="menuitem"]', 'Open in another chat').as('chatSubmenu');
     cy.get('@chatSubmenu').click();
     cy.get('@chatSubmenu').should('have.attr', 'aria-expanded', 'true');

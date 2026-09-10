@@ -749,6 +749,41 @@ describe('DocsLayout', () => {
 });
 
 describe('DocsPageActions', () => {
+  it.each([
+    DocsPageActions.CopyPage,
+    DocsPageActions.CopyLink,
+    DocsPageActions.ViewMarkdown,
+    DocsPageActions.Edit,
+    DocsPageActions.Item,
+  ])('applies the themeable text stack to action %s', (Action) => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        slotRecipes: {
+          [chakraDocsRecipeKeys.pageActions]: {
+            base: { actionContent: { gap: '7px' } },
+          },
+        },
+      },
+    });
+    const markup = renderWithStyles(
+      createElement(
+        DocsPageActions.Root,
+        {
+          markdown: '# Page',
+          pageUrl: '/docs/page',
+          markdownUrl: '/docs/page.md',
+          editUrl: 'https://example.com/edit',
+        },
+        createElement(Action, { label: 'Action', description: 'Details' }),
+      ),
+      system,
+    );
+    expect(markup).toContain('flex-direction:column');
+    expect(markup).toContain('gap:7px');
+    expect(markup).toContain('>Action<');
+    expect(markup).toContain('>Details<');
+  });
+
   it('derives copy, edit, and canonical page actions from page context', () => {
     const page = {
       ...createPage('/docs/start', 'Start'),
@@ -2091,6 +2126,7 @@ describe('Chakra Docs slot recipes', () => {
         'trigger',
         'primaryTrigger',
         'icon',
+        'actionContent',
         'label',
         'indicator',
         'menu',
