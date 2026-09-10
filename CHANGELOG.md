@@ -32,6 +32,8 @@
 
 ### 🩹 Fixes
 
+- **chakra:** wrap long navigation, breadcrumb, card, pagination and prose content without changing code whitespace; respect reduced motion for disclosure indicators and dialogs.
+
 - **chakra:** provide 44px mobile hit areas for standalone navigation, disclosure, tab, copy, search, feedback and version controls while retaining compact desktop and inline-link spacing.
 
 - **chakra:** give navigation links, cards, disclosure triggers, search and feedback controls explicit semantic keyboard-focus styles at the recipe level.

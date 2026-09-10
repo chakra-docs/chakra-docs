@@ -17,6 +17,9 @@ const interactiveFocus = {
   outlineOffset: '2px',
 };
 
+const wrapContent = { minW: 0, overflowWrap: 'anywhere' };
+const reducedMotion = { animation: 'none', transition: 'none' };
+
 export const chakraDocsRecipeKeys = {
   apiTable: 'chakraDocsApiTable',
   article: 'chakraDocsArticle',
@@ -48,10 +51,14 @@ export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
     root: {
       display: 'grid',
       gap: 4,
-      gridTemplateColumns: { base: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+      gridTemplateColumns: {
+        base: 'minmax(0, 1fr)',
+        md: 'repeat(2, minmax(0, 1fr))',
+      },
       my: 6,
     },
     card: {
+      ...wrapContent,
       alignItems: 'flex-start',
       bg: 'bg',
       borderColor: 'border',
@@ -66,7 +73,13 @@ export const chakraDocsCardsSlotRecipe = defineSlotRecipe({
       _focusVisible: interactiveFocus,
     },
     icon: { color: 'fg.muted', flexShrink: 0, mt: 1 },
-    content: { display: 'flex', flex: 1, flexDirection: 'column', gap: 1 },
+    content: {
+      ...wrapContent,
+      display: 'flex',
+      flex: 1,
+      flexDirection: 'column',
+      gap: 1,
+    },
     title: { color: 'fg', fontWeight: 'semibold' },
     description: { color: 'fg.muted', fontSize: 'sm' },
     badge: { ms: 2 },
@@ -305,7 +318,11 @@ export const chakraDocsMobileNavigationSlotRecipe = defineSlotRecipe({
     },
     triggerIcon: { display: 'inline-flex', flexShrink: 0 },
     triggerLabel: { display: 'inline-flex' },
-    backdrop: { bg: 'bg.inverted/40', display: { base: 'block', lg: 'none' } },
+    backdrop: {
+      bg: 'bg.inverted/40',
+      display: { base: 'block', lg: 'none' },
+      _motionReduce: reducedMotion,
+    },
     positioner: {
       alignItems: 'stretch',
       display: { base: 'flex', lg: 'none' },
@@ -313,6 +330,7 @@ export const chakraDocsMobileNavigationSlotRecipe = defineSlotRecipe({
     },
     content: {
       bg: 'bg.panel',
+      _motionReduce: reducedMotion,
       borderColor: 'border',
       borderEndWidth: '1px',
       borderRadius: 0,
@@ -393,7 +411,7 @@ export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
         w: 'full',
       },
     },
-    header: { mb: 8 },
+    header: { ...wrapContent, mb: 8 },
     breadcrumbs: { mb: 4 },
     heading: {
       alignItems: 'flex-start',
@@ -404,7 +422,7 @@ export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
     },
     title: { mb: 3 },
     description: { color: 'fg.muted', fontSize: 'lg' },
-    actions: { flexShrink: 0 },
+    actions: { flexShrink: 0, maxW: 'full', minW: 0 },
   },
 });
 
@@ -412,7 +430,7 @@ export const chakraDocsBreadcrumbsSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-breadcrumbs',
   slots: ['root', 'list', 'item', 'link', 'current', 'separator'],
   base: {
-    root: { color: 'fg.muted', fontSize: 'sm' },
+    root: { ...wrapContent, color: 'fg.muted', fontSize: 'sm' },
     list: {
       alignItems: 'center',
       display: 'flex',
@@ -422,15 +440,22 @@ export const chakraDocsBreadcrumbsSlotRecipe = defineSlotRecipe({
       m: 0,
       p: 0,
     },
-    item: { alignItems: 'center', display: 'inline-flex', gap: 2 },
+    item: {
+      ...wrapContent,
+      maxW: 'full',
+      alignItems: 'center',
+      display: 'inline-flex',
+      gap: 2,
+    },
     link: {
+      ...wrapContent,
       color: 'fg.muted',
       textDecoration: 'none',
       _hover: { color: 'fg', textDecoration: 'underline' },
       _focusVisible: interactiveFocus,
     },
-    current: { color: 'fg', fontWeight: 'medium' },
-    separator: { color: 'fg.subtle', userSelect: 'none' },
+    current: { ...wrapContent, color: 'fg', fontWeight: 'medium' },
+    separator: { color: 'fg.subtle', flexShrink: 0, userSelect: 'none' },
   },
 });
 
@@ -629,6 +654,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       display: 'inline-flex',
       flexShrink: 0,
       transition: 'transform 150ms ease',
+      _motionReduce: reducedMotion,
       _open: { transform: 'rotate(180deg)' },
     },
     menuPositioner: { zIndex: 'dropdown' },
@@ -714,6 +740,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       flexShrink: 0,
       marginInlineStart: 'auto',
       transition: 'transform 150ms ease',
+      _motionReduce: reducedMotion,
     },
     submenuPositioner: { zIndex: 'dropdown' },
     submenuContent: {
@@ -812,10 +839,12 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     link: {
       alignItems: 'center',
       display: 'inline-flex',
+      ...wrapContent,
+      maxW: 'full',
       minH: { base: '44px', lg: 'auto' },
       _focusVisible: interactiveFocus,
     },
-    sectionTitle: { fontWeight: 'semibold' },
+    sectionTitle: { ...wrapContent, fontWeight: 'semibold' },
     badge: { ms: 2 },
     children: { mt: 1, ps: 4 },
     trigger: {
@@ -834,6 +863,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       minH: { base: '44px', lg: 'auto' },
       minW: { base: '44px', lg: 'auto' },
       textAlign: 'start',
+      overflowWrap: 'anywhere',
       w: 'full',
       _focusVisible: interactiveFocus,
     },
@@ -841,6 +871,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       display: 'inline-flex',
       flex: '0 0 auto',
       transition: 'transform 150ms ease',
+      _motionReduce: reducedMotion,
     },
     content: {},
   },
@@ -887,6 +918,7 @@ export const chakraDocsTableOfContentsSlotRecipe = defineSlotRecipe({
     link: {
       color: 'fg.muted',
       display: 'block',
+      ...wrapContent,
       fontSize: 'sm',
       fontWeight: 'medium',
       position: 'relative',
@@ -958,6 +990,7 @@ export const chakraDocsMobileTableOfContentsSlotRecipe = defineSlotRecipe({
     triggerLabel: { color: 'fg' },
     current: {
       color: 'fg.muted',
+      minW: 0,
       fontWeight: 'normal',
       marginInlineStart: 'auto',
       overflow: 'hidden',
@@ -971,6 +1004,7 @@ export const chakraDocsMobileTableOfContentsSlotRecipe = defineSlotRecipe({
     link: {
       color: 'fg.muted',
       display: 'flex',
+      ...wrapContent,
       alignItems: 'center',
       minH: '44px',
       fontSize: 'sm',
@@ -1034,6 +1068,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       _focusVisible: interactiveFocus,
     },
     triggerLabel: { color: 'fg.muted', fontWeight: 'medium' },
+    backdrop: { _motionReduce: reducedMotion },
     positioner: {
       '--chakra-docs-search-offset': { base: '3rem', md: '5rem' },
       px: 4,
@@ -1048,6 +1083,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       my: 0,
       overflow: 'hidden',
       p: 0,
+      _motionReduce: reducedMotion,
     },
     header: { borderBottomWidth: '1px', flexShrink: 0, p: 4 },
     title: { fontSize: 'sm' },
@@ -1091,7 +1127,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       justifyContent: 'space-between',
     },
     resultLink: { _focusVisible: interactiveFocus },
-    resultContent: { gap: 1 },
+    resultContent: { ...wrapContent, flex: 1, gap: 1 },
     resultTitle: { fontWeight: 'semibold' },
     resultDescription: { color: 'fg.muted', fontSize: 'sm' },
     resultBadge: { flexShrink: 0 },
@@ -1174,7 +1210,7 @@ export const chakraDocsMarkdownContentSlotRecipe = defineSlotRecipe({
     'taskCheckbox',
   ],
   base: {
-    root: { gap: 4, minW: 0, maxW: 'full' },
+    root: { ...wrapContent, gap: 4, maxW: 'full' },
     paragraph: { color: 'fg.muted', fontSize: 'md' },
     list: {
       color: 'fg.muted',
@@ -1242,7 +1278,8 @@ export const chakraDocsPaginationSlotRecipe = defineSlotRecipe({
       pt: 6,
     },
     label: { color: 'fg.muted', fontSize: 'sm' },
-    link: { _focusVisible: interactiveFocus },
+    item: { ...wrapContent, flex: 1 },
+    link: { ...wrapContent, _focusVisible: interactiveFocus },
   },
   variants: {
     direction: {
@@ -1335,6 +1372,7 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
       flex: 1,
       fontFamily: 'mono',
       minW: 0,
+      overflowWrap: 'anywhere',
     },
     control: {
       alignItems: 'center',
@@ -1373,6 +1411,7 @@ export const chakraDocsCodeBlockSlotRecipe = defineSlotRecipe({
       overflowX: 'auto',
       overflowY: 'hidden',
       whiteSpace: 'pre',
+      overflowWrap: 'normal',
     },
     codeText: { display: 'block', minW: 0 },
   },

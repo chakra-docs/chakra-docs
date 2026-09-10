@@ -286,6 +286,18 @@ Recipe defaults use portable Chakra semantic colors (`bg`, `fg`, and `border`)
 so they inherit naturally from the host system. Applications can introduce a
 brand palette or replace any slot without changing component code.
 
+The defaults also include visible keyboard-focus states, 44px mobile hit areas
+for standalone controls (without expanding inline links), and wrapping for long
+navigation labels, card content and prose. Tables and code blocks retain their
+own horizontal scroll areas. Disclosure indicators and dialog surfaces respect
+`prefers-reduced-motion`.
+
+Page-action menus and submenus fit the available viewport and scroll when tall.
+Their `size` and root CSS custom-property overrides carry through portals; root
+layout styles do not. Customize `menuContent`/`submenuContent` for menu surfaces,
+`menuItem` for rows, and `actionContent`/`label`/`description` for the text stack.
+Per-instance slot props still take precedence over recipe defaults.
+
 | Recipe key                        | Slots                                                                                                                                                                                                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `chakraDocsApiTable`              | `root`, `table`, `caption`, `header`, `row`, `columnHeader`, `cell`, `name`, `type`, `defaultValue`, `description`, `required`                                                                                                                                                                                                             |

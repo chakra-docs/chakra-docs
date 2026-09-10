@@ -6,6 +6,60 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('wraps long content without changing code whitespace or table scrolling', () => {
+    const content = {
+      cards: ['card', 'content'],
+      breadcrumbs: ['item', 'link', 'current'],
+      sidebar: ['link', 'sectionTitle'],
+      tableOfContents: ['link'],
+      mobileTableOfContents: ['link'],
+      search: ['resultContent'],
+      pagination: ['item', 'link'],
+      markdownContent: ['root'],
+    } as const;
+    for (const [key, slots] of Object.entries(content)) {
+      const recipe =
+        chakraDocsSlotRecipes[
+          chakraDocsRecipeKeys[key as keyof typeof content]
+        ];
+      for (const slot of slots)
+        expect(recipe.base[slot], `${key}.${slot}`).toMatchObject({
+          minW: 0,
+          overflowWrap: 'anywhere',
+        });
+    }
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.codeBlock].base.code,
+    ).toMatchObject({
+      whiteSpace: 'pre',
+      overflowWrap: 'normal',
+      overflowX: 'auto',
+    });
+    expect(
+      chakraDocsSlotRecipes[chakraDocsRecipeKeys.markdownContent].base
+        .tableContainer.overflowX,
+    ).toBe('auto');
+  });
+
+  it('respects reduced motion for disclosure indicators and dialog surfaces', () => {
+    const animated = {
+      sidebar: ['indicator'],
+      pageActions: ['menuIndicator', 'submenuIndicator'],
+      mobileNavigation: ['content', 'backdrop'],
+      search: ['root', 'backdrop'],
+    } as const;
+    for (const [key, slots] of Object.entries(animated)) {
+      const recipe =
+        chakraDocsSlotRecipes[
+          chakraDocsRecipeKeys[key as keyof typeof animated]
+        ];
+      for (const slot of slots)
+        expect(recipe.base[slot]._motionReduce, `${key}.${slot}`).toEqual({
+          animation: 'none',
+          transition: 'none',
+        });
+    }
+  });
   it('gives standalone mobile controls 44px hit areas without enlarging inline links', () => {
     const controls = {
       tabs: ['trigger'],
