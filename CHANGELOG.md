@@ -32,6 +32,8 @@
 
 ### 🩹 Fixes
 
+- **chakra:** bound page-action menus to the available viewport, scroll tall menus, and wrap long labels and descriptions.
+
 - **chakra:** preserve page-action recipe variables and root CSS/inline variable overrides in portaled menus and submenus without leaking split-button layout styles.
 
 - **chakra:** give page-action menus and submenus explicit muted inset keyboard-focus outlines.

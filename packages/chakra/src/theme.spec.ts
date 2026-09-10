@@ -6,6 +6,25 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('bounds page-action menus while keeping long rows readable and scrollable', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
+    for (const slot of ['menuContent', 'submenuContent']) {
+      expect(recipe.base[slot]).toMatchObject({
+        minW: 'min(18rem, var(--available-width, calc(100dvw - 1rem)))',
+        maxW: 'min(var(--available-width, 100dvw), calc(100dvw - 1rem))',
+        maxH: 'min(var(--available-height, 100dvh), calc(100dvh - 1rem))',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+      });
+    }
+    expect(recipe.base.menuItem).toMatchObject({
+      flexShrink: 0,
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
+    });
+    expect(recipe.base.label.overflowWrap).toBe('anywhere');
+    expect(recipe.base.description.overflowWrap).toBe('anywhere');
+  });
   it('owns focus appearance for portaled menus and submenus', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
     for (const slot of ['menuContent', 'submenuContent']) {

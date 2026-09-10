@@ -1914,7 +1914,7 @@ describe('Chakra Docs slot recipes', () => {
       menuContent: {
         bg: 'bg',
         color: 'fg',
-        minW: '18rem',
+        minW: 'min(18rem, var(--available-width, calc(100dvw - 1rem)))',
         p: 2,
         borderRadius: 'xl',
         boxShadow: 'xl',
@@ -1922,7 +1922,7 @@ describe('Chakra Docs slot recipes', () => {
       submenuContent: {
         bg: 'bg',
         color: 'fg',
-        minW: '18rem',
+        minW: 'min(18rem, var(--available-width, calc(100dvw - 1rem)))',
         p: 2,
         borderRadius: 'xl',
         boxShadow: 'xl',

@@ -190,7 +190,9 @@ describe('docs', () => {
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'true');
     cy.get('[role="menu"]')
       .filter(':visible')
-      .should('have.css', 'min-width', '288px')
+      .should(($menu) =>
+        expect($menu[0].getBoundingClientRect().width).to.be.at.least(288),
+      )
       .and('have.css', 'padding', '8px')
       .and('have.css', 'border-radius', '12px');
     cy.get('[role="menuitem"]')
@@ -242,6 +244,44 @@ describe('docs', () => {
     cy.get('@pageActionsMenu').click();
     cy.get('h1').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
+  });
+
+  it('keeps page actions scrollable and readable in a small viewport', () => {
+    cy.viewport(280, 360);
+    visit('/docs/components');
+    cy.get('button[aria-label="More page action examples"]').click();
+    cy.get('[role="menu"]').filter(':visible').as('boundedMenu');
+    cy.get('@boundedMenu')
+      .find('span')
+      .filter(
+        (_, element) =>
+          Cypress.$(element).text() === 'Copy page as Markdown for LLMs',
+      )
+      .invoke('text', 'AnUnbrokenDescription'.repeat(20));
+    cy.get('@boundedMenu').should(($menu) => {
+      const menu = $menu[0];
+      const bounds = menu.getBoundingClientRect();
+      expect(bounds.left).to.be.at.least(0);
+      expect(bounds.right).to.be.at.most(280);
+      expect(bounds.top).to.be.at.least(0);
+      expect(bounds.bottom).to.be.at.most(360);
+      expect(menu.scrollWidth).to.be.at.most(menu.clientWidth + 1);
+      expect(menu.scrollHeight).to.be.greaterThan(menu.clientHeight);
+    });
+    cy.get('@boundedMenu').type('{end}');
+    cy.get('@boundedMenu').should(($menu) => {
+      const menu = $menu[0];
+      const active = menu.querySelector('[data-highlighted]');
+      expect(active).not.to.be.null;
+      const bounds = active!.getBoundingClientRect();
+      const menuBounds = menu.getBoundingClientRect();
+      expect(bounds.top).to.be.at.least(menuBounds.top);
+      expect(bounds.bottom).to.be.at.most(menuBounds.bottom);
+    });
+    cy.get('@boundedMenu').type('{esc}');
+    cy.get('button[aria-label="More page action examples"]').should(
+      'be.focused',
+    );
   });
 
   it('warms default results on keyboard focus and reuses them when opening search', () => {
