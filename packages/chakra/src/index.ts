@@ -108,6 +108,7 @@ import {
   chakraDocsVersionSelectSlotRecipe,
 } from './theme/recipes.js';
 import {
+  extractSlotCssVariables,
   mergeSlotStyleProps,
   useChakraDocsSlotRecipe,
 } from './theme/use-slot-recipe.js';
@@ -913,6 +914,8 @@ interface DocsPageActionsContextValue {
   page?: DocsPage;
   pageUrl?: string;
   styles: Record<string, unknown>;
+  portalCss: unknown;
+  portalStyle: Record<string, unknown>;
 }
 
 const DocsPageActionsContext = createContext<
@@ -967,6 +970,11 @@ export function DocsPageActionsRoot(
     page,
     pageUrl,
     styles,
+    portalCss: extractSlotCssVariables([styles.root, props.slotProps?.css]),
+    portalStyle: extractSlotCssVariables(props.slotProps?.style) as Record<
+      string,
+      unknown
+    >,
   };
   const children =
     props.children ??
@@ -1335,9 +1343,13 @@ function usePageActionsDisclosure(
           {
             unstyled: true,
             ...mergeSlotStyleProps(
-              props.slots.positioner,
+              [props.context.portalCss, props.slots.positioner],
               props.positionerSlotProps,
             ),
+            style: {
+              ...props.context.portalStyle,
+              ...(props.positionerSlotProps?.style as Record<string, unknown>),
+            },
           },
           createElement(
             ChakraMenu.Content,

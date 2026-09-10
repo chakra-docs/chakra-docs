@@ -43,3 +43,23 @@ export function mergeSlotStyleProps(
     ...props,
   };
 }
+
+// Portals lose root inheritance. Carry custom properties (including conditional
+// declarations) without copying the root's flex layout, borders, or spacing.
+export function extractSlotCssVariables(styles: unknown): unknown {
+  if (Array.isArray(styles)) {
+    return styles.map(extractSlotCssVariables);
+  }
+  if (!styles || typeof styles !== 'object') return {};
+
+  const variables: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(styles)) {
+    if (key.startsWith('--')) {
+      variables[key] = value;
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const nested = extractSlotCssVariables(value) as Record<string, unknown>;
+      if (Object.keys(nested).length > 0) variables[key] = nested;
+    }
+  }
+  return variables;
+}

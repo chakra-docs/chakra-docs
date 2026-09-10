@@ -156,6 +156,59 @@ async function typeQuery(input: HTMLInputElement, value: string) {
   });
 }
 
+describe('DocsPageActions portal variables', () => {
+  it('carries root inline variables through both portal levels and allows local overrides', async () => {
+    await render(
+      createElement(
+        DocsPageActions.Root,
+        {
+          size: 'lg',
+          slotProps: {
+            style: { '--page-action-test': 'root', display: 'flex' },
+          },
+        },
+        createElement(
+          DocsPageActions.Menu,
+          {
+            label: 'Actions',
+            defaultOpen: true,
+            positionerSlotProps: { 'data-testid': 'main-positioner' },
+          },
+          createElement(
+            DocsPageActions.Submenu,
+            {
+              label: 'Nested',
+              defaultOpen: true,
+              positionerSlotProps: {
+                'data-testid': 'nested-positioner',
+                style: { '--page-action-local': 'nested' },
+              },
+            },
+            createElement(DocsPageActions.Item, { href: '/docs' }, 'Docs'),
+          ),
+        ),
+      ),
+    );
+    for (const id of ['main-positioner', 'nested-positioner']) {
+      const positioner = required(
+        document.querySelector<HTMLElement>(`[data-testid="${id}"]`),
+      );
+      expect(positioner.style.getPropertyValue('--page-action-test')).toBe(
+        'root',
+      );
+      expect(positioner.style.display).not.toBe('flex');
+      expect(container.contains(positioner)).toBe(false);
+    }
+    expect(
+      required(
+        document.querySelector<HTMLElement>(
+          '[data-testid="nested-positioner"]',
+        ),
+      ).style.getPropertyValue('--page-action-local'),
+    ).toBe('nested');
+  });
+});
+
 describe('DocsPageActions copy confirmation', () => {
   it.each([
     { action: 'page', expected: 'Copied!' },

@@ -32,6 +32,8 @@
 
 ### 🩹 Fixes
 
+- **chakra:** preserve page-action recipe variables and root CSS/inline variable overrides in portaled menus and submenus without leaking split-button layout styles.
+
 - **chakra:** give page-action menus and submenus explicit muted inset keyboard-focus outlines.
 
 - **chakra:** keep copy confirmation text visible, default to “Copied!”, and preserve provider/per-action copied-label overrides with polite live feedback.

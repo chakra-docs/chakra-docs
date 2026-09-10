@@ -196,7 +196,8 @@ describe('docs', () => {
     cy.get('[role="menuitem"]')
       .filter(':visible')
       .first()
-      .should('have.css', 'padding', '12px');
+      .should('have.css', 'padding', '12px')
+      .and('have.css', 'font-size', '14px');
     for (const description of [
       'Copy page as Markdown for LLMs',
       'Copy a link to this page',
@@ -224,6 +225,11 @@ describe('docs', () => {
     cy.contains('[role="menuitem"]', 'Open in another chat').as('chatSubmenu');
     cy.get('@chatSubmenu').click();
     cy.get('@chatSubmenu').should('have.attr', 'aria-expanded', 'true');
+    cy.contains('[role="menuitem"]', 'ChatGPT').should(
+      'have.css',
+      'font-size',
+      '14px',
+    );
     cy.contains('[role="menuitem"]', 'ChatGPT').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
 
