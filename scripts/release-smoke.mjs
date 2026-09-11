@@ -407,6 +407,15 @@ async function smokePackedConsumer() {
       dependencies[dependencyName] = installedManifest.version;
     }
 
+    // TS 5.9's bundled DOM lib lacks the URLPattern globals used by Next 16.3.
+    // Preserve the npm alias so the clean consumer uses the same real DOM
+    // declarations as the workspace, without shims or skipped library checks.
+    const domManifest = await readJson(
+      'node_modules/@typescript/lib-dom/package.json',
+    );
+    dependencies['@typescript/lib-dom'] =
+      `npm:${domManifest.name}@${domManifest.version}`;
+
     if (peerProfile === 'minimum') {
       Object.assign(dependencies, {
         // 4.1 is the first 4.x release whose React type peers can coexist with

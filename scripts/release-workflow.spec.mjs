@@ -28,6 +28,29 @@ for (const directory of packageDirectories) {
 const versions = new Set(publicPackages.map(({ version }) => version));
 const [committedVersion] = versions;
 
+test('packed consumers include pinned DOM declarations without weakening compatibility checks', async () => {
+  const manifest = JSON.parse(await read('package.json'));
+  const lock = JSON.parse(await read('package-lock.json'));
+  const domTypes = lock.packages['node_modules/@typescript/lib-dom'];
+  assert.equal(
+    manifest.devDependencies['@typescript/lib-dom'],
+    `npm:@types/web@${domTypes.version}`,
+  );
+  assert.equal(
+    lock.packages[''].devDependencies['@typescript/lib-dom'],
+    manifest.devDependencies['@typescript/lib-dom'],
+  );
+
+  const smoke = await read('scripts/release-smoke.mjs');
+  assert.match(smoke, /dependencies\['@typescript\/lib-dom'\]/);
+  assert.match(smoke, /'@types\/node': '22\.20\.1'/);
+  assert.match(smoke, /skipLibCheck: false/);
+  const ci = await read('.github/workflows/ci.yml');
+  assert.match(ci, /node-version-file: '\.nvmrc'/);
+  assert.match(ci, /node-version: '22\.22\.0'/);
+  assert.match(ci, /CHAKRA_DOCS_PEER_PROFILE: minimum/);
+});
+
 test('docs Postkit dependencies resolve from the registry without yalc', async () => {
   const manifest = JSON.parse(await read('apps/docs/package.json'));
   const lock = JSON.parse(await read('package-lock.json'));

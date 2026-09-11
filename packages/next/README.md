@@ -25,6 +25,19 @@ Peer dependencies: `next` (>=15.5.24 <16 or >=16.3.3 <17), `react` (>=18 <20),
 and `react-dom` (>=18 <20). The lower bounds intentionally follow maintained,
 security-patched Next.js release lines rather than unsupported Next.js 14.
 
+For strict declaration checking (`skipLibCheck: false`) with Next.js 16.3 and
+TypeScript 5.9, install the standalone DOM declarations to provide the global
+`URLPattern` types referenced by Next.js:
+
+```bash
+npm install --save-dev @typescript/lib-dom@npm:@types/web@0.0.356
+```
+
+TypeScript automatically uses this package in place of its bundled DOM library.
+This is a declaration-only dependency, not a runtime polyfill; it does not raise
+the Node.js requirement. Upgrading only the Node executable or its declarations
+does not supply all of these missing web types.
+
 ## Usage
 
 ### App Router
