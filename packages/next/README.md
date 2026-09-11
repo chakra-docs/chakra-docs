@@ -21,7 +21,7 @@ Entry points:
 npm install @chakra-docs/next next react react-dom
 ```
 
-Peer dependencies: `next` (>=15.5.18 <16 or >=16.2.6 <17), `react` (>=18 <20),
+Peer dependencies: `next` (>=15.5.24 <16 or >=16.3.3 <17), `react` (>=18 <20),
 and `react-dom` (>=18 <20). The lower bounds intentionally follow maintained,
 security-patched Next.js release lines rather than unsupported Next.js 14.
 

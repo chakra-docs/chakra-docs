@@ -62,7 +62,7 @@
   ],
   "dependencies": {
     "@chakra-docs/core": "0.2.0",
-    "js-yaml": "^4.3.0",
+    "js-yaml": "^4.3.2",
     "tinyglobby": "^0.2.16",
     "tslib": "^2.3.0"
   },

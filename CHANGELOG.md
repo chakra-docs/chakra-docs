@@ -32,6 +32,7 @@
 
 ### 🩹 Fixes
 
+- **deps:** update the docs site to Next.js 16.3.4 and patch Sharp and YAML dependencies. Adapter peers now require Next.js 15.5.24+/16.3.3+ or Astro 7.2.8+ to exclude affected framework releases.
 - **docs:** pin published Postkit 0.2.0 with locked transitive dependencies, replacing the required local yalc setup and removing MDX dependency workarounds.
 - **chakra:** position page-action overlays above sticky headers with viewport-fixed positioning and keyboard scroll padding; positioning and stacking remain overridable.
 
