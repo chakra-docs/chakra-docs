@@ -115,6 +115,7 @@ Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [
 | [`@chakra-docs/search`](packages/search)                       | Framework-neutral server search, HTTP handlers, and a lightweight remote client.         |
 | [`@chakra-docs/search-pagefind`](packages/search-pagefind)     | Pagefind record generation for static search.                                            |
 | [`@chakra-docs/feed`](packages/feed)                           | RSS, Atom, and JSON Feed generation.                                                     |
+| [`@chakra-docs/shiki`](packages/shiki)                         | Optional, lazy Shiki syntax highlighting with light/dark themes; no Postkit dependency.  |
 
 ## Development
 
@@ -135,6 +136,10 @@ npm run yalc:publish
 ```
 
 The project spec lives at [docs/specs/chakra-docs-package-spec.md](docs/specs/chakra-docs-package-spec.md).
+
+## Agent skill
+
+The repository publishes a portable [`compose-chakra-docs`](skills/compose-chakra-docs) skill for agents that are integrating, composing, theming, or troubleshooting a Chakra Docs instance. Install it from this repository with a compatible Agent Skills client, or ask Codex's `$skill-installer` to install the skill from its GitHub directory.
 
 ## Help and contributing
 

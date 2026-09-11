@@ -131,6 +131,90 @@ describe('createDocsSearchEngine', () => {
     ).toEqual(['distinct', 'same']);
   });
 
+  it('normalizes diacritics and common identifier separators', () => {
+    const engine = createDocsSearchEngine([
+      createRecord({ id: 'cafe', title: 'CaféConfig reference' }),
+      createRecord({ id: 'snake', title: 'theme_config options' }),
+      createRecord({ id: 'javascript', title: 'JavaScript SDK' }),
+      createRecord({
+        id: 'javascript-body',
+        title: 'Language guide',
+        text: 'JavaScript SDK',
+      }),
+    ]);
+
+    expect(engine.search({ query: 'cafe config' }).results[0]?.id).toBe('cafe');
+    expect(engine.search({ query: 'theme config' }).results[0]?.id).toBe(
+      'snake',
+    );
+    expect(
+      engine.search({ query: 'javascript sdk' }).results.map(({ id }) => id),
+    ).toEqual(['javascript', 'javascript-body']);
+  });
+
+  it('searches tags and aliases without exposing aliases in results', () => {
+    const engine = createDocsSearchEngine([
+      createRecord({ id: 'tagged', title: 'Inclusive UI', tags: ['a11y'] }),
+      createRecord({
+        id: 'aliased',
+        title: 'Server rendering',
+        aliases: ['SSR'],
+      }),
+    ]);
+
+    expect(engine.search({ query: 'a11y' }).results[0]?.id).toBe('tagged');
+    expect(engine.search({ query: 'ssr' }).results[0]?.id).toBe('aliased');
+    expect(engine.search({ query: 'ssr' }).results[0]).not.toHaveProperty(
+      'aliases',
+    );
+  });
+
+  it('expands bounded synonym groups for terms and phrases', () => {
+    const engine = createDocsSearchEngine(
+      [
+        createRecord({ id: 'javascript', title: 'JavaScript SDK' }),
+        createRecord({ id: 'rendering', title: 'Server-side rendering' }),
+      ],
+      {
+        synonyms: [
+          ['js', 'javascript'],
+          ['ssr', 'server-side rendering', 'server rendering'],
+        ],
+      },
+    );
+
+    expect(engine.search({ query: 'js sdk' }).results[0]?.id).toBe(
+      'javascript',
+    );
+    expect(engine.search({ query: 'SSR' }).results[0]?.id).toBe('rendering');
+  });
+
+  it('matches multi-term queries when terms are not adjacent', () => {
+    const engine = createDocsSearchEngine([
+      createRecord({
+        id: 'distributed',
+        title: 'Configure the renderer',
+        text: 'Install the adapter before selecting a package.',
+      }),
+    ]);
+
+    expect(engine.search({ query: 'install package' }).results[0]?.id).toBe(
+      'distributed',
+    );
+  });
+
+  it('applies bounded search priority only after a record matches', () => {
+    const engine = createDocsSearchEngine([
+      createRecord({ id: 'normal', title: 'Install' }),
+      createRecord({ id: 'preferred', title: 'Install', searchPriority: 5 }),
+      createRecord({ id: 'unrelated', title: 'Deploy', searchPriority: 100 }),
+    ]);
+
+    expect(
+      engine.search({ query: 'install' }).results.map(({ id }) => id),
+    ).toEqual(['normal', 'preferred']);
+  });
+
   it('returns the first non-heading pages for blank queries', () => {
     const engine = createDocsSearchEngine([
       createRecord({ id: 'heading', kind: 'heading' }),

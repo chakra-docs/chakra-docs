@@ -12,7 +12,8 @@ Entry points:
 - `@chakra-docs/next/pages` — Pages Router helpers.
 - `@chakra-docs/next/link` — `next/link`-backed link component.
 - `@chakra-docs/next/search` — server search handlers for both routers.
-- `@chakra-docs/next` — re-exports the app, pages, and link helpers.
+- `@chakra-docs/next/documents` — Markdown, metadata, and LLM discovery handlers.
+- `@chakra-docs/next` — re-exports all integration helpers.
 
 ## Install
 
@@ -20,9 +21,22 @@ Entry points:
 npm install @chakra-docs/next next react react-dom
 ```
 
-Peer dependencies: `next` (>=15.5.18 <16 or >=16.2.6 <17), `react` (>=18 <20),
+Peer dependencies: `next` (>=15.5.24 <16 or >=16.3.3 <17), `react` (>=18 <20),
 and `react-dom` (>=18 <20). The lower bounds intentionally follow maintained,
 security-patched Next.js release lines rather than unsupported Next.js 14.
+
+For strict declaration checking (`skipLibCheck: false`) with Next.js 16.3 and
+TypeScript 5.9, install the standalone DOM declarations to provide the global
+`URLPattern` types referenced by Next.js:
+
+```bash
+npm install --save-dev @typescript/lib-dom@npm:@types/web@0.0.356
+```
+
+TypeScript automatically uses this package in place of its bundled DOM library.
+This is a declaration-only dependency, not a runtime polyfill; it does not raise
+the Node.js requirement. Upgrading only the Node executable or its declarations
+does not supply all of these missing web types.
 
 ## Usage
 
@@ -139,6 +153,36 @@ import { DocsLink } from '@chakra-docs/next/link';
 <DocsProvider config={{ linkComponent: DocsLink }}>{children}</DocsProvider>;
 ```
 
+### Machine-readable documents
+
+`@chakra-docs/next/documents` publishes clean Markdown responses for docs pages and `llms.txt` or `llms-full.txt` responses for a manifest. It also creates App Router metadata, Pages Router link descriptors, and HTTP Link headers that advertise those resources.
+
+```ts
+import {
+  createAppRouterLlmsHandler,
+  createAppRouterMarkdownHandler,
+  createDocsPageMetadata,
+} from '@chakra-docs/next/documents';
+
+export const GET = createAppRouterMarkdownHandler({ manifest });
+export const HEAD = GET;
+
+export const getLlms = createAppRouterLlmsHandler({
+  manifest,
+  title: 'Example Docs',
+  siteUrl: 'https://example.com',
+});
+
+export function generateMetadata() {
+  return createDocsPageMetadata(page, {
+    llmsUrl: '/llms.txt',
+    siteUrl: 'https://example.com',
+  });
+}
+```
+
+Use a rewrite when the physical Next route differs from the public `/docs/page.md` URL. `appRoute` and `pagesRoute` can map rewritten requests back to the manifest route. Pages Router equivalents relay the same responses through `NextApiResponse`.
+
 ### Drafts and hidden pages
 
 The static params/paths factories and the doc lookups (`getAppRouterDoc`, `getPagesRouterDoc`, `createPagesRouterDocProps`) exclude pages with `frontmatter.draft` or `frontmatter.hidden` unless you pass `includeDrafts: true` / `includeHidden: true` in the options, for example `getAppRouterDoc({ manifest, includeDrafts: true }, route)` for preview builds.
@@ -173,6 +217,14 @@ Static params are relative to the common segment-level base path shared by all c
 - `createAppRouterSearchHandler(search, options?)` — create a Fetch-compatible App Router route handler.
 - `createPagesRouterSearchHandler(search, options?)` — create a Pages Router API handler with the same validation, result shape, and cache policy.
 - `NextSearch`, `NextSearchHandlerOptions` — accepted engine/provider and handler option types.
+
+### `@chakra-docs/next/documents`
+
+- `createDocsPageMetadata(page, options?)` — create canonical and Markdown alternate Next metadata.
+- `createDocsPageLinkDescriptors(page, options?)` — create descriptors suitable for `next/head`.
+- `createDocsDiscoveryLinkHeader(page, options?)` — advertise Markdown and `llms.txt` through an HTTP Link header.
+- `createAppRouterMarkdownHandler(options)` / `createPagesRouterMarkdownHandler(options)` — serve `.md` page representations.
+- `createAppRouterLlmsHandler(options)` / `createPagesRouterLlmsHandler(options)` — serve concise or full LLM discovery documents.
 
 ## Help and contributing
 

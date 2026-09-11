@@ -12,7 +12,7 @@ This package exposes `createAstroStaticPaths` for turning a Chakra Docs manifest
 npm install @chakra-docs/astro astro react react-dom
 ```
 
-Peer dependencies: `astro` (>=5 <8), `react` (>=18 <20), and `react-dom`
+Peer dependencies: `astro` (>=7.2.8 <8), `react` (>=18 <20), and `react-dom`
 (>=18 <20). `@astrojs/react` (>=4 <6) is an optional peer for rendering
 `@chakra-docs/chakra` components inside Astro.
 

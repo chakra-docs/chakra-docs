@@ -20,6 +20,7 @@ if (!['current', 'minimum'].includes(peerProfile)) {
 
 const publicPackages = [
   '@chakra-docs/core',
+  '@chakra-docs/shiki',
   '@chakra-docs/search',
   '@chakra-docs/source-filesystem',
   '@chakra-docs/source-git',
@@ -34,6 +35,7 @@ const publicPackages = [
 
 const packageRoots = new Map([
   ['@chakra-docs/core', 'packages/core'],
+  ['@chakra-docs/shiki', 'packages/shiki'],
   ['@chakra-docs/search', 'packages/search'],
   ['@chakra-docs/source-filesystem', 'packages/source-filesystem'],
   ['@chakra-docs/source-git', 'packages/source-git'],
@@ -109,6 +111,7 @@ for (const packageName of publicPackages) {
 
 const core = await import('@chakra-docs/core');
 const search = await import('@chakra-docs/search');
+const miniSearch = await import('@chakra-docs/search/minisearch');
 const sourceFilesystem = await import('@chakra-docs/source-filesystem');
 const sourceGit = await import('@chakra-docs/source-git');
 const chakra = await import('@chakra-docs/chakra');
@@ -192,6 +195,14 @@ Run the installer.
     [{ route: '/docs/getting-started#install', title: 'Install' }],
   );
 
+  const fuzzySearchEngine = miniSearch.createMiniSearchEngine(manifest.search, {
+    synonyms: [['setup', 'installation']],
+  });
+  assert.equal(
+    fuzzySearchEngine.search({ query: 'instll' }).results[0]?.title,
+    'Install',
+  );
+
   const generatedManifest = await cli.buildDocsManifest({
     config: discoveryConfig,
   });
@@ -240,6 +251,7 @@ Run the installer.
   assert.equal(pagefindRecords[0].url, '/docs/getting-started');
   assert.equal(pagefindRecords[0].title, 'Getting started');
   assert.match(pagefindRecords[0].content, /Install and configure docs/);
+  assert.match(pagefindRecords[0].content, /docs\nguide/);
   assert.deepEqual(pagefindRecords[0].meta, {
     id: 'docs:getting-started',
     kind: 'page',
@@ -247,7 +259,13 @@ Run the installer.
     pageTitle: 'Getting started',
     sectionTitle: '',
     headingId: '',
+    headingLevel: '',
     collectionId: 'docs',
+    sourceId: '',
+    description: 'Install and configure docs.',
+    tags: 'docs, guide',
+    aliases: '',
+    searchPriority: '',
   });
 
   const feedArtifacts = feed.createFeedArtifacts(manifest.feeds, {
@@ -389,6 +407,15 @@ async function smokePackedConsumer() {
       dependencies[dependencyName] = installedManifest.version;
     }
 
+    // TS 5.9's bundled DOM lib lacks the URLPattern globals used by Next 16.3.
+    // Preserve the npm alias so the clean consumer uses the same real DOM
+    // declarations as the workspace, without shims or skipped library checks.
+    const domManifest = await readJson(
+      'node_modules/@typescript/lib-dom/package.json',
+    );
+    dependencies['@typescript/lib-dom'] =
+      `npm:${domManifest.name}@${domManifest.version}`;
+
     if (peerProfile === 'minimum') {
       Object.assign(dependencies, {
         // 4.1 is the first 4.x release whose React type peers can coexist with
@@ -396,8 +423,8 @@ async function smokePackedConsumer() {
         '@astrojs/react': '4.1.0',
         '@chakra-ui/react': '3.36.0',
         '@emotion/react': '11.0.0',
-        astro: '5.0.0',
-        next: '15.5.18',
+        astro: '7.2.8',
+        next: '15.5.24',
         pagefind: '1.0.0',
         react: '18.2.0',
         'react-dom': '18.2.0',
@@ -448,6 +475,7 @@ async function smokePackedConsumer() {
 
     const publicEntryPoints = [
       ...publicPackages,
+      '@chakra-docs/chakra/theme',
       '@chakra-docs/search/client',
       '@chakra-docs/search/http',
       '@chakra-docs/next/app',
@@ -466,6 +494,18 @@ const { createElement } = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { ChakraProvider, defaultSystem } = await import('@chakra-ui/react');
 const { Callout, CodeBlock, DocsProvider } = await import('@chakra-docs/chakra');
+const { createChakraDocsShikiAdapter } = await import('@chakra-docs/shiki');
+const shikiAdapter = createChakraDocsShikiAdapter({ languages: ['typescript'] });
+const shikiContext = await shikiAdapter.loadContext();
+const shikiResult = shikiAdapter.getHighlighter(shikiContext)({ code: 'const packed = true;', language: 'ts' });
+if (!shikiResult.highlighted || !shikiResult.code.includes('data-line="1"')) {
+  throw new Error('Packed Shiki adapter did not highlight code.');
+}
+shikiAdapter.dispose();
+const { chakraDocsThemeConfig } = await import('@chakra-docs/chakra/theme');
+if (!chakraDocsThemeConfig?.theme?.slotRecipes?.chakraDocsLayout) {
+  throw new Error('Packed Chakra theme entry point is incomplete.');
+}
 const markup = renderToStaticMarkup(
   createElement(
     ChakraProvider,
@@ -521,8 +561,13 @@ if (
     await writeFile(
       path.join(consumerDir, 'types.tsx'),
       `import { DocsProvider, DocsSearch } from '@chakra-docs/chakra';
+import {
+  chakraDocsThemeConfig,
+  type ChakraDocsThemeConfig,
+} from '@chakra-docs/chakra/theme';
 import type { DocsManifest } from '@chakra-docs/core';
 import { createFeedArtifacts } from '@chakra-docs/feed';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 import { createGenerateStaticParams } from '@chakra-docs/next/app';
 import { NextLink } from '@chakra-docs/next/link';
 import { createGetStaticPaths } from '@chakra-docs/next/pages';
@@ -535,6 +580,9 @@ import { createFetchSearchHandler } from '@chakra-docs/search/http';
 import { createAppRouterSearchHandler } from '@chakra-docs/next/search';
 
 declare const manifest: DocsManifest;
+
+const themeConfig: ChakraDocsThemeConfig = chakraDocsThemeConfig;
+void themeConfig;
 
 createGenerateStaticParams({ manifest })();
 createGetStaticPaths({ manifest })();
@@ -549,7 +597,7 @@ createAppRouterSearchHandler(searchEngine);
 createFeedArtifacts(manifest.feeds, { title: 'Docs', siteUrl: 'https://example.com', updated: '2026-01-01' });
 
 const tree = (
-  <DocsProvider config={{ linkComponent: NextLink }}>
+  <DocsProvider config={{ linkComponent: NextLink, codeBlock: { adapter: createChakraDocsShikiAdapter() } }}>
     <DocsSearch records={manifest.search} />
   </DocsProvider>
 );

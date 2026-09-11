@@ -1,31 +1,18 @@
-import {
-  ChakraProvider,
-  createShikiAdapter,
-  defaultSystem,
-} from '@chakra-ui/react';
+import { createSystem, defaultConfig } from '@chakra-ui/react';
 import { DocsProvider } from '@chakra-docs/chakra';
-import { NextLink } from '@chakra-docs/next';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
+import { NextLink } from '@chakra-docs/next/link';
+import { PostkitProvider } from '@postkit/react';
+import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 import type { AppProps } from 'next/app';
 import { Analytics } from '../components/analytics';
 
-const shikiAdapter = createShikiAdapter({
-  theme: {
-    light: 'github-light',
-    dark: 'github-dark',
-  },
-  async load() {
-    const { createHighlighter } = await import('shiki');
-
-    return createHighlighter({
-      langs: ['bash', 'tsx', 'ts', 'json', 'markdown', 'text'],
-      themes: ['github-light', 'github-dark'],
-    });
-  },
-});
+const docsSystem = createSystem(defaultConfig, chakraDocsThemeConfig);
+const shikiAdapter = createChakraDocsShikiAdapter();
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (
-    <ChakraProvider value={defaultSystem}>
+    <PostkitProvider system={docsSystem} codeBlockAdapter={shikiAdapter}>
       <Analytics>
         <DocsProvider
           config={{
@@ -45,7 +32,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </DocsProvider>
       </Analytics>
-    </ChakraProvider>
+    </PostkitProvider>
   );
 }
 

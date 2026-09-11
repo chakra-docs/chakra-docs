@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/astro",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Astro static path helpers for Chakra Docs manifests.",
   "keywords": [
     "chakra-ui",
@@ -60,12 +60,12 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
     "@astrojs/react": ">=4 <6",
-    "astro": ">=5 <8",
+    "astro": ">=7.2.8 <8",
     "react": ">=18 <20",
     "react-dom": ">=18 <20"
   },

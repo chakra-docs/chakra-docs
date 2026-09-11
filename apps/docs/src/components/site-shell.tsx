@@ -98,6 +98,7 @@ export function SiteShell(props: SiteShellProps) {
 
             <HStack gap={3} wrap="wrap">
               <DocsSearch
+                prefetch="intent"
                 collectionId={selectedCollectionId || undefined}
                 onNavigate={(href) => {
                   void router.push(href);

@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/chakra",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Chakra UI component layer for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -54,6 +54,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "import": "./dist/theme.js",
+      "default": "./dist/theme.js"
     }
   },
   "files": [
@@ -62,8 +67,10 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
-    "@chakra-docs/search": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
+    "@chakra-docs/search": "0.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

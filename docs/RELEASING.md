@@ -6,7 +6,19 @@ pull request. `.github/workflows/release.yml` then builds and publishes that
 exact default-branch commit; it never versions, commits, tags, pushes, or
 creates a GitHub release.
 
-All eleven public packages use one fixed version.
+All twelve public packages use one fixed version.
+
+## Reproducible Postkit dependencies
+
+The docs application pins the published `@postkit/react@0.2.0` package. Its
+`@postkit/core` and `@postkit/unfurl` dependencies are also versioned at `0.2.0`
+and resolved from npm through the committed `package-lock.json`. The docs site
+uses the first-party `@chakra-docs/shiki` workspace package for highlighting.
+
+Use `npm ci` for release validation so local yalc overrides cannot mask missing
+registry dependencies. Yalc remains an optional development override through
+`npm run yalc:link --workspace=docs`, not a CI prerequisite. Postkit is never
+published implicitly as part of a Chakra Docs release.
 
 ## Prepare a release pull request
 
@@ -28,10 +40,23 @@ All eleven public packages use one fixed version.
 5. Run the release checks:
 
    ```bash
+   npm audit --omit=dev --audit-level=moderate
+   npm audit --audit-level=high
+   npm exec nx -- format:check --all
    npm run test:release
+   npm run lint
+   npm run typecheck
+   npm run test:coverage
    npm run build
+   npm run types:performance:check
+   npm run search:performance:check
+   npm exec nx -- run docs:e2e --skipNxCache
    npm run release:smoke
    ```
+
+   These commands intentionally mirror the main CI job that authorizes a
+   release. Run the complete list after versioning so the verified commit is
+   the same commit that will be published.
 
 6. Open and merge the pull request only after CI succeeds. The successful CI
    push run for the resulting merge commit is the release authorization.
@@ -93,7 +118,7 @@ The workflow requires a successful CI push run for the exact dispatch commit.
 Immediately before publishing, it also confirms the default branch has not
 advanced. It then validates the committed fixed version, builds the packages,
 checks npm for versions that already exist, publishes the missing versions, and
-verifies that all eleven versions and `latest` tags are public. The registry
+verifies that all twelve versions and `latest` tags are public. The registry
 check remains enabled during bootstrap so the exact run can safely resume after
 a partial publish.
 

@@ -16,6 +16,7 @@ interface RemoteSearchRequester {
     provider: DocsSearchProvider,
     query: DocsSearchQuery,
     delayMs: number,
+    initialResults?: DocsSearchResult[],
   ) => void;
   cancel: () => void;
 }
@@ -69,13 +70,18 @@ export function createRemoteSearchRequester(
     provider: DocsSearchProvider,
     query: DocsSearchQuery,
     delayMs: number,
+    initialResults?: DocsSearchResult[],
   ): void {
     cancel();
 
     const requestGeneration = generation;
     const requestController = new AbortController();
     controller = requestController;
-    onStateChange({ results: [], status: 'loading' });
+    onStateChange(
+      initialResults === undefined
+        ? { results: [], status: 'loading' }
+        : { results: initialResults, status: 'success' },
+    );
 
     scheduled = schedule(() => {
       scheduled = undefined;
@@ -92,7 +98,10 @@ export function createRemoteSearchRequester(
             }
 
             controller = undefined;
-            onStateChange({ results: response.results, status: 'success' });
+            onStateChange({
+              results: initialResults ?? response.results,
+              status: 'success',
+            });
           },
           () => {
             if (
@@ -103,7 +112,11 @@ export function createRemoteSearchRequester(
             }
 
             controller = undefined;
-            onStateChange({ results: [], status: 'error' });
+            onStateChange(
+              initialResults === undefined
+                ? { results: [], status: 'error' }
+                : { results: initialResults, status: 'success' },
+            );
           },
         );
     }, delayMs);

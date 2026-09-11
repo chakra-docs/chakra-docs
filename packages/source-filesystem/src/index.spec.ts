@@ -248,6 +248,26 @@ describe('buildFilesystemManifest frontmatter parsing', () => {
 });
 
 describe('buildFilesystemManifest headings', () => {
+  it('aligns CommonMark headings, page titles and search sections', async () => {
+    const manifest = await buildFixtureManifest({
+      'commonmark.md':
+        'Page\n====\n\nSection\n-------\n\nFirst body\n\n  ## **Section** ##\n\nSecond body\n\n## [Guide][ref]\n\n[ref]: /docs/guide',
+    });
+    const page = getPage(manifest, 'docs:commonmark');
+    expect(page.title).toBe('Page');
+    expect(page.headings).toEqual([
+      { id: 'section', title: 'Section', level: 2 },
+      { id: 'section-2', title: 'Section', level: 2 },
+      { id: 'guide', title: 'Guide', level: 2 },
+    ]);
+    expect(
+      manifest.search.find((record) => record.headingId === 'section')?.text,
+    ).toContain('First body');
+    expect(
+      manifest.search.find((record) => record.headingId === 'section')?.text,
+    ).not.toContain('Second body');
+  });
+
   it('extracts h2-h6, skips fenced code, strips markdown, and dedupes ids', async () => {
     const manifest = await buildFixtureManifest({
       'headings.md': [

@@ -1,0 +1,85 @@
+{
+  "name": "@chakra-docs/shiki",
+  "version": "0.2.0",
+  "description": "Optional Shiki syntax highlighting adapter for Chakra Docs.",
+  "keywords": [
+    "chakra-ui",
+    "chakra-docs",
+    "shiki",
+    "syntax-highlighting",
+    "markdown",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Ryan Hefner",
+    "email": "hi@ryanhefner.com",
+    "url": "https://www.ryanhefner.com"
+  },
+  "contributors": [
+    {
+      "name": "Commune Software",
+      "url": "https://commune.software"
+    }
+  ],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/ryanhefner"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/ryanhefner"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/ryanhefner"
+    }
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "prepack": "npm exec nx -- run @chakra-docs/shiki:build --skipNxCache --outputStyle=static"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.d.ts.map",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "shiki": "^4.3.1",
+    "tslib": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chakra-docs/chakra-docs.git",
+    "directory": "packages/shiki"
+  },
+  "bugs": {
+    "url": "https://github.com/chakra-docs/chakra-docs/issues"
+  },
+  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/shiki#readme",
+  "nx": {
+    "tags": [
+      "layer:integration",
+      "scope:shiki"
+    ]
+  }
+}

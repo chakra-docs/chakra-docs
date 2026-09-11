@@ -10,8 +10,13 @@ const pageRecord: DocsSearchRecord = {
   route: '/docs/getting-started',
   title: 'Getting started',
   pageTitle: 'Getting started',
+  sourceId: 'website',
+  description: 'Install the SDK.',
   headings: [],
   text: 'Getting started\nInstall and configure the SDK.',
+  tags: ['setup', 'sdk'],
+  aliases: ['quick start', 'installation'],
+  searchPriority: 4,
 };
 
 const headingRecord: DocsSearchRecord = {
@@ -44,7 +49,7 @@ describe('createPagefindDocumentRecords', () => {
     expect(document.url).toBe('/docs/getting-started');
     expect(document.title).toBe('Getting started');
     expect(document.content).toBe(
-      'Getting started\nInstall and configure the SDK.',
+      'Getting started\nInstall and configure the SDK.\nsetup\nsdk\nquick start\ninstallation',
     );
   });
 
@@ -58,7 +63,13 @@ describe('createPagefindDocumentRecords', () => {
       pageTitle: 'Getting started',
       sectionTitle: 'Install',
       headingId: 'install',
+      headingLevel: '2',
       collectionId: 'docs',
+      sourceId: '',
+      description: '',
+      tags: '',
+      aliases: '',
+      searchPriority: '',
     });
   });
 
@@ -72,7 +83,25 @@ describe('createPagefindDocumentRecords', () => {
       pageTitle: '',
       sectionTitle: '',
       headingId: '',
+      headingLevel: '',
       collectionId: '',
+      sourceId: '',
+      description: '',
+      tags: '',
+      aliases: '',
+      searchPriority: '',
+    });
+  });
+
+  it('preserves extended search metadata as Pagefind strings', () => {
+    const [document] = createPagefindDocumentRecords([pageRecord]);
+
+    expect(document.meta).toMatchObject({
+      sourceId: 'website',
+      description: 'Install the SDK.',
+      tags: 'setup, sdk',
+      aliases: 'quick start, installation',
+      searchPriority: '4',
     });
   });
 

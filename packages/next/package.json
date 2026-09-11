@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Next.js App and Pages Router integration for Chakra Docs documentation sites.",
   "keywords": [
     "chakra-ui",
@@ -60,6 +60,11 @@
       "import": "./dist/app.js",
       "default": "./dist/app.js"
     },
+    "./documents": {
+      "types": "./dist/documents.d.ts",
+      "import": "./dist/documents.js",
+      "default": "./dist/documents.js"
+    },
     "./link": {
       "types": "./dist/link.d.ts",
       "import": "./dist/link.js",
@@ -82,12 +87,12 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
-    "@chakra-docs/search": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
+    "@chakra-docs/search": "0.2.0",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "next": ">=15.5.18 <16 || >=16.2.6 <17",
+    "next": ">=15.5.24 <16 || >=16.3.3 <17",
     "react": ">=18 <20",
     "react-dom": ">=18 <20"
   },

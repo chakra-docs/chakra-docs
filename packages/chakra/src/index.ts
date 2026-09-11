@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Fragment,
   createContext,
   createElement,
   useContext,
@@ -12,12 +13,14 @@ import {
 } from 'react';
 import type { ComponentType, ElementType, ReactNode } from 'react';
 import * as ChakraRuntime from '@chakra-ui/react';
+import ReactMarkdown from 'react-markdown';
+import type { Components as MarkdownComponents } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   createCollectionOptions,
-  createHeadingIdGenerator,
+  getDocsMarkdownHeadings,
   isSafeDocsRoute,
   isSafeLinkHref,
-  stripMarkdown,
 } from '@chakra-docs/core';
 import type {
   DocsCollection,
@@ -35,7 +38,21 @@ import type {
   DocsSearchResult,
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
+import { emitAnalytics } from './analytics.js';
+import { useSearchAnalytics } from './search-analytics.js';
+import type { DocsSearchAnalyticsCallbacks } from './search-analytics.js';
+export type {
+  DocsSearchAnalyticsCallbacks,
+  DocsSearchAnalyticsContext,
+  DocsSearchResultsEvent,
+  DocsSearchSelectionContext,
+  DocsSearchCloseEvent,
+} from './search-analytics.js';
+import { getDefaultSearchResults } from './default-search-results.js';
+import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
+import { createDocsBreadcrumbItems } from './breadcrumbs.js';
+import type { DocsBreadcrumbItem } from './breadcrumbs.js';
 import {
   getActiveHeadingId,
   getHeadingScrollOffset,
@@ -51,30 +68,117 @@ import {
   getRemoteSearchDelayMs,
 } from './remote-search.js';
 import type { RemoteSearchState } from './remote-search.js';
+import {
+  getActiveSidebarBranchIds,
+  getSidebarBranchIds,
+  mergeActiveSidebarBranchIds,
+  normalizeSidebarExpandedIds,
+  resolveSidebarDefaultExpandedIds,
+  sidebarExpandedIdsEqual,
+  toggleSidebarExpandedId,
+} from './sidebar-expansion.js';
+import type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
+import {
+  getDocsTabsSyncValue,
+  publishDocsTabsSyncValue,
+  subscribeDocsTabsSyncValue,
+} from './tabs-sync.js';
+import {
+  chakraDocsApiTableSlotRecipe,
+  chakraDocsArticleSlotRecipe,
+  chakraDocsBadgeSlotRecipe,
+  chakraDocsBreadcrumbsSlotRecipe,
+  chakraDocsCalloutSlotRecipe,
+  chakraDocsCardsSlotRecipe,
+  chakraDocsCodeBlockSlotRecipe,
+  chakraDocsFeedbackSlotRecipe,
+  chakraDocsLayoutSlotRecipe,
+  chakraDocsHeadingPermalinkSlotRecipe,
+  chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileNavigationSlotRecipe,
+  chakraDocsMobileTableOfContentsSlotRecipe,
+  chakraDocsPageActionsSlotRecipe,
+  chakraDocsPaginationSlotRecipe,
+  chakraDocsRecipeKeys,
+  chakraDocsSearchSlotRecipe,
+  chakraDocsSidebarSlotRecipe,
+  chakraDocsStepsSlotRecipe,
+  chakraDocsTabsSlotRecipe,
+  chakraDocsTableOfContentsSlotRecipe,
+  chakraDocsVersionSelectSlotRecipe,
+} from './theme/recipes.js';
+import {
+  extractSlotCssVariables,
+  mergeSlotStyleProps,
+  useChakraDocsSlotRecipe,
+} from './theme/use-slot-recipe.js';
 
 export type { ChakraDocsStickyTop } from './heading-scroll.js';
+export type { DocsSidebarDefaultExpanded } from './sidebar-expansion.js';
+export type { DocsBreadcrumbItem } from './breadcrumbs.js';
+export type {
+  ChakraDocsRecipeKey,
+  ChakraDocsRecipeKeyMap,
+  ChakraDocsSlotRecipeConfig,
+  ChakraDocsThemeConfig,
+  ChakraDocsThemeStyleObject,
+} from './theme/theme-contract.js';
+export { createDocsBreadcrumbItems } from './breadcrumbs.js';
+export {
+  chakraDocsApiTableSlotRecipe,
+  chakraDocsArticleSlotRecipe,
+  chakraDocsBadgeSlotRecipe,
+  chakraDocsBreadcrumbsSlotRecipe,
+  chakraDocsCalloutSlotRecipe,
+  chakraDocsCardsSlotRecipe,
+  chakraDocsCodeBlockSlotRecipe,
+  chakraDocsFeedbackSlotRecipe,
+  chakraDocsLayoutSlotRecipe,
+  chakraDocsHeadingPermalinkSlotRecipe,
+  chakraDocsMarkdownContentSlotRecipe,
+  chakraDocsMobileNavigationSlotRecipe,
+  chakraDocsMobileTableOfContentsSlotRecipe,
+  chakraDocsPageActionsSlotRecipe,
+  chakraDocsPaginationSlotRecipe,
+  chakraDocsRecipeKeys,
+  chakraDocsSearchSlotRecipe,
+  chakraDocsSidebarSlotRecipe,
+  chakraDocsSlotRecipes,
+  chakraDocsStepsSlotRecipe,
+  chakraDocsTabsSlotRecipe,
+  chakraDocsTableOfContentsSlotRecipe,
+  chakraDocsThemeConfig,
+  chakraDocsVersionSelectSlotRecipe,
+} from './theme/recipes.js';
 
 const Chakra = ChakraRuntime as unknown as Record<string, ElementType>;
 const Badge = Chakra.Badge;
 const Box = Chakra.Box;
 const Button = Chakra.Button;
+const ChakraClipboard = Chakra.Clipboard as unknown as Record<
+  string,
+  ElementType
+>;
 const Code = Chakra.Code;
 const Container = Chakra.Container;
 const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
-const Flex = Chakra.Flex;
+const Tabs = Chakra.Tabs as unknown as Record<string, ElementType>;
 const Heading = Chakra.Heading;
 const HStack = Chakra.HStack;
 const Input = Chakra.Input;
 const Kbd = Chakra.Kbd;
 const Link = Chakra.Link;
+const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
 const Portal = Chakra.Portal;
 const Stack = Chakra.Stack;
 const Text = Chakra.Text;
+const Textarea = Chakra.Textarea;
 const ChakraCodeBlock = Chakra.CodeBlock as unknown as Record<
   string,
   ElementType
 >;
 const emptySearchRecords: readonly DocsSearchRecord[] = [];
+const emptyRemoteSearchResults: DocsSearchResult[] = [];
 
 export interface DocsLinkProps {
   href: string;
@@ -101,22 +205,61 @@ export interface DocsLabels {
   nextPage: string;
   editPage: string;
   onThisPage: string;
+  navigationTitle: string;
+  navigationMenu: string;
   openNavigation: string;
   closeNavigation: string;
   copyCode: string;
   copiedCode: string;
+  copyPage: string;
+  copyPageDescription?: string;
+  copiedPage: string;
+  copyLink: string;
+  copyLinkDescription?: string;
+  copiedLink: string;
+  viewMarkdown: string;
+  viewMarkdownDescription?: string;
+  moreActions: string;
+  editPageDescription?: string;
+  copyHeadingLink: string;
+  copiedHeadingLink: string;
+  feedbackPrompt: string;
+  feedbackHelpful: string;
+  feedbackNotHelpful: string;
+  feedbackCommentPlaceholder: string;
+  feedbackSubmit: string;
+  feedbackSubmitting: string;
+  feedbackSubmitted: string;
+  feedbackError: string;
 }
 
-export interface DocsAnalyticsCallbacks {
-  onSearchOpen?: () => void;
-  onSearch?: (query: string) => void;
-  onSearchResultSelect?: (result: DocsSearchResult) => void;
+export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
   onCodeCopy?: (event: {
     code: string;
     language?: string;
     title?: string;
   }) => void;
   onPackageCommandCopy?: (event: { command: string; manager: string }) => void;
+  onPageCopy?: (event: {
+    page?: DocsPage;
+    value: string;
+    format: 'markdown' | 'link';
+  }) => void;
+  onPageAction?: (event: {
+    page?: DocsPage;
+    action: string;
+    href?: string;
+  }) => void;
+  onHeadingLinkCopy?: (event: {
+    headingId: string;
+    href: string;
+    title?: string;
+  }) => void;
+  onPageFeedback?: (event: {
+    page?: DocsPage;
+    value: DocsPageFeedbackValue;
+    comment: string;
+  }) => void;
 }
 
 export interface ChakraDocsCodeBlockHighlightResult {
@@ -153,8 +296,16 @@ export interface ChakraDocsCodeBlockAdapter {
   unloadContext?: (context: unknown) => void;
 }
 
+export type ChakraDocsCodeBlockSize = 'sm' | 'md' | 'lg';
+export type ChakraDocsCodeBlockVariant = 'outline' | 'subtle' | 'plain';
+
 export interface ChakraDocsCodeBlockConfig {
   adapter?: ChakraDocsCodeBlockAdapter;
+  copy?: boolean;
+  lineNumbers?: boolean;
+  size?: ChakraDocsCodeBlockSize;
+  variant?: ChakraDocsCodeBlockVariant;
+  wrap?: boolean;
 }
 
 export interface ChakraDocsLayoutConfig {
@@ -185,22 +336,399 @@ export interface DocsLayoutProps extends DocsComponentProps {
   stickyTop?: ChakraDocsStickyTop;
   scrollMarginTop?: ChakraDocsStickyTop;
   contentSlotProps?: Record<string, unknown>;
+  innerSlotProps?: Record<string, unknown>;
+  mobileNavigation?: boolean;
+  mobileNavigationProps?: Omit<DocsMobileNavigationRootProps, 'nav' | 'page'>;
+  mobileToc?: boolean;
+  mobileTocActiveIndicatorSlotProps?: Record<string, unknown>;
+  mobileTocContentSlotProps?: Record<string, unknown>;
+  mobileTocCurrentSlotProps?: Record<string, unknown>;
+  mobileTocIndicatorSlotProps?: Record<string, unknown>;
+  mobileTocItemSlotProps?: Record<string, unknown>;
+  mobileTocLinkSlotProps?: Record<string, unknown>;
+  mobileTocListSlotProps?: Record<string, unknown>;
+  mobileTocSlotProps?: Record<string, unknown>;
+  mobileTocTriggerLabelSlotProps?: Record<string, unknown>;
+  mobileTocTriggerSlotProps?: Record<string, unknown>;
+  sidebarBadgeSlotProps?: Record<string, unknown>;
+  sidebarCollapsible?: boolean;
+  sidebarContentSlotProps?: Record<string, unknown>;
+  sidebarContent?: ReactNode;
+  sidebarDefaultExpanded?: DocsSidebarDefaultExpanded;
+  sidebarExpandedIds?: readonly string[];
+  sidebarIndicatorSlotProps?: Record<string, unknown>;
+  onSidebarExpandedChange?: (expandedIds: readonly string[]) => void;
   sidebarSlotProps?: Record<string, unknown>;
+  sidebarTriggerSlotProps?: Record<string, unknown>;
   tocSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsArticleProps extends DocsComponentProps {
+  actions?: ReactNode;
+  actionsSlotProps?: Record<string, unknown>;
+  breadcrumbs?: ReactNode;
+  breadcrumbsSlotProps?: Record<string, unknown>;
+  descriptionSlotProps?: Record<string, unknown>;
+  headingSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsRootProps {
+  children?: ReactNode;
+  editUrl?: string;
+  markdown?: string;
+  markdownUrl?: string;
+  page?: DocsPage;
+  pageUrl?: string;
+  size?: DocsPageActionsSize;
+  slotProps?: Record<string, unknown>;
+  variant?: 'default' | 'split';
+}
+
+export type DocsPageActionsSize = 'sm' | 'md' | 'lg';
+
+export interface DocsPageActionProps {
+  children?: ReactNode;
+  copiedLabel?: string;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: string;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionLinkProps extends DocsPageActionProps {
+  href?: string;
+}
+
+export interface DocsPageActionsMenuProps {
+  ariaLabel?: string;
+  children?: ReactNode;
+  closeOnSelect?: boolean;
+  contentSlotProps?: Record<string, unknown>;
+  defaultOpen?: boolean;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  onOpenChange?: (details: DocsPageActionsOpenChangeDetails) => void;
+  open?: boolean;
+  positioning?: DocsPageActionsPositioning;
+  positionerSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsOpenChangeDetails {
+  open: boolean;
+}
+
+export type DocsPageActionsPlacement =
+  | 'top'
+  | 'top-start'
+  | 'top-end'
+  | 'right'
+  | 'right-start'
+  | 'right-end'
+  | 'bottom'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'left'
+  | 'left-start'
+  | 'left-end';
+
+export interface DocsPageActionsPositioning {
+  fitViewport?: boolean;
+  flip?: boolean | DocsPageActionsPlacement[];
+  gutter?: number;
+  hideWhenDetached?: boolean;
+  overflowPadding?: number;
+  overlap?: boolean;
+  placement?: DocsPageActionsPlacement;
+  sameWidth?: boolean;
+  shift?: number;
+  slide?: boolean;
+  strategy?: 'absolute' | 'fixed';
+}
+
+export interface DocsPageActionsSubmenuProps extends Omit<
+  DocsPageActionsMenuProps,
+  'label'
+> {
+  label: ReactNode;
+}
+
+export interface DocsPageActionsGroupProps {
+  ariaLabel?: string;
+  children?: ReactNode;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsSeparatorProps {
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageActionsItemProps extends DocsPageActionProps {
+  action?: string;
+  href?: string;
+  onSelect?: () => void;
 }
 
 export interface DocsStickyComponentProps extends DocsComponentProps {
   stickyTop?: ChakraDocsStickyTop;
 }
 
+export interface DocsSidebarProps extends DocsStickyComponentProps {
+  badgeSlotProps?: Record<string, unknown>;
+  collapsible?: boolean;
+  contentSlotProps?: Record<string, unknown>;
+  defaultExpanded?: DocsSidebarDefaultExpanded;
+  expandedIds?: readonly string[];
+  indicatorSlotProps?: Record<string, unknown>;
+  onExpandedChange?: (expandedIds: readonly string[]) => void;
+  triggerSlotProps?: Record<string, unknown>;
+  childrenSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  sectionTitleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationOpenChangeDetails {
+  open: boolean;
+}
+
+export interface DocsMobileNavigationRootProps extends DocsComponentProps {
+  closeOnNavigate?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (details: DocsMobileNavigationOpenChangeDetails) => void;
+  open?: boolean;
+  search?: ReactNode;
+  sidebarContent?: ReactNode;
+  sidebarProps?: Omit<DocsSidebarProps, 'nav' | 'page'>;
+  title?: ReactNode;
+}
+
+export interface DocsMobileNavigationTriggerProps {
+  ariaLabel?: string;
+  children?: ReactNode;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  label?: ReactNode;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationContentProps {
+  backdropSlotProps?: Record<string, unknown>;
+  children?: ReactNode;
+  positionerSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileNavigationCloseTriggerProps extends DocsMobileNavigationPartProps {
+  ariaLabel?: string;
+}
+
+export type DocsMobileNavigationSidebarProps = Omit<
+  DocsSidebarProps,
+  'nav' | 'page'
+>;
+
 export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
   scrollMarginTop?: ChakraDocsStickyTop;
+  activeIndicatorSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsMobileTableOfContentsProps extends DocsTableOfContentsProps {
+  contentSlotProps?: Record<string, unknown>;
+  currentSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  triggerLabelSlotProps?: Record<string, unknown>;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsBreadcrumbsProps extends DocsComponentProps {
+  currentSlotProps?: Record<string, unknown>;
+  homeHref?: string;
+  homeLabel?: string;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  separator?: ReactNode;
+  separatorSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsHeadingPermalinkProps {
+  children?: ReactNode;
+  copiedLabel?: string;
+  headingId: string;
+  href?: string;
+  indicatorSlotProps?: Record<string, unknown>;
+  label?: string;
+  slotProps?: Record<string, unknown>;
+  title?: string;
+  triggerSlotProps?: Record<string, unknown>;
+}
+
+export type DocsPageFeedbackValue = 'helpful' | 'not-helpful' | (string & {});
+
+export interface DocsPageFeedbackSubmitDetails {
+  comment: string;
+  page?: DocsPage;
+  value: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackRootProps {
+  children?: ReactNode;
+  comment?: string;
+  defaultComment?: string;
+  defaultValue?: DocsPageFeedbackValue;
+  onCommentChange?: (comment: string) => void;
+  onSubmit?: (details: DocsPageFeedbackSubmitDetails) => void | Promise<void>;
+  onValueChange?: (value: DocsPageFeedbackValue) => void;
+  page?: DocsPage;
+  slotProps?: Record<string, unknown>;
+  value?: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPageFeedbackOptionProps extends DocsPageFeedbackPartProps {
+  value: DocsPageFeedbackValue;
+}
+
+export interface DocsPageFeedbackCommentProps extends DocsPageFeedbackPartProps {
+  label?: string;
+  placeholder?: string;
+}
+
+export interface DocsCardsRootProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsCardProps {
+  badge?: ReactNode;
+  badgeSlotProps?: Record<string, unknown>;
+  children?: ReactNode;
+  contentSlotProps?: Record<string, unknown>;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  href?: string;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  title: ReactNode;
+  titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsStepsRootProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsStepProps {
+  children?: ReactNode;
+  contentSlotProps?: Record<string, unknown>;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
+  indicatorSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  title?: ReactNode;
+  titleSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsTabsRootProps {
+  children?: ReactNode;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  slotProps?: Record<string, unknown>;
+  syncKey?: string;
+  value?: string;
+}
+
+export interface DocsTabsPartProps {
+  children?: ReactNode;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsTabsValuePartProps extends DocsTabsPartProps {
+  value: string;
+}
+
+export interface DocsApiTableItem {
+  defaultValue?: ReactNode;
+  description?: ReactNode;
+  name: string;
+  required?: boolean;
+  type?: ReactNode;
+}
+
+export interface DocsApiTableProps {
+  caption?: ReactNode;
+  captionSlotProps?: Record<string, unknown>;
+  cellSlotProps?: Record<string, unknown>;
+  columnHeaderSlotProps?: Record<string, unknown>;
+  defaultLabel?: string;
+  defaultValueSlotProps?: Record<string, unknown>;
+  descriptionLabel?: string;
+  descriptionSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  items: readonly DocsApiTableItem[];
+  nameLabel?: string;
+  nameSlotProps?: Record<string, unknown>;
+  requiredLabel?: string;
+  requiredSlotProps?: Record<string, unknown>;
+  rowSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  tableSlotProps?: Record<string, unknown>;
+  typeLabel?: string;
+  typeSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsBadgeProps {
+  children?: ReactNode;
+  colorPalette?: string;
+  slotProps?: Record<string, unknown>;
+  tone?: 'neutral' | 'accent';
 }
 
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
+  /** Curated, ordered results shown only for an empty query. An empty array opts out of provider defaults. */
+  defaultResults?: readonly DocsSearchResult[];
+  /** Heading for curated results. Defaults to "Recommended". */
+  defaultResultsLabel?: string;
+  /** Warm the provider's empty-query response on mount or trigger hover/focus. Disabled by default. */
+  prefetch?: false | 'intent' | 'mount';
+  /** Cache freshness in milliseconds; defaults to 60,000. Stale results stay visible during refresh. */
+  prefetchStaleTimeMs?: number;
   debounceMs?: number;
+  /** Coalesce onSearch query-change events; default 0 preserves immediate reporting. */
+  analyticsDebounceMs?: number;
   collectionId?: string;
   collectionIds?: readonly string[];
   limit?: number;
@@ -208,10 +736,28 @@ export interface DocsSearchProps {
   placeholder?: string;
   onNavigate?: (href: string, result: DocsSearchResult) => void;
   onResultSelect?: (result: DocsSearchResult) => void;
+  backdropSlotProps?: Record<string, unknown>;
+  bodySlotProps?: Record<string, unknown>;
+  contentSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
+  positionerSlotProps?: Record<string, unknown>;
+  resultBadgeSlotProps?: Record<string, unknown>;
+  resultContentSlotProps?: Record<string, unknown>;
+  resultDescriptionSlotProps?: Record<string, unknown>;
+  resultLinkSlotProps?: Record<string, unknown>;
+  resultListSlotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
+  triggerLabelSlotProps?: Record<string, unknown>;
+  shortcutSlotProps?: Record<string, unknown>;
   inputSlotProps?: Record<string, unknown>;
   resultSlotProps?: Record<string, unknown>;
+  resultRowSlotProps?: Record<string, unknown>;
+  resultTitleSlotProps?: Record<string, unknown>;
+  resultsSlotProps?: Record<string, unknown>;
+  sectionLabelSlotProps?: Record<string, unknown>;
+  statusSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export type DocsVersionOption = DocsCollectionOption;
@@ -232,16 +778,41 @@ export interface DocsVersionSelectProps {
   selectSlotProps?: Record<string, unknown>;
 }
 
-type MarkdownBlock =
-  | { type: 'heading'; level: number; text: string }
-  | { type: 'paragraph'; text: string }
-  | { type: 'list'; items: string[] }
-  | { type: 'code'; code: string; language?: string }
-  | { type: 'quote'; text: string };
+export interface DocsPaginationProps extends DocsComponentProps {
+  itemSlotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+}
 
 export interface MarkdownContentProps {
+  getHeadingHref?: (headingId: string) => string;
+  headingPermalinkIndicatorSlotProps?: Record<string, unknown>;
+  headingPermalinkSlotProps?: Record<string, unknown>;
+  headingPermalinkTriggerSlotProps?: Record<string, unknown>;
+  headingPermalinks?: boolean;
   source: string;
   slotProps?: Record<string, unknown>;
+  codeBlockProps?: Omit<CodeBlockProps, 'children' | 'code' | 'language'>;
+  codeBlockSlotProps?: Record<string, unknown>;
+  headingSlotProps?: Record<string, unknown>;
+  inlineCodeSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listItemSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  paragraphSlotProps?: Record<string, unknown>;
+  quoteSlotProps?: Record<string, unknown>;
+  imageSlotProps?: Record<string, unknown>;
+  separatorSlotProps?: Record<string, unknown>;
+  tableContainerSlotProps?: Record<string, unknown>;
+  tableSlotProps?: Record<string, unknown>;
+  tableHeadSlotProps?: Record<string, unknown>;
+  tableBodySlotProps?: Record<string, unknown>;
+  tableRowSlotProps?: Record<string, unknown>;
+  tableHeaderSlotProps?: Record<string, unknown>;
+  tableCellSlotProps?: Record<string, unknown>;
+  taskCheckboxSlotProps?: Record<string, unknown>;
+  /** Accessible label for each keyboard-scrollable Markdown table. */
+  tableLabel?: string;
 }
 
 type DocsInputChangeEvent = {
@@ -254,6 +825,11 @@ type DocsKeyboardEvent = {
   key: string;
   metaKey?: boolean;
   ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  defaultPrevented?: boolean;
+  isComposing?: boolean;
+  nativeEvent?: { isComposing?: boolean };
   preventDefault: () => void;
 };
 
@@ -273,10 +849,32 @@ const defaultLabels: DocsLabels = {
   nextPage: 'Next',
   editPage: 'Edit this page',
   onThisPage: 'On this page',
+  navigationTitle: 'Browse',
+  navigationMenu: 'Menu',
   openNavigation: 'Open navigation',
   closeNavigation: 'Close navigation',
   copyCode: 'Copy code',
   copiedCode: 'Copied',
+  copyPage: 'Copy page',
+  copyPageDescription: 'Copy page as Markdown for LLMs',
+  copiedPage: 'Copied!',
+  copyLink: 'Copy link',
+  copyLinkDescription: 'Copy a link to this page',
+  copiedLink: 'Copied!',
+  viewMarkdown: 'View as Markdown',
+  viewMarkdownDescription: 'Open this page as plain text',
+  moreActions: 'More page actions',
+  editPageDescription: 'Suggest changes to this page',
+  copyHeadingLink: 'Copy section link',
+  copiedHeadingLink: 'Copied section link',
+  feedbackPrompt: 'Was this page helpful?',
+  feedbackHelpful: 'Yes',
+  feedbackNotHelpful: 'No',
+  feedbackCommentPlaceholder: 'How could this page be improved?',
+  feedbackSubmit: 'Send feedback',
+  feedbackSubmitting: 'Sending…',
+  feedbackSubmitted: 'Thanks for your feedback.',
+  feedbackError: 'Feedback could not be sent. Please try again.',
 };
 
 const DocsContext = createContext<ChakraDocsConfig>({
@@ -307,28 +905,975 @@ export function useDocsConfig(): ChakraDocsConfig {
   };
 }
 
+interface DocsPageActionsContextValue {
+  config: ChakraDocsConfig;
+  editUrl?: string;
+  inMenu: boolean;
+  markdown?: string;
+  markdownUrl?: string;
+  page?: DocsPage;
+  pageUrl?: string;
+  styles: Record<string, unknown>;
+  portalCss: unknown;
+  portalStyle: Record<string, unknown>;
+}
+
+const DocsPageActionsContext = createContext<
+  DocsPageActionsContextValue | undefined
+>(undefined);
+
+function useDocsPageActionsContext(): DocsPageActionsContextValue {
+  const context = useContext(DocsPageActionsContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPageActions components must be rendered inside DocsPageActions.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsPageActionsRoot(
+  props: DocsPageActionsRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const page = props.page;
+  const markdown = props.markdown ?? page?.body;
+  const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
+  const markdownUrl = props.markdownUrl;
+  const editUrl =
+    props.editUrl ??
+    (page && config.editUrl ? config.editUrl(page) : undefined);
+  const automaticComposition = props.children === undefined;
+  const hasPrimaryAction = markdown !== undefined;
+  const hasMenu = Boolean(pageUrl || markdownUrl || editUrl);
+  const effectiveVariant =
+    props.variant === 'split' &&
+    (!automaticComposition || (hasPrimaryAction && hasMenu))
+      ? 'split'
+      : 'default';
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.pageActions,
+    chakraDocsPageActionsSlotRecipe,
+  );
+  const styles = recipe({
+    size: props.size ?? 'md',
+    variant: effectiveVariant,
+  });
+  const context: DocsPageActionsContextValue = {
+    config,
+    editUrl,
+    inMenu: false,
+    markdown,
+    markdownUrl,
+    page,
+    pageUrl,
+    styles,
+    portalCss: extractSlotCssVariables([styles.root, props.slotProps?.css]),
+    portalStyle: extractSlotCssVariables(props.slotProps?.style) as Record<
+      string,
+      unknown
+    >,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      hasPrimaryAction ? createElement(DocsPageActionsCopyPage) : null,
+      hasMenu
+        ? createElement(
+            DocsPageActionsMenu,
+            hasPrimaryAction && effectiveVariant === 'split'
+              ? {
+                  ariaLabel:
+                    config.labels?.moreActions ?? defaultLabels.moreActions,
+                  indicator: createElement(PageActionsChevronIcon),
+                  label: null,
+                }
+              : null,
+            hasPrimaryAction ? createElement(DocsPageActionsCopyPage) : null,
+            pageUrl ? createElement(DocsPageActionsCopyLink) : null,
+            markdownUrl ? createElement(DocsPageActionsViewMarkdown) : null,
+            editUrl ? createElement(DocsPageActionsEdit) : null,
+          )
+        : null,
+    );
+
+  return createElement(
+    DocsPageActionsContext.Provider,
+    { value: context },
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.root, props.slotProps),
+      children,
+    ),
+  );
+}
+
+export function DocsPageActionsCopyPage(props: DocsPageActionProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (context.markdown === undefined) {
+    return null;
+  }
+
+  return createCopyPageAction({
+    children: props.children,
+    context,
+    copiedLabel:
+      props.copiedLabel ?? labels.copiedPage ?? defaultLabels.copiedPage,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.copyPageDescription ?? defaultLabels.copyPageDescription,
+    ),
+    descriptionSlotProps: props.descriptionSlotProps,
+    format: 'markdown',
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    indicatorSlotProps: props.indicatorSlotProps,
+    label: props.label ?? labels.copyPage ?? defaultLabels.copyPage,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+    value: context.markdown,
+  });
+}
+
+export function DocsPageActionsCopyLink(props: DocsPageActionProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (!context.pageUrl) {
+    return null;
+  }
+
+  return createCopyPageAction({
+    children: props.children,
+    context,
+    copiedLabel:
+      props.copiedLabel ?? labels.copiedLink ?? defaultLabels.copiedLink,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.copyLinkDescription ?? defaultLabels.copyLinkDescription,
+    ),
+    descriptionSlotProps: props.descriptionSlotProps,
+    format: 'link',
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    indicatorSlotProps: props.indicatorSlotProps,
+    label: props.label ?? labels.copyLink ?? defaultLabels.copyLink,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+    value: context.pageUrl,
+  });
+}
+
+export function DocsPageActionsViewMarkdown(
+  props: DocsPageActionLinkProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const href = props.href ?? context.markdownUrl;
+
+  if (!href) {
+    return null;
+  }
+
+  return createPageActionLink({
+    action: 'view-markdown',
+    children: props.children,
+    context,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.viewMarkdownDescription ?? defaultLabels.viewMarkdownDescription,
+    ),
+    descriptionSlotProps: props.descriptionSlotProps,
+    href,
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    label: props.label ?? labels.viewMarkdown ?? defaultLabels.viewMarkdown,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+  });
+}
+
+export function DocsPageActionsEdit(props: DocsPageActionLinkProps): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const href = props.href ?? context.editUrl;
+
+  if (!href) {
+    return null;
+  }
+
+  return createPageActionLink({
+    action: 'edit',
+    children: props.children,
+    context,
+    description: resolvePageActionDescription(
+      props.description,
+      context,
+      labels.editPageDescription ?? defaultLabels.editPageDescription,
+    ),
+    descriptionSlotProps: props.descriptionSlotProps,
+    href,
+    icon: props.icon,
+    iconSlotProps: props.iconSlotProps,
+    label: props.label ?? labels.editPage ?? defaultLabels.editPage,
+    labelSlotProps: props.labelSlotProps,
+    slotProps: props.slotProps,
+  });
+}
+
+export function DocsPageActionsMenu(
+  props: DocsPageActionsMenuProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const defaultLabel = labels.moreActions ?? defaultLabels.moreActions;
+
+  return usePageActionsDisclosure({
+    ...props,
+    ariaLabel:
+      props.ariaLabel ??
+      (typeof props.label === 'string' ? props.label : defaultLabel),
+    context,
+    label:
+      props.label !== undefined
+        ? props.label
+        : props.icon || props.indicator
+          ? undefined
+          : defaultLabel,
+    slots: {
+      content: context.styles.menuContent,
+      indicator: context.styles.menuIndicator,
+      positioner: context.styles.menuPositioner,
+      root: context.styles.menu,
+      trigger: [context.styles.trigger, context.styles.menuTrigger],
+    },
+  });
+}
+
+function PageActionsChevronIcon(): ReactNode {
+  return createElement(
+    'svg',
+    {
+      'aria-hidden': 'true',
+      fill: 'none',
+      height: '1em',
+      viewBox: '0 0 16 16',
+      width: '1em',
+    },
+    createElement('path', {
+      d: 'm4 6 4 4 4-4',
+      stroke: 'currentColor',
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      strokeWidth: '1.5',
+    }),
+  );
+}
+
+export function DocsPageActionsSubmenu(
+  props: DocsPageActionsSubmenuProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+
+  return usePageActionsDisclosure({
+    ...props,
+    ariaLabel:
+      props.ariaLabel ??
+      (typeof props.label === 'string' ? props.label : undefined),
+    context,
+    indicator: props.indicator ?? '›',
+    nested: true,
+    slots: {
+      content: context.styles.submenuContent,
+      indicator: context.styles.submenuIndicator,
+      positioner: context.styles.submenuPositioner,
+      root: context.styles.submenu,
+      trigger: [context.styles.menuItem, context.styles.submenuTrigger],
+    },
+  });
+}
+
+export function DocsPageActionsGroup(
+  props: DocsPageActionsGroupProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const labelId = useId();
+
+  return createElement(
+    ChakraMenu.ItemGroup,
+    {
+      'aria-label': props.ariaLabel,
+      'aria-labelledby': !props.ariaLabel && props.label ? labelId : undefined,
+      unstyled: true,
+      ...mergeSlotStyleProps(context.styles.menuGroup, props.slotProps),
+    },
+    props.label
+      ? createElement(
+          ChakraMenu.ItemGroupLabel,
+          {
+            id: labelId,
+            unstyled: true,
+            ...mergeSlotStyleProps(
+              context.styles.menuGroupLabel,
+              props.labelSlotProps,
+            ),
+          },
+          props.label,
+        )
+      : null,
+    props.children,
+  );
+}
+
+export function DocsPageActionsSeparator(
+  props: DocsPageActionsSeparatorProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+
+  return createElement(ChakraMenu.Separator, {
+    unstyled: true,
+    ...mergeSlotStyleProps(context.styles.menuSeparator, props.slotProps),
+  });
+}
+
+interface PageActionsDisclosureProps extends DocsPageActionsMenuProps {
+  context: DocsPageActionsContextValue;
+  nested?: boolean;
+  slots: {
+    content: unknown;
+    indicator: unknown;
+    positioner: unknown;
+    root: unknown;
+    trigger: unknown;
+  };
+}
+
+interface PageActionClickEvent {
+  defaultPrevented?: boolean;
+  preventDefault?: () => void;
+}
+
+function usePageActionsDisclosure(
+  props: PageActionsDisclosureProps,
+): ReactNode {
+  const disclosureId = useId();
+  const menuContext: DocsPageActionsContextValue = {
+    ...props.context,
+    inMenu: true,
+  };
+  const triggerProps = mergeSlotStyleProps(
+    props.slots.trigger,
+    props.triggerSlotProps,
+  );
+  const triggerContent = createPageActionsDisclosureTrigger(props);
+  const trigger = props.nested
+    ? createElement(
+        ChakraMenu.TriggerItem,
+        {
+          ...triggerProps,
+          'aria-label': props.ariaLabel,
+          unstyled: true,
+          value: `submenu-${disclosureId}`,
+        },
+        triggerContent,
+      )
+    : createElement(
+        ChakraMenu.Trigger,
+        { asChild: true },
+        createElement(
+          Button,
+          {
+            type: 'button',
+            unstyled: true,
+            ...triggerProps,
+            'aria-label': props.ariaLabel,
+          },
+          triggerContent,
+        ),
+      );
+  const defaultPositioning: DocsPageActionsPositioning = props.nested
+    ? {
+        flip: true,
+        gutter: 4,
+        overflowPadding: 8,
+        placement: 'right-start',
+        slide: true,
+        strategy: 'fixed',
+      }
+    : {
+        flip: true,
+        gutter: 8,
+        overflowPadding: 8,
+        placement: 'bottom-end',
+        slide: true,
+        strategy: 'fixed',
+      };
+  const positioning = { ...defaultPositioning, ...props.positioning };
+
+  return createElement(
+    ChakraMenu.Root,
+    {
+      closeOnSelect: props.closeOnSelect ?? true,
+      defaultOpen: props.defaultOpen,
+      id: disclosureId,
+      loopFocus: true,
+      onOpenChange: (details: { open: boolean }) =>
+        props.onOpenChange?.({ open: details.open }),
+      open: props.open,
+      positioning,
+      typeahead: true,
+      unstyled: true,
+    },
+    createElement(
+      Box,
+      mergeSlotStyleProps(props.slots.root, props.slotProps),
+      trigger,
+      createElement(
+        Portal,
+        null,
+        createElement(
+          ChakraMenu.Positioner,
+          {
+            unstyled: true,
+            ...mergeSlotStyleProps(
+              [props.context.portalCss, props.slots.positioner],
+              props.positionerSlotProps,
+            ),
+            style: {
+              ...props.context.portalStyle,
+              ...(props.positionerSlotProps?.style as Record<string, unknown>),
+            },
+          },
+          createElement(
+            ChakraMenu.Content,
+            {
+              unstyled: true,
+              ...mergeSlotStyleProps(
+                props.slots.content,
+                props.contentSlotProps,
+              ),
+            },
+            createElement(
+              DocsPageActionsContext.Provider,
+              { value: menuContext },
+              props.children,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function createPageActionsDisclosureTrigger(
+  props: PageActionsDisclosureProps,
+): ReactNode {
+  return createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(
+              props.context.styles.icon,
+              props.iconSlotProps,
+            ),
+          },
+          props.icon,
+        )
+      : null,
+    props.label
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(
+              props.context.styles.label,
+              props.labelSlotProps,
+            ),
+          },
+          props.label,
+        )
+      : null,
+    props.indicator
+      ? createElement(
+          ChakraMenu.Indicator,
+          {
+            'aria-hidden': 'true',
+            unstyled: true,
+            ...mergeSlotStyleProps(
+              props.slots.indicator,
+              props.indicatorSlotProps,
+            ),
+          },
+          props.indicator,
+        )
+      : null,
+  );
+}
+
+export function DocsPageActionsItem(
+  props: DocsPageActionsItemProps,
+): ReactNode {
+  const context = useDocsPageActionsContext();
+  const itemId = useId();
+  const action = props.action ?? 'custom';
+
+  if (props.href) {
+    return createPageActionLink({
+      action,
+      children: props.children,
+      context,
+      description: props.description,
+      descriptionSlotProps: props.descriptionSlotProps,
+      href: props.href,
+      icon: props.icon,
+      iconSlotProps: props.iconSlotProps,
+      label: props.label ?? action,
+      labelSlotProps: props.labelSlotProps,
+      onSelect: props.onSelect,
+      slotProps: props.slotProps,
+    });
+  }
+
+  const slotProps = getPageActionSlotProps(context, props.slotProps);
+  const onClick = slotProps.onClick;
+
+  const item = createElement(
+    Button,
+    {
+      type: 'button',
+      unstyled: true,
+      ...slotProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        props.onSelect?.();
+        emitAnalytics(context.config.analytics?.onPageAction, {
+          action,
+          page: context.page,
+        });
+      },
+    },
+    createPageActionContent(context, props),
+  );
+
+  return context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        { asChild: true, unstyled: true, value: `${action}-${itemId}` },
+        item,
+      )
+    : item;
+}
+
+export const DocsPageActions = {
+  Root: DocsPageActionsRoot,
+  CopyPage: DocsPageActionsCopyPage,
+  CopyLink: DocsPageActionsCopyLink,
+  ViewMarkdown: DocsPageActionsViewMarkdown,
+  Edit: DocsPageActionsEdit,
+  Menu: DocsPageActionsMenu,
+  Submenu: DocsPageActionsSubmenu,
+  Group: DocsPageActionsGroup,
+  Separator: DocsPageActionsSeparator,
+  Item: DocsPageActionsItem,
+} as const;
+
+function createCopyPageAction(props: {
+  children?: ReactNode;
+  context: DocsPageActionsContextValue;
+  copiedLabel: string;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  format: 'markdown' | 'link';
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+  label: string;
+  labelSlotProps?: Record<string, unknown>;
+  slotProps?: Record<string, unknown>;
+  value: string;
+}): ReactNode {
+  const { context } = props;
+  const triggerProps = getPageActionSlotProps(context, props.slotProps);
+  const onClick = triggerProps.onClick;
+  const trigger = createElement(
+    ChakraClipboard.Trigger,
+    {
+      type: 'button',
+      'aria-label': props.label,
+      ...triggerProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+      },
+    },
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
+          },
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      {
+        as: 'span',
+        'aria-live': 'polite',
+        'aria-atomic': true,
+        ...mergeSlotStyleProps(context.styles.actionContent, undefined),
+      },
+      createElement(
+        ChakraClipboard.Indicator,
+        {
+          as: 'span',
+          // Chakra forwards indicator content as a child element. A bare
+          // string disappears in the copied state, leaving only the icon.
+          copied: createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.label,
+                props.labelSlotProps,
+              ),
+            },
+            props.copiedLabel,
+          ),
+          ...mergeSlotStyleProps(
+            context.styles.indicator,
+            props.indicatorSlotProps,
+          ),
+        },
+        createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.label, props.labelSlotProps),
+          },
+          props.children ?? props.label,
+        ),
+      ),
+      props.description
+        ? createElement(
+            Text,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.description,
+                props.descriptionSlotProps,
+              ),
+            },
+            props.description,
+          )
+        : null,
+    ),
+  );
+  const item = context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        {
+          asChild: true,
+          unstyled: true,
+          value: props.format === 'markdown' ? 'copy-page' : 'copy-link',
+          valueText: props.label,
+        },
+        trigger,
+      )
+    : trigger;
+
+  return createElement(
+    ChakraClipboard.Root,
+    {
+      unstyled: true,
+      value: props.value,
+      onStatusChange: (details: { copied: boolean }) => {
+        if (details.copied) {
+          emitAnalytics(context.config.analytics?.onPageCopy, {
+            format: props.format,
+            page: context.page,
+            value: props.value,
+          });
+        }
+      },
+      ...mergeSlotStyleProps(context.styles.copyRoot, undefined),
+    },
+    item,
+  );
+}
+
+function createPageActionLink(props: {
+  action: string;
+  children?: ReactNode;
+  context: DocsPageActionsContextValue;
+  description?: ReactNode;
+  descriptionSlotProps?: Record<string, unknown>;
+  href: string;
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  label: string;
+  labelSlotProps?: Record<string, unknown>;
+  onSelect?: () => void;
+  slotProps?: Record<string, unknown>;
+}): ReactNode {
+  if (!isSafeLinkHref(props.href)) {
+    return null;
+  }
+
+  const slotProps = getPageActionSlotProps(props.context, props.slotProps);
+  const onClick = slotProps.onClick;
+
+  const link = createElement(
+    DocsLink,
+    {
+      unstyled: true,
+      href: props.href,
+      ...slotProps,
+      onClick: (event: PageActionClickEvent) => {
+        callPageActionClickHandler(onClick, event);
+
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        props.onSelect?.();
+        emitAnalytics(props.context.config.analytics?.onPageAction, {
+          action: props.action,
+          href: props.href,
+          page: props.context.page,
+        });
+      },
+    },
+    createPageActionContent(props.context, props),
+  );
+
+  return props.context.inMenu
+    ? createElement(
+        ChakraMenu.Item,
+        {
+          asChild: true,
+          unstyled: true,
+          value: `${props.action}:${props.href}`,
+          valueText: props.label,
+        },
+        link,
+      )
+    : link;
+}
+
+function resolvePageActionDescription(
+  description: ReactNode | undefined,
+  context: DocsPageActionsContextValue,
+  defaultDescription: ReactNode,
+): ReactNode {
+  if (description !== undefined) {
+    return description;
+  }
+
+  return context.inMenu ? defaultDescription : undefined;
+}
+
+function getPageActionSlotProps(
+  context: DocsPageActionsContextValue,
+  slotProps: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  return mergeSlotStyleProps(
+    context.inMenu
+      ? context.styles.menuItem
+      : [context.styles.trigger, context.styles.primaryTrigger],
+    slotProps,
+  );
+}
+
+function callPageActionClickHandler(
+  handler: unknown,
+  event: PageActionClickEvent,
+): void {
+  if (typeof handler === 'function') {
+    (handler as (event: PageActionClickEvent) => void)(event);
+  }
+}
+
+function createPageActionContent(
+  context: DocsPageActionsContextValue,
+  props: Pick<
+    DocsPageActionProps,
+    | 'description'
+    | 'descriptionSlotProps'
+    | 'children'
+    | 'icon'
+    | 'iconSlotProps'
+    | 'label'
+    | 'labelSlotProps'
+  >,
+): ReactNode {
+  return createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          {
+            as: 'span',
+            ...mergeSlotStyleProps(context.styles.icon, props.iconSlotProps),
+          },
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      {
+        as: 'span',
+        ...mergeSlotStyleProps(context.styles.actionContent, undefined),
+      },
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(context.styles.label, props.labelSlotProps),
+        },
+        props.children ?? props.label,
+      ),
+      props.description
+        ? createElement(
+            Text,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(
+                context.styles.description,
+                props.descriptionSlotProps,
+              ),
+            },
+            props.description,
+          )
+        : null,
+    ),
+  );
+}
+
+function resolvePageActionUrl(
+  page: DocsPage | undefined,
+  siteUrl: string | undefined,
+): string | undefined {
+  if (!page) {
+    return undefined;
+  }
+
+  if (!siteUrl) {
+    return page.route;
+  }
+
+  try {
+    return new URL(page.route, siteUrl).toString();
+  } catch {
+    return page.route;
+  }
+}
+
 export function DocsLayout(props: DocsLayoutProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.layout,
+    chakraDocsLayoutSlotRecipe,
+  );
+  const styles = recipe();
+  const mobileNavigationProps = props.mobileNavigationProps ?? {};
+  const mobileNavigationSidebarProps = mobileNavigationProps.sidebarProps ?? {};
+
   return createElement(
     Container,
-    { maxW: '7xl', px: { base: 4, md: 8 }, py: 8, ...props.slotProps },
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    props.nav && props.mobileNavigation !== false
+      ? createElement(DocsMobileNavigationRoot, {
+          ...mobileNavigationProps,
+          nav: props.nav,
+          page: props.page,
+          sidebarContent:
+            mobileNavigationProps.sidebarContent !== undefined
+              ? mobileNavigationProps.sidebarContent
+              : props.sidebarContent,
+          sidebarProps: {
+            badgeSlotProps: props.sidebarBadgeSlotProps,
+            collapsible: props.sidebarCollapsible,
+            contentSlotProps: props.sidebarContentSlotProps,
+            defaultExpanded: props.sidebarDefaultExpanded,
+            expandedIds: props.sidebarExpandedIds,
+            indicatorSlotProps: props.sidebarIndicatorSlotProps,
+            onExpandedChange: props.onSidebarExpandedChange,
+            triggerSlotProps: props.sidebarTriggerSlotProps,
+            ...mobileNavigationSidebarProps,
+          },
+          slotProps: mergeComponentSlotProps(
+            styles.mobileNavigation,
+            mobileNavigationProps.slotProps,
+          ),
+        })
+      : null,
     createElement(
-      Flex,
-      {
-        align: 'flex-start',
-        gap: { base: 8, lg: 12 },
-        direction: { base: 'column', lg: 'row' },
-      },
+      Box,
+      mergeSlotStyleProps(styles.inner, props.innerSlotProps),
       props.nav
-        ? createElement(DocsSidebar, {
-            nav: props.nav,
-            page: props.page,
-            stickyTop: props.stickyTop,
-            slotProps: props.sidebarSlotProps,
-          })
+        ? createElement(
+            DocsSidebar,
+            {
+              nav: props.nav,
+              page: props.page,
+              badgeSlotProps: props.sidebarBadgeSlotProps,
+              collapsible: props.sidebarCollapsible,
+              contentSlotProps: props.sidebarContentSlotProps,
+              defaultExpanded: props.sidebarDefaultExpanded,
+              expandedIds: props.sidebarExpandedIds,
+              indicatorSlotProps: props.sidebarIndicatorSlotProps,
+              onExpandedChange: props.onSidebarExpandedChange,
+              triggerSlotProps: props.sidebarTriggerSlotProps,
+              stickyTop: props.stickyTop,
+              slotProps: mergeComponentSlotProps(
+                styles.sidebar,
+                props.sidebarSlotProps,
+              ),
+            },
+            props.sidebarContent,
+          )
         : null,
       createElement(
         Box,
-        { flex: '1', minW: 0, as: 'div', ...props.contentSlotProps },
+        {
+          as: 'div',
+          ...mergeSlotStyleProps(styles.content, props.contentSlotProps),
+        },
+        props.headings && props.mobileToc !== false
+          ? createElement(DocsMobileTableOfContents, {
+              activeIndicatorSlotProps: props.mobileTocActiveIndicatorSlotProps,
+              contentSlotProps: props.mobileTocContentSlotProps,
+              currentSlotProps: props.mobileTocCurrentSlotProps,
+              headings: props.headings,
+              indicatorSlotProps: props.mobileTocIndicatorSlotProps,
+              itemSlotProps: props.mobileTocItemSlotProps,
+              linkSlotProps: props.mobileTocLinkSlotProps,
+              listSlotProps: props.mobileTocListSlotProps,
+              scrollMarginTop: props.scrollMarginTop,
+              slotProps: props.mobileTocSlotProps,
+              triggerLabelSlotProps: props.mobileTocTriggerLabelSlotProps,
+              triggerSlotProps: props.mobileTocTriggerSlotProps,
+            })
+          : null,
         props.children ??
           createElement(DocsArticle, {
             page: props.page,
@@ -347,23 +1892,60 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
   );
 }
 
-export function DocsArticle(props: DocsComponentProps): ReactNode {
+export function DocsArticle(props: DocsArticleProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.article,
+    chakraDocsArticleSlotRecipe,
+  );
+  const styles = recipe();
+
   return createElement(
     Box,
-    { as: 'article', maxW: '3xl', ...props.slotProps },
+    {
+      as: 'article',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
     props.page
       ? createElement(
           Box,
-          { mb: 8 },
+          mergeSlotStyleProps(styles.header, props.headerSlotProps),
+          props.breadcrumbs
+            ? createElement(
+                Box,
+                mergeSlotStyleProps(
+                  styles.breadcrumbs,
+                  props.breadcrumbsSlotProps,
+                ),
+                props.breadcrumbs,
+              )
+            : null,
           createElement(
-            Heading,
-            { as: 'h1', size: '3xl', mb: 3 },
-            props.page.title,
+            Box,
+            mergeSlotStyleProps(styles.heading, props.headingSlotProps),
+            createElement(
+              Heading,
+              {
+                as: 'h1',
+                size: '3xl',
+                ...mergeSlotStyleProps(styles.title, props.titleSlotProps),
+              },
+              props.page.title,
+            ),
+            props.actions
+              ? createElement(
+                  Box,
+                  mergeSlotStyleProps(styles.actions, props.actionsSlotProps),
+                  props.actions,
+                )
+              : null,
           ),
           props.page.description
             ? createElement(
                 Text,
-                { color: 'fg.muted', fontSize: 'lg' },
+                mergeSlotStyleProps(
+                  styles.description,
+                  props.descriptionSlotProps,
+                ),
                 props.page.description,
               )
             : null,
@@ -373,28 +1955,1346 @@ export function DocsArticle(props: DocsComponentProps): ReactNode {
   );
 }
 
-export function DocsSidebar(props: DocsStickyComponentProps): ReactNode {
-  const config = useDocsConfig();
-  const stickyTop = props.stickyTop ??
-    config.layout?.sidebarStickyTop ??
-    config.layout?.stickyTop ?? { lg: 8 };
+export function DocsBreadcrumbs(props: DocsBreadcrumbsProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.breadcrumbs,
+    chakraDocsBreadcrumbsSlotRecipe,
+  );
+  const styles = recipe();
+  const items: DocsBreadcrumbItem[] = [
+    ...(props.homeLabel
+      ? [
+          {
+            id: 'home',
+            title: props.homeLabel,
+            href: props.homeHref,
+          },
+        ]
+      : []),
+    ...createDocsBreadcrumbItems(props.nav ?? [], props.page?.route),
+  ];
+
+  if (items.length === 0) {
+    return null;
+  }
 
   return createElement(
     Box,
     {
       as: 'nav',
-      flex: '0 0 16rem',
-      position: { lg: 'sticky' },
-      top: stickyTop,
-      w: { base: '100%', lg: '16rem' },
-      ...props.slotProps,
+      'aria-label': 'Breadcrumb',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
+    createElement(
+      Box,
+      {
+        as: 'ol',
+        ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+      },
+      items.map((item, index) => {
+        const current = index === items.length - 1;
+
+        return createElement(
+          Box,
+          {
+            as: 'li',
+            key: item.id,
+            ...mergeSlotStyleProps(styles.item, props.itemSlotProps),
+          },
+          index > 0
+            ? createElement(
+                Box,
+                {
+                  as: 'span',
+                  'aria-hidden': 'true',
+                  ...mergeSlotStyleProps(
+                    styles.separator,
+                    props.separatorSlotProps,
+                  ),
+                },
+                props.separator ?? '/',
+              )
+            : null,
+          current || !item.href
+            ? createElement(
+                Box,
+                {
+                  as: 'span',
+                  'aria-current': current ? 'page' : undefined,
+                  ...mergeSlotStyleProps(
+                    current ? styles.current : styles.link,
+                    current ? props.currentSlotProps : props.linkSlotProps,
+                  ),
+                },
+                item.title,
+              )
+            : createElement(
+                DocsLink,
+                {
+                  href: item.href,
+                  ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+                },
+                item.title,
+              ),
+        );
+      }),
+    ),
+  );
+}
+
+export function DocsHeadingPermalink(
+  props: DocsHeadingPermalinkProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const labels = config.labels ?? defaultLabels;
+  const href = props.href ?? `#${props.headingId}`;
+  const label =
+    props.label ?? labels.copyHeadingLink ?? defaultLabels.copyHeadingLink;
+  const copiedLabel =
+    props.copiedLabel ??
+    labels.copiedHeadingLink ??
+    defaultLabels.copiedHeadingLink;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.headingPermalink,
+    chakraDocsHeadingPermalinkSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (!isSafeLinkHref(href)) {
+    return null;
+  }
+
+  return createElement(
+    ChakraClipboard.Root,
+    {
+      value: href,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+      onStatusChange: (details: { copied: boolean }) => {
+        if (details.copied) {
+          emitAnalytics(config.analytics?.onHeadingLinkCopy, {
+            headingId: props.headingId,
+            href,
+            title: props.title,
+          });
+        }
+        (
+          props.slotProps?.onStatusChange as
+            ((details: { copied: boolean }) => void) | undefined
+        )?.(details);
+      },
+    },
+    createElement(
+      ChakraClipboard.Trigger,
+      {
+        type: 'button',
+        'aria-label': label,
+        title: label,
+        ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+      },
+      createElement(
+        ChakraClipboard.Indicator,
+        {
+          copied: copiedLabel,
+          ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+        },
+        props.children ?? '#',
+      ),
+    ),
+  );
+}
+
+type DocsPageFeedbackStatus = 'idle' | 'submitting' | 'submitted' | 'error';
+
+interface DocsPageFeedbackContextValue {
+  comment: string;
+  config: ChakraDocsConfig;
+  page?: DocsPage;
+  setComment: (comment: string) => void;
+  setValue: (value: DocsPageFeedbackValue) => void;
+  status: DocsPageFeedbackStatus;
+  styles: Record<string, unknown>;
+  submit: () => Promise<void>;
+  value?: DocsPageFeedbackValue;
+}
+
+const DocsPageFeedbackContext = createContext<
+  DocsPageFeedbackContextValue | undefined
+>(undefined);
+
+function useDocsPageFeedbackContext(): DocsPageFeedbackContextValue {
+  const context = useContext(DocsPageFeedbackContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPageFeedback components must be rendered inside DocsPageFeedback.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsPageFeedbackRoot(
+  props: DocsPageFeedbackRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    props.defaultValue ?? '',
+  );
+  const [uncontrolledComment, setUncontrolledComment] = useState(
+    props.defaultComment ?? '',
+  );
+  const [status, setStatus] = useState<DocsPageFeedbackStatus>('idle');
+  const value = props.value ?? uncontrolledValue;
+  const comment = props.comment ?? uncontrolledComment;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.feedback,
+    chakraDocsFeedbackSlotRecipe,
+  );
+  const styles = recipe({ status });
+
+  function setValue(nextValue: DocsPageFeedbackValue) {
+    if (props.value === undefined) {
+      setUncontrolledValue(nextValue);
+    }
+
+    setStatus('idle');
+    props.onValueChange?.(nextValue);
+  }
+
+  function setComment(nextComment: string) {
+    if (props.comment === undefined) {
+      setUncontrolledComment(nextComment);
+    }
+
+    setStatus('idle');
+    props.onCommentChange?.(nextComment);
+  }
+
+  async function submit() {
+    if (!value || status === 'submitting' || status === 'submitted') {
+      return;
+    }
+
+    const details = { comment, page: props.page, value };
+    setStatus('submitting');
+
+    try {
+      await props.onSubmit?.(details);
+      emitAnalytics(config.analytics?.onPageFeedback, details);
+      setStatus('submitted');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  const context: DocsPageFeedbackContextValue = {
+    comment,
+    config,
+    page: props.page,
+    setComment,
+    setValue,
+    status,
+    styles,
+    submit,
+    value,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsPageFeedbackPrompt),
+      createElement(
+        DocsPageFeedbackChoices,
+        null,
+        createElement(DocsPageFeedbackOption, { value: 'helpful' }),
+        createElement(DocsPageFeedbackOption, { value: 'not-helpful' }),
+      ),
+      value ? createElement(DocsPageFeedbackComment) : null,
+      value
+        ? createElement(
+            DocsPageFeedbackActions,
+            null,
+            createElement(DocsPageFeedbackSubmit),
+          )
+        : null,
+      createElement(DocsPageFeedbackStatus),
+    );
+
+  return createElement(
+    DocsPageFeedbackContext.Provider,
+    { value: context },
+    createElement(
+      Box,
+      {
+        as: 'form',
+        onSubmit: (event: { preventDefault: () => void }) => {
+          event.preventDefault();
+          void submit();
+        },
+        ...mergeSlotStyleProps(styles.root, props.slotProps),
+      },
+      children,
+    ),
+  );
+}
+
+export function DocsPageFeedbackPrompt(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Text,
+    mergeSlotStyleProps(context.styles.prompt, props.slotProps),
+    props.children ?? labels.feedbackPrompt ?? defaultLabels.feedbackPrompt,
+  );
+}
+
+export function DocsPageFeedbackChoices(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.choices, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsPageFeedbackOption(
+  props: DocsPageFeedbackOptionProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const selected = context.value === props.value;
+  const optionStyles = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.feedback,
+    chakraDocsFeedbackSlotRecipe,
+  )({ selected, status: context.status });
+  const defaultLabel =
+    props.value === 'helpful'
+      ? (labels.feedbackHelpful ?? defaultLabels.feedbackHelpful)
+      : props.value === 'not-helpful'
+        ? (labels.feedbackNotHelpful ?? defaultLabels.feedbackNotHelpful)
+        : props.value;
+
+  return createElement(
+    Button,
+    {
+      type: 'button',
+      'aria-pressed': selected,
+      disabled:
+        context.status === 'submitting' || context.status === 'submitted',
+      onClick: () => context.setValue(props.value),
+      ...mergeSlotStyleProps(optionStyles.option, props.slotProps),
+    },
+    props.children ?? defaultLabel,
+  );
+}
+
+export function DocsPageFeedbackComment(
+  props: DocsPageFeedbackCommentProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const placeholder =
+    props.placeholder ??
+    labels.feedbackCommentPlaceholder ??
+    defaultLabels.feedbackCommentPlaceholder;
+
+  return createElement(Textarea, {
+    'aria-label': props.label ?? placeholder,
+    disabled: context.status === 'submitting' || context.status === 'submitted',
+    onChange: (event: { currentTarget: { value: string } }) =>
+      context.setComment(event.currentTarget.value),
+    placeholder,
+    value: context.comment,
+    ...mergeSlotStyleProps(context.styles.comment, props.slotProps),
+  });
+}
+
+export function DocsPageFeedbackActions(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.actions, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsPageFeedbackSubmit(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const label =
+    context.status === 'submitting'
+      ? (labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting)
+      : (labels.feedbackSubmit ?? defaultLabels.feedbackSubmit);
+
+  return createElement(
+    Button,
+    {
+      type: 'submit',
+      disabled:
+        !context.value ||
+        context.status === 'submitting' ||
+        context.status === 'submitted',
+      ...mergeSlotStyleProps(context.styles.submit, props.slotProps),
+    },
+    props.children ?? label,
+  );
+}
+
+export function DocsPageFeedbackStatus(
+  props: DocsPageFeedbackPartProps,
+): ReactNode {
+  const context = useDocsPageFeedbackContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  if (context.status === 'idle') {
+    return null;
+  }
+
+  const message =
+    context.status === 'submitting'
+      ? (labels.feedbackSubmitting ?? defaultLabels.feedbackSubmitting)
+      : context.status === 'submitted'
+        ? (labels.feedbackSubmitted ?? defaultLabels.feedbackSubmitted)
+        : (labels.feedbackError ?? defaultLabels.feedbackError);
+
+  return createElement(
+    Text,
+    {
+      role: context.status === 'error' ? 'alert' : 'status',
+      ...mergeSlotStyleProps(context.styles.status, props.slotProps),
+    },
+    props.children ?? message,
+  );
+}
+
+export const DocsPageFeedback = {
+  Root: DocsPageFeedbackRoot,
+  Prompt: DocsPageFeedbackPrompt,
+  Choices: DocsPageFeedbackChoices,
+  Option: DocsPageFeedbackOption,
+  Comment: DocsPageFeedbackComment,
+  Actions: DocsPageFeedbackActions,
+  Submit: DocsPageFeedbackSubmit,
+  Status: DocsPageFeedbackStatus,
+} as const;
+
+export function DocsCardsRoot(props: DocsCardsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.cards,
+    chakraDocsCardsSlotRecipe,
+  );
+  const styles = recipe();
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    props.children,
+  );
+}
+
+export function DocsCard(props: DocsCardProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.cards,
+    chakraDocsCardsSlotRecipe,
+  );
+  const styles = recipe();
+  const content = createElement(
+    Fragment,
+    null,
+    props.icon
+      ? createElement(
+          Box,
+          mergeSlotStyleProps(styles.icon, props.iconSlotProps),
+          props.icon,
+        )
+      : null,
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.title, props.titleSlotProps),
+        props.title,
+        props.badge
+          ? createElement(
+              Box,
+              {
+                as: 'span',
+                ...mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+              },
+              props.badge,
+            )
+          : null,
+      ),
+      props.description
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(styles.description, props.descriptionSlotProps),
+            props.description,
+          )
+        : null,
+      props.children,
+    ),
+  );
+  const cardProps = mergeSlotStyleProps(styles.card, props.slotProps);
+
+  return props.href && isSafeLinkHref(props.href)
+    ? createElement(DocsLink, { href: props.href, ...cardProps }, content)
+    : createElement(Box, cardProps, content);
+}
+
+export const DocsCards = {
+  Root: DocsCardsRoot,
+  Card: DocsCard,
+} as const;
+
+export function DocsStepsRoot(props: DocsStepsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.steps,
+    chakraDocsStepsSlotRecipe,
+  );
+  const styles = recipe();
+
+  return createElement(
+    Box,
+    { as: 'ol', ...mergeSlotStyleProps(styles.root, props.slotProps) },
+    props.children,
+  );
+}
+
+export function DocsStep(props: DocsStepProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.steps,
+    chakraDocsStepsSlotRecipe,
+  );
+  const styles = recipe({ customIndicator: props.indicator !== undefined });
+
+  return createElement(
+    Box,
+    { as: 'li', ...mergeSlotStyleProps(styles.item, props.slotProps) },
+    createElement(
+      Box,
+      {
+        as: 'span',
+        'aria-hidden': 'true',
+        ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+      },
+      props.indicator,
+    ),
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      props.title
+        ? createElement(
+            Box,
+            mergeSlotStyleProps(styles.title, props.titleSlotProps),
+            props.title,
+          )
+        : null,
+      props.description
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(styles.description, props.descriptionSlotProps),
+            props.description,
+          )
+        : null,
+      props.children,
+    ),
+  );
+}
+
+export const DocsSteps = {
+  Root: DocsStepsRoot,
+  Item: DocsStep,
+} as const;
+
+interface DocsTabsContextValue {
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
+  styles: Record<string, unknown>;
+  value: string;
+}
+
+const DocsTabsContext = createContext<DocsTabsContextValue | undefined>(
+  undefined,
+);
+
+function useDocsTabsContext(): DocsTabsContextValue {
+  const context = useContext(DocsTabsContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsTabs components must be rendered inside DocsTabs.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.tabs,
+    chakraDocsTabsSlotRecipe,
+  );
+  const styles = recipe();
+  const controlled = props.value !== undefined;
+  const [uncontrolledValue, setUncontrolledValue] = useState<string>(
+    props.defaultValue ?? '',
+  );
+  const value = props.value ?? uncontrolledValue;
+  const valueRef = useRef(value);
+  const onValueChangeRef = useRef(props.onValueChange);
+  valueRef.current = value;
+  onValueChangeRef.current = props.onValueChange;
+
+  useEffect(() => {
+    if (!props.syncKey) {
+      return;
+    }
+
+    const syncKey = props.syncKey;
+    const receiveValue = (nextValue: string) => {
+      if (nextValue === valueRef.current) {
+        return;
+      }
+
+      valueRef.current = nextValue;
+      if (!controlled) {
+        setUncontrolledValue(nextValue);
+      }
+      onValueChangeRef.current?.(nextValue);
+    };
+    const unsubscribe = subscribeDocsTabsSyncValue(syncKey, receiveValue);
+    const syncedValue = getDocsTabsSyncValue(syncKey);
+
+    if (syncedValue !== undefined && syncedValue !== valueRef.current) {
+      receiveValue(syncedValue);
+    }
+
+    return unsubscribe;
+  }, [controlled, props.syncKey]);
+
+  const select = (nextValue: string) => {
+    if (nextValue === value) {
+      return;
+    }
+
+    if (!controlled) {
+      setUncontrolledValue(nextValue);
+    }
+    valueRef.current = nextValue;
+    props.onValueChange?.(nextValue);
+
+    if (props.syncKey) {
+      publishDocsTabsSyncValue(props.syncKey, nextValue);
+    }
+  };
+
+  return createElement(
+    DocsTabsContext.Provider,
+    { value: { recipe, styles, value } },
+    createElement(
+      Tabs.Root,
+      {
+        ...mergeSlotStyleProps(styles.root, props.slotProps),
+        unstyled: true,
+        value,
+        onValueChange: (details: { value: string }) => select(details.value),
+      },
+      props.children,
+    ),
+  );
+}
+
+export function DocsTabsList(props: DocsTabsPartProps): ReactNode {
+  const context = useDocsTabsContext();
+
+  return createElement(
+    Tabs.List,
+    {
+      ...mergeSlotStyleProps(context.styles.list, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+export function DocsTabsTrigger(props: DocsTabsValuePartProps): ReactNode {
+  const context = useDocsTabsContext();
+  const selected = context.value === props.value;
+  const styles = context.recipe({ selected });
+
+  return createElement(
+    Tabs.Trigger,
+    {
+      ...mergeSlotStyleProps(styles.trigger, props.slotProps),
+      value: props.value,
+    },
+    props.children,
+  );
+}
+
+export function DocsTabsContent(props: DocsTabsValuePartProps): ReactNode {
+  const context = useDocsTabsContext();
+
+  return createElement(
+    Tabs.Content,
+    {
+      ...mergeSlotStyleProps(context.styles.content, props.slotProps),
+      value: props.value,
+    },
+    props.children,
+  );
+}
+
+export const DocsTabs = {
+  Root: DocsTabsRoot,
+  List: DocsTabsList,
+  Trigger: DocsTabsTrigger,
+  Content: DocsTabsContent,
+} as const;
+
+export function DocsApiTable(props: DocsApiTableProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.apiTable,
+    chakraDocsApiTableSlotRecipe,
+  );
+  const styles = recipe();
+  const headers = [
+    props.nameLabel ?? 'Name',
+    props.typeLabel ?? 'Type',
+    props.defaultLabel ?? 'Default',
+    props.descriptionLabel ?? 'Description',
+  ];
+
+  return createElement(
+    Box,
+    {
+      role: 'region',
+      'aria-label':
+        typeof props.caption === 'string'
+          ? props.caption
+          : 'API reference table',
+      tabIndex: 0,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    createElement(
+      Box,
+      {
+        as: 'table',
+        'data-chakra-docs-table-scroll': 'external',
+        ...mergeSlotStyleProps(styles.table, props.tableSlotProps),
+      },
+      props.caption
+        ? createElement(
+            Box,
+            {
+              as: 'caption',
+              ...mergeSlotStyleProps(styles.caption, props.captionSlotProps),
+            },
+            props.caption,
+          )
+        : null,
+      createElement(
+        Box,
+        {
+          as: 'thead',
+          ...mergeSlotStyleProps(styles.header, props.headerSlotProps),
+        },
+        createElement(
+          Box,
+          { as: 'tr', ...mergeSlotStyleProps(styles.row, props.rowSlotProps) },
+          headers.map((header) =>
+            createElement(
+              Box,
+              {
+                as: 'th',
+                key: header,
+                scope: 'col',
+                ...mergeSlotStyleProps(
+                  styles.columnHeader,
+                  props.columnHeaderSlotProps,
+                ),
+              },
+              header,
+            ),
+          ),
+        ),
+      ),
+      createElement(
+        Box,
+        { as: 'tbody' },
+        props.items.map((item) =>
+          createElement(
+            Box,
+            {
+              as: 'tr',
+              key: item.name,
+              ...mergeSlotStyleProps(styles.row, props.rowSlotProps),
+            },
+            createElement(
+              Box,
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
+              createElement(
+                Code,
+                mergeSlotStyleProps(styles.name, props.nameSlotProps),
+                item.name,
+              ),
+              item.required
+                ? createElement(
+                    DocsBadge,
+                    {
+                      slotProps: mergeSlotStyleProps(
+                        styles.required,
+                        props.requiredSlotProps,
+                      ),
+                    },
+                    props.requiredLabel ?? 'Required',
+                  )
+                : null,
+            ),
+            createElement(
+              Box,
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
+              item.type !== undefined
+                ? createElement(
+                    Code,
+                    mergeSlotStyleProps(styles.type, props.typeSlotProps),
+                    item.type,
+                  )
+                : '—',
+            ),
+            createElement(
+              Box,
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(styles.cell, props.cellSlotProps),
+              },
+              item.defaultValue !== undefined
+                ? createElement(
+                    Code,
+                    mergeSlotStyleProps(
+                      styles.defaultValue,
+                      props.defaultValueSlotProps,
+                    ),
+                    item.defaultValue,
+                  )
+                : '—',
+            ),
+            createElement(
+              Box,
+              {
+                as: 'td',
+                ...mergeSlotStyleProps(
+                  [styles.cell, styles.description],
+                  props.descriptionSlotProps,
+                ),
+              },
+              item.description,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+export function DocsBadge(props: DocsBadgeProps): ReactNode {
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.badge,
+    chakraDocsBadgeSlotRecipe,
+  );
+  const styles = recipe({ tone: props.tone ?? 'neutral' });
+
+  return createElement(
+    Badge,
+    {
+      colorPalette: props.colorPalette,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    props.children,
+  );
+}
+
+export function DocsSidebar(props: DocsSidebarProps): ReactNode {
+  const config = useDocsConfig();
+  const stickyTop = props.stickyTop ??
+    config.layout?.sidebarStickyTop ??
+    config.layout?.stickyTop ?? { lg: 8 };
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.sidebar,
+    chakraDocsSidebarSlotRecipe,
+  );
+  const styles = recipe();
+  const nav = props.nav ?? [];
+  const activeRoute = props.page?.route;
+  const controlled = props.expandedIds !== undefined;
+  const [uncontrolledExpandedIds, setUncontrolledExpandedIds] = useState(() =>
+    resolveSidebarDefaultExpandedIds(nav, activeRoute, props.defaultExpanded),
+  );
+  const expandedIds = normalizeSidebarExpandedIds(
+    nav,
+    props.expandedIds ?? uncontrolledExpandedIds,
+  );
+  const expandedIdsRef = useRef(expandedIds);
+  const navRef = useRef(nav);
+  const onExpandedChangeRef = useRef(props.onExpandedChange);
+  const mountedRef = useRef(false);
+  expandedIdsRef.current = expandedIds;
+  navRef.current = nav;
+  onExpandedChangeRef.current = props.onExpandedChange;
+  const activeBranchKey = getActiveSidebarBranchIds(nav, activeRoute).join(
+    '\0',
+  );
+  const branchKey = getSidebarBranchIds(nav).join('\0');
+
+  useEffect(() => {
+    if (!props.collapsible) {
+      return;
+    }
+
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+
+    const nextExpandedIds = mergeActiveSidebarBranchIds(
+      navRef.current,
+      activeRoute,
+      expandedIdsRef.current,
+    );
+
+    if (sidebarExpandedIdsEqual(expandedIdsRef.current, nextExpandedIds)) {
+      return;
+    }
+
+    if (!controlled) {
+      setUncontrolledExpandedIds(nextExpandedIds);
+    }
+    onExpandedChangeRef.current?.(nextExpandedIds);
+  }, [activeBranchKey, activeRoute, branchKey, controlled, props.collapsible]);
+
+  const toggleExpanded = (id: string) => {
+    const nextExpandedIds = toggleSidebarExpandedId(
+      nav,
+      expandedIdsRef.current,
+      id,
+    );
+
+    if (!controlled) {
+      setUncontrolledExpandedIds(nextExpandedIds);
+    }
+    props.onExpandedChange?.(nextExpandedIds);
+  };
+  const contentIdPrefix = useId();
+
+  return createElement(
+    Box,
+    {
+      as: 'nav',
+      top: stickyTop,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    props.children,
     createElement(NavList, {
-      items: props.nav ?? [],
-      activeRoute: props.page?.route,
+      items: nav,
+      activeRoute,
+      badgeSlotProps: props.badgeSlotProps,
+      collapsible: props.collapsible ?? false,
+      contentIdPrefix,
+      contentSlotProps: props.contentSlotProps,
+      childrenSlotProps: props.childrenSlotProps,
+      expandedIds: new Set(expandedIds),
+      indicatorSlotProps: props.indicatorSlotProps,
+      itemSlotProps: props.itemSlotProps,
+      linkSlotProps: props.linkSlotProps,
+      listSlotProps: props.listSlotProps,
+      recipe,
+      sectionTitleSlotProps: props.sectionTitleSlotProps,
+      toggleExpanded,
+      triggerSlotProps: props.triggerSlotProps,
     }),
   );
 }
+
+interface DocsMobileNavigationContextValue {
+  closeOnNavigate: boolean;
+  config: ChakraDocsConfig;
+  nav: DocsNavItem[];
+  page?: DocsPage;
+  search?: ReactNode;
+  sidebarContent?: ReactNode;
+  sidebarProps?: Omit<DocsSidebarProps, 'nav' | 'page'>;
+  styles: Record<string, unknown>;
+  title?: ReactNode;
+}
+
+const DocsMobileNavigationContext = createContext<
+  DocsMobileNavigationContextValue | undefined
+>(undefined);
+
+function useDocsMobileNavigationContext(): DocsMobileNavigationContextValue {
+  const context = useContext(DocsMobileNavigationContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsMobileNavigation components must be rendered inside DocsMobileNavigation.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function DocsMobileNavigationRoot(
+  props: DocsMobileNavigationRootProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.mobileNavigation,
+    chakraDocsMobileNavigationSlotRecipe,
+  );
+  const styles = recipe();
+  const context: DocsMobileNavigationContextValue = {
+    closeOnNavigate: props.closeOnNavigate ?? true,
+    config,
+    nav: props.nav ?? [],
+    page: props.page,
+    search: props.search,
+    sidebarContent: props.sidebarContent,
+    sidebarProps: props.sidebarProps,
+    styles,
+    title: props.title,
+  };
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsMobileNavigationTrigger),
+      createElement(DocsMobileNavigationContent),
+    );
+
+  return createElement(
+    Dialog.Root,
+    {
+      defaultOpen: props.defaultOpen,
+      lazyMount: true,
+      motionPreset: 'slide-in-left',
+      onOpenChange: props.onOpenChange,
+      open: props.open,
+      // Preserve uncontrolled sidebar expansion after the first opening.
+      unmountOnExit: false,
+    },
+    createElement(
+      DocsMobileNavigationContext.Provider,
+      { value: context },
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.root, props.slotProps),
+        children,
+      ),
+    ),
+  );
+}
+
+export function DocsMobileNavigationTrigger(
+  props: DocsMobileNavigationTriggerProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+  const content =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(
+        Box,
+        {
+          as: 'span',
+          'aria-hidden': 'true',
+          ...mergeSlotStyleProps(
+            context.styles.triggerIcon,
+            props.iconSlotProps,
+          ),
+        },
+        props.icon ?? '☰',
+      ),
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(
+            context.styles.triggerLabel,
+            props.labelSlotProps,
+          ),
+        },
+        props.label ?? labels.navigationMenu ?? defaultLabels.navigationMenu,
+      ),
+    );
+
+  return createElement(
+    Dialog.Trigger,
+    { asChild: true },
+    createElement(
+      Button,
+      {
+        type: 'button',
+        'aria-label':
+          props.ariaLabel ??
+          labels.openNavigation ??
+          defaultLabels.openNavigation,
+        ...mergeSlotStyleProps(context.styles.trigger, props.slotProps),
+      },
+      content,
+    ),
+  );
+}
+
+export function DocsMobileNavigationContent(
+  props: DocsMobileNavigationContentProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const children =
+    props.children ??
+    createElement(
+      Fragment,
+      null,
+      createElement(DocsMobileNavigationHeader),
+      context.search ? createElement(DocsMobileNavigationSearch) : null,
+      createElement(DocsMobileNavigationBody),
+    );
+
+  return createElement(
+    Portal,
+    null,
+    createElement(
+      Dialog.Backdrop,
+      mergeSlotStyleProps(context.styles.backdrop, props.backdropSlotProps),
+    ),
+    createElement(
+      Dialog.Positioner,
+      mergeSlotStyleProps(context.styles.positioner, props.positionerSlotProps),
+      createElement(
+        Dialog.Content,
+        mergeSlotStyleProps(context.styles.content, props.slotProps),
+        children,
+      ),
+    ),
+  );
+}
+
+export function DocsMobileNavigationHeader(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+
+  return createElement(
+    Dialog.Header,
+    mergeSlotStyleProps(context.styles.header, props.slotProps),
+    props.children ??
+      createElement(
+        Fragment,
+        null,
+        createElement(DocsMobileNavigationTitle),
+        createElement(DocsMobileNavigationCloseTrigger),
+      ),
+  );
+}
+
+export function DocsMobileNavigationTitle(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Dialog.Title,
+    mergeSlotStyleProps(context.styles.title, props.slotProps),
+    props.children ??
+      context.title ??
+      labels.navigationTitle ??
+      defaultLabels.navigationTitle,
+  );
+}
+
+export function DocsMobileNavigationCloseTrigger(
+  props: DocsMobileNavigationCloseTriggerProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const labels = context.config.labels ?? defaultLabels;
+
+  return createElement(
+    Dialog.CloseTrigger,
+    { asChild: true },
+    createElement(
+      Button,
+      {
+        type: 'button',
+        'aria-label':
+          props.ariaLabel ??
+          labels.closeNavigation ??
+          defaultLabels.closeNavigation,
+        ...mergeSlotStyleProps(context.styles.closeTrigger, props.slotProps),
+      },
+      props.children ?? '×',
+    ),
+  );
+}
+
+export function DocsMobileNavigationSearch(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const children = props.children ?? context.search;
+
+  if (!children) {
+    return null;
+  }
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(context.styles.search, props.slotProps),
+    children,
+  );
+}
+
+export function DocsMobileNavigationBody(
+  props: DocsMobileNavigationPartProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+
+  return createElement(
+    Dialog.Body,
+    mergeSlotStyleProps(context.styles.body, props.slotProps),
+    props.children ?? createElement(DocsMobileNavigationSidebar),
+  );
+}
+
+interface DocsMobileNavigationClickEvent {
+  defaultPrevented?: boolean;
+}
+
+function DocsMobileNavigationRouteEffect(props: {
+  closeOnNavigate: boolean;
+  open: boolean;
+  route?: string;
+  setOpen: (open: boolean) => void;
+}): null {
+  const previousRouteRef = useRef(props.route);
+
+  useEffect(() => {
+    if (
+      props.closeOnNavigate &&
+      props.open &&
+      previousRouteRef.current !== undefined &&
+      previousRouteRef.current !== props.route
+    ) {
+      props.setOpen(false);
+    }
+
+    previousRouteRef.current = props.route;
+  }, [props.closeOnNavigate, props.open, props.route, props.setOpen]);
+
+  return null;
+}
+
+export function DocsMobileNavigationSidebar(
+  props: DocsMobileNavigationSidebarProps,
+): ReactNode {
+  const context = useDocsMobileNavigationContext();
+  const configuredProps = context.sidebarProps ?? {};
+
+  return createElement(Dialog.Context, {
+    children: ({
+      open,
+      setOpen,
+    }: {
+      open: boolean;
+      setOpen: (open: boolean) => void;
+    }) => {
+      const linkSlotProps = mergeComponentSlotProps(
+        undefined,
+        configuredProps.linkSlotProps,
+        props.linkSlotProps,
+      );
+      const onClick = linkSlotProps.onClick;
+
+      return createElement(
+        Fragment,
+        null,
+        createElement(DocsMobileNavigationRouteEffect, {
+          closeOnNavigate: context.closeOnNavigate,
+          open,
+          route: context.page?.route,
+          setOpen,
+        }),
+        createElement(
+          DocsSidebar,
+          {
+            ...configuredProps,
+            ...props,
+            collapsible:
+              props.collapsible ?? configuredProps.collapsible ?? true,
+            defaultExpanded:
+              props.defaultExpanded ??
+              configuredProps.defaultExpanded ??
+              'active',
+            nav: context.nav,
+            page: context.page,
+            linkSlotProps: {
+              ...linkSlotProps,
+              onClick: (event: DocsMobileNavigationClickEvent) => {
+                if (typeof onClick === 'function') {
+                  (onClick as (event: DocsMobileNavigationClickEvent) => void)(
+                    event,
+                  );
+                }
+
+                if (!event.defaultPrevented && context.closeOnNavigate) {
+                  setOpen(false);
+                }
+              },
+            },
+            slotProps: mergeComponentSlotProps(
+              context.styles.sidebar,
+              configuredProps.slotProps,
+              props.slotProps,
+            ),
+          },
+          props.children ?? configuredProps.children ?? context.sidebarContent,
+        ),
+      );
+    },
+  });
+}
+
+export const DocsMobileNavigation = {
+  Root: DocsMobileNavigationRoot,
+  Trigger: DocsMobileNavigationTrigger,
+  Content: DocsMobileNavigationContent,
+  Header: DocsMobileNavigationHeader,
+  Title: DocsMobileNavigationTitle,
+  CloseTrigger: DocsMobileNavigationCloseTrigger,
+  Search: DocsMobileNavigationSearch,
+  Body: DocsMobileNavigationBody,
+  Sidebar: DocsMobileNavigationSidebar,
+} as const;
 
 export function DocsTableOfContents(
   props: DocsTableOfContentsProps,
@@ -402,10 +3302,6 @@ export function DocsTableOfContents(
   const config = useDocsConfig();
   const labels = config.labels ?? defaultLabels;
   const headings = props.headings ?? [];
-  const headingIds = useMemo(
-    () => headings.map((heading) => heading.id).filter(Boolean),
-    [headings],
-  );
   const stickyTop =
     props.stickyTop ??
     config.layout?.tocStickyTop ??
@@ -417,15 +3313,15 @@ export function DocsTableOfContents(
     config.layout?.scrollMarginTop ??
     config.layout?.stickyTop ??
     8;
-  const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
-
-  useEffect(() => {
-    return observeActiveHeading({
-      headingIds,
-      scrollMarginTop,
-      onChange: setActiveHeadingId,
-    });
-  }, [headingIds, scrollMarginTop]);
+  const [activeHeadingId, setActiveHeadingId] = useActiveTocHeading(
+    headings,
+    scrollMarginTop,
+  );
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.tableOfContents,
+    chakraDocsTableOfContentsSlotRecipe,
+  );
+  const styles = recipe();
 
   if (headings.length === 0) {
     return null;
@@ -435,18 +3331,23 @@ export function DocsTableOfContents(
     Box,
     {
       as: 'aside',
-      flex: '0 0 14rem',
-      display: { base: 'none', xl: 'block' },
-      position: 'sticky',
       top: stickyTop,
-      ...props.slotProps,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
-    createElement(Text, { fontWeight: 'semibold', mb: 3 }, labels.onThisPage),
+    createElement(
+      Text,
+      mergeSlotStyleProps(styles.label, props.labelSlotProps),
+      labels.onThisPage,
+    ),
     createElement(
       Box,
-      { as: 'ol', listStyleType: 'none', ps: 0, m: 0 },
+      {
+        as: 'ol',
+        ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+      },
       headings.map((heading) => {
         const active = activeHeadingId === heading.id;
+        const itemStyles = recipe({ active });
 
         return createElement(
           Box,
@@ -454,19 +3355,12 @@ export function DocsTableOfContents(
             as: 'li',
             key: heading.id,
             ps: Math.max(0, heading.level - 2) * 3,
-            py: 1,
+            ...mergeSlotStyleProps(itemStyles.item, props.itemSlotProps),
           },
           createElement(
             Link,
             {
               'aria-current': active ? 'location' : undefined,
-              borderInlineStartWidth: '2px',
-              borderInlineStartColor: active ? 'teal.500' : 'transparent',
-              borderRadius: 'sm',
-              color: active ? 'teal.700' : 'fg.muted',
-              display: 'block',
-              fontSize: 'sm',
-              fontWeight: 'medium',
               href: `#${heading.id}`,
               onClick: (event: DocsAnchorClickEvent) => {
                 if (!shouldHandleTocClick(event)) {
@@ -477,19 +3371,169 @@ export function DocsTableOfContents(
                 setActiveHeadingId(heading.id);
                 scrollToHeading(heading.id, scrollMarginTop);
               },
-              px: 2,
-              py: 1,
-              _hover: {
-                color: active ? 'teal.800' : 'fg',
-                textDecoration: 'none',
-              },
+              ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
             },
+            createElement(Box, {
+              as: 'span',
+              'aria-hidden': 'true',
+              ...mergeSlotStyleProps(
+                itemStyles.activeIndicator,
+                props.activeIndicatorSlotProps,
+              ),
+            }),
             heading.title,
           ),
         );
       }),
     ),
   );
+}
+
+export function DocsMobileTableOfContents(
+  props: DocsMobileTableOfContentsProps,
+): ReactNode {
+  const config = useDocsConfig();
+  const labels = config.labels ?? defaultLabels;
+  const headings = props.headings ?? [];
+  const scrollMarginTop =
+    props.scrollMarginTop ??
+    props.stickyTop ??
+    config.layout?.scrollMarginTop ??
+    config.layout?.stickyTop ??
+    8;
+  const [activeHeadingId, setActiveHeadingId] = useActiveTocHeading(
+    headings,
+    scrollMarginTop,
+  );
+  const activeHeading = headings.find(
+    (heading) => heading.id === activeHeadingId,
+  );
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.mobileTableOfContents,
+    chakraDocsMobileTableOfContentsSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (headings.length === 0) {
+    return null;
+  }
+
+  return createElement(
+    Box,
+    {
+      as: 'details',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+    },
+    createElement(
+      Box,
+      {
+        as: 'summary',
+        ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+      },
+      createElement(
+        Box,
+        {
+          as: 'span',
+          ...mergeSlotStyleProps(
+            styles.triggerLabel,
+            props.triggerLabelSlotProps,
+          ),
+        },
+        labels.onThisPage ?? defaultLabels.onThisPage,
+      ),
+      activeHeading
+        ? createElement(
+            Box,
+            {
+              as: 'span',
+              ...mergeSlotStyleProps(styles.current, props.currentSlotProps),
+            },
+            activeHeading.title,
+          )
+        : null,
+      createElement(
+        Box,
+        {
+          as: 'span',
+          'aria-hidden': 'true',
+          ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+        },
+        '⌄',
+      ),
+    ),
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      createElement(
+        Box,
+        {
+          as: 'ol',
+          ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+        },
+        headings.map((heading) => {
+          const active = activeHeadingId === heading.id;
+          const itemStyles = recipe({ active });
+
+          return createElement(
+            Box,
+            {
+              as: 'li',
+              key: heading.id,
+              ps: Math.max(0, heading.level - 2) * 3,
+              ...mergeSlotStyleProps(itemStyles.item, props.itemSlotProps),
+            },
+            createElement(
+              Link,
+              {
+                'aria-current': active ? 'location' : undefined,
+                href: `#${heading.id}`,
+                onClick: (event: DocsAnchorClickEvent) => {
+                  if (!shouldHandleTocClick(event)) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  setActiveHeadingId(heading.id);
+                  scrollToHeading(heading.id, scrollMarginTop);
+                },
+                ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
+              },
+              createElement(Box, {
+                as: 'span',
+                'aria-hidden': 'true',
+                ...mergeSlotStyleProps(
+                  itemStyles.activeIndicator,
+                  props.activeIndicatorSlotProps,
+                ),
+              }),
+              heading.title,
+            ),
+          );
+        }),
+      ),
+    ),
+  );
+}
+
+function useActiveTocHeading(
+  headings: readonly DocsHeading[],
+  scrollMarginTop: ChakraDocsStickyTop,
+): [string | undefined, (headingId: string | undefined) => void] {
+  const headingIds = useMemo(
+    () => headings.map((heading) => heading.id).filter(Boolean),
+    [headings],
+  );
+  const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
+
+  useEffect(() => {
+    return observeActiveHeading({
+      headingIds,
+      scrollMarginTop,
+      onChange: setActiveHeadingId,
+    });
+  }, [headingIds, scrollMarginTop]);
+
+  return [activeHeadingId, setActiveHeadingId];
 }
 
 function observeActiveHeading(props: {
@@ -628,24 +3672,55 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
   const config = useDocsConfig();
   const labels = config.labels ?? defaultLabels;
   const inputRef = useRef<{ focus: () => void } | null>(null);
+  const returnFocusRef = useRef<{
+    focus: () => void;
+    isConnected: boolean;
+  } | null>(null);
+  const searchId = useId();
+  const resultsId = `${searchId}-results`;
+  const resultsLabelId = `${searchId}-results-label`;
+  const resultsRef = useRef<{
+    scrollTop: number;
+    clientTop: number;
+    clientHeight: number;
+    getBoundingClientRect: () => { top: number };
+    querySelector: (selector: string) => {
+      getBoundingClientRect: () => { top: number; bottom: number };
+    } | null;
+  } | null>(null);
   const remoteRequesterRef = useRef<ReturnType<
     typeof createRemoteSearchRequester
   > | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [remoteSearch, setRemoteSearch] = useState<RemoteSearchState>({
+  const remoteContextRef = useRef<object | undefined>(undefined);
+  const [remoteSnapshot, setRemoteSnapshot] = useState<
+    RemoteSearchState & { context?: object }
+  >({
     results: [],
     status: 'idle',
   });
   const isRemote = props.searchProvider !== undefined;
   const normalizedQuery = query.trim().toLowerCase();
   const records = props.records ?? emptySearchRecords;
-  const searchAvailable = isRemote || records.length > 0;
   const collectionIds = useMemo(
     () => resolveSearchCollectionIds(props),
     [props.collectionId, props.collectionIds],
   );
+  const defaultResults = useMemo(
+    () =>
+      getDefaultSearchResults(
+        props.defaultResults,
+        collectionIds,
+        props.popularLimit,
+      ),
+    [props.defaultResults, collectionIds, props.popularLimit],
+  );
+  const showDefaultResults =
+    !normalizedQuery && props.defaultResults !== undefined;
+  const searchAvailable =
+    isRemote || records.length > 0 || defaultResults.length > 0;
   const searchQuery = useMemo<DocsSearchQuery>(
     () => ({
       collectionIds,
@@ -655,6 +3730,59 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     }),
     [collectionIds, props.limit, props.popularLimit, query],
   );
+  // Semantic scope keys avoid resetting the cache for equivalent array props.
+  const prefetchScope = JSON.stringify([
+    collectionIds?.slice().sort(),
+    props.limit,
+    props.popularLimit,
+  ]);
+  const prefetchEnabled =
+    Boolean(props.prefetch) && props.defaultResults === undefined;
+  const prefetchCache = useMemo(() => {
+    if (!prefetchEnabled || !props.searchProvider) return undefined;
+    const [scope, limit, popularLimit] = JSON.parse(prefetchScope) as [
+      string[] | null,
+      number | null,
+      number | null,
+    ];
+    return createSearchPrefetch(
+      props.searchProvider,
+      {
+        query: '',
+        collectionIds: scope ?? undefined,
+        limit: limit ?? undefined,
+        popularLimit: popularLimit ?? undefined,
+      },
+      props.prefetchStaleTimeMs,
+    );
+  }, [
+    prefetchEnabled,
+    prefetchScope,
+    props.searchProvider,
+    props.prefetchStaleTimeMs,
+  ]);
+  const remoteContext = useMemo(
+    () => ({}),
+    [
+      props.searchProvider,
+      prefetchScope,
+      searchQuery.query,
+      prefetchCache,
+      open,
+    ],
+  );
+  const cachedDefaults = !normalizedQuery
+    ? prefetchCache?.peek()?.results
+    : undefined;
+  const remoteSearch: RemoteSearchState =
+    remoteSnapshot.context === remoteContext
+      ? remoteSnapshot
+      : cachedDefaults !== undefined
+        ? { results: cachedDefaults, status: 'success' }
+        : {
+            results: emptyRemoteSearchResults,
+            status: open ? 'loading' : 'idle',
+          };
   const searchEngine = useMemo(
     () => (isRemote ? undefined : createDocsSearchEngine(records)),
     [isRemote, records],
@@ -663,16 +3791,67 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     () => searchEngine?.search(searchQuery).results ?? [],
     [searchEngine, searchQuery],
   );
-  const results = isRemote ? remoteSearch.results : localResults;
+  const results = showDefaultResults
+    ? defaultResults
+    : isRemote
+      ? remoteSearch.results
+      : localResults;
+  const resultsUnavailable =
+    isRemote &&
+    !showDefaultResults &&
+    (remoteSearch.status === 'loading' || remoteSearch.status === 'error');
+  const trackSelection = useSearchAnalytics({
+    callbacks: config.analytics,
+    open,
+    context: {
+      query: searchQuery.query,
+      collectionIds: collectionIds?.slice().sort(),
+      source: showDefaultResults ? 'curated' : isRemote ? 'remote' : 'local',
+      mode: normalizedQuery ? 'query' : 'default',
+      resultCount: results.length,
+    },
+    results,
+    status:
+      !isRemote || showDefaultResults
+        ? 'success'
+        : remoteSearch.status === 'idle'
+          ? 'loading'
+          : remoteSearch.status,
+    debounceMs: props.analyticsDebounceMs,
+  });
+  const selectedIndex = Math.min(activeIndex, results.length - 1);
+  const activeResultId =
+    open && !resultsUnavailable && selectedIndex >= 0
+      ? `${searchId}-result-${selectedIndex}`
+      : undefined;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.search,
+    chakraDocsSearchSlotRecipe,
+  );
+  const styles = recipe();
 
   if (!remoteRequesterRef.current) {
-    remoteRequesterRef.current = createRemoteSearchRequester(setRemoteSearch);
+    remoteRequesterRef.current = createRemoteSearchRequester((state) => {
+      setRemoteSnapshot({ ...state, context: remoteContextRef.current });
+    });
+  }
+
+  useEffect(() => () => prefetchCache?.dispose(), [prefetchCache]);
+
+  useEffect(() => {
+    if (props.prefetch === 'mount')
+      void prefetchCache?.prefetch().catch(() => undefined);
+  }, [prefetchCache, props.prefetch]);
+
+  function prefetchOnIntent() {
+    if (props.prefetch === 'intent')
+      void prefetchCache?.prefetch().catch(() => undefined);
   }
 
   useEffect(() => {
     const requester = remoteRequesterRef.current;
 
-    if (!requester || !open || !props.searchProvider) {
+    if (!requester || !open || !props.searchProvider || showDefaultResults) {
       requester?.cancel();
       return;
     }
@@ -680,8 +3859,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     // Popular results are useful immediately when the dialog opens. Typed
     // queries wait for the debounce interval to avoid unnecessary requests.
     const delayMs = getRemoteSearchDelayMs(searchQuery.query, props.debounceMs);
-
-    requester.request(props.searchProvider, searchQuery, delayMs);
+    remoteContextRef.current = remoteContext;
+    requester.request(
+      prefetchCache?.search ?? props.searchProvider,
+      searchQuery,
+      delayMs,
+      !searchQuery.query ? prefetchCache?.peek()?.results : undefined,
+    );
     return () => requester.cancel();
   }, [
     normalizedQuery,
@@ -689,6 +3873,9 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     props.debounceMs,
     props.searchProvider,
     searchQuery,
+    showDefaultResults,
+    prefetchCache,
+    remoteContext,
   ]);
 
   useEffect(() => {
@@ -707,7 +3894,13 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       const isSearchShortcut =
         event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
 
-      if (!isSearchShortcut) {
+      if (
+        !isSearchShortcut ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.altKey ||
+        event.shiftKey
+      ) {
         return;
       }
 
@@ -716,41 +3909,46 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       }
 
       event.preventDefault();
+      const document = (
+        globalThis as unknown as {
+          document?: { activeElement: typeof returnFocusRef.current };
+        }
+      ).document;
+      if (!open) returnFocusRef.current = document?.activeElement ?? null;
       setOpen(true);
-      config.analytics?.onSearchOpen?.();
     }
 
     target.addEventListener?.('keydown', onKeyDown);
     return () => target.removeEventListener?.('keydown', onKeyDown);
-  }, [config.analytics, searchAvailable]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    globalThis.setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
+  }, [open, searchAvailable]);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [open, results]);
 
   useEffect(() => {
-    if (normalizedQuery) {
-      config.analytics?.onSearch?.(normalizedQuery);
+    const scroller = resultsRef.current;
+    if (!activeResultId || !scroller) return;
+    const row = scroller.querySelector(
+      `[data-search-result-index="${selectedIndex}"]`,
+    );
+    if (!row) return;
+
+    // Scroll only the results pane, not the dialog or the host document. Keep
+    // the whole row visible without smooth-scroll lag during key repeat.
+    const top = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const bottom = top + scroller.clientHeight;
+    const bounds = row.getBoundingClientRect();
+    if (bounds.top < top) {
+      scroller.scrollTop += bounds.top - top;
+    } else if (bounds.bottom > bottom) {
+      scroller.scrollTop += Math.min(bounds.bottom - bottom, bounds.top - top);
     }
-  }, [config.analytics, normalizedQuery]);
+  }, [activeResultId, results, selectedIndex]);
 
   function closeSearch() {
     setOpen(false);
     setQuery('');
-  }
-
-  function selectResult(record: DocsSearchResult) {
-    props.onResultSelect?.(record);
-    config.analytics?.onSearchResultSelect?.(record);
-    closeSearch();
   }
 
   function navigateToLocation(href: string) {
@@ -777,12 +3975,26 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       event,
       navigate: navigateToLocation,
       onNavigate: props.onNavigate,
-      onSelect: selectResult,
+      onSelect: (selected) => {
+        props.onResultSelect?.(selected);
+        trackSelection(selected, event ? 'pointer' : 'keyboard');
+        closeSearch();
+      },
     });
   }
 
   function onInputKeyDown(event: DocsKeyboardEvent) {
-    if (results.length === 0) {
+    if (
+      resultsUnavailable ||
+      results.length === 0 ||
+      event.defaultPrevented ||
+      event.isComposing ||
+      event.nativeEvent?.isComposing ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      event.shiftKey
+    ) {
       return;
     }
 
@@ -798,9 +4010,9 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
       return;
     }
 
-    if (event.key === 'Enter' && results[activeIndex]) {
+    if (event.key === 'Enter' && results[selectedIndex]) {
       event.preventDefault();
-      activateResult(results[activeIndex]);
+      activateResult(results[selectedIndex]);
     }
   }
 
@@ -808,18 +4020,27 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     Dialog.Root,
     {
       lazyMount: true,
+      initialFocusEl: () => inputRef.current,
+      finalFocusEl: () =>
+        returnFocusRef.current?.isConnected
+          ? returnFocusRef.current
+          : undefined,
+      placement: 'top',
+      ...props.slotProps,
       onOpenChange: (details: { open: boolean }) => {
         setOpen(details.open);
 
         if (details.open) {
-          config.analytics?.onSearchOpen?.();
+          returnFocusRef.current = null;
         } else {
           setQuery('');
         }
+        (
+          props.slotProps?.onOpenChange as
+            ((details: { open: boolean }) => void) | undefined
+        )?.(details);
       },
       open,
-      placement: 'top',
-      ...props.slotProps,
     },
     createElement(
       Dialog.Trigger,
@@ -828,99 +4049,164 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
         Button,
         {
           disabled: !searchAvailable,
-          justifyContent: 'space-between',
-          minW: { base: 'full', md: '13rem' },
           size: 'sm',
           variant: 'outline',
-          ...props.triggerSlotProps,
+          ...mergeSlotStyleProps(styles.trigger, props.triggerSlotProps),
+          onPointerEnter: (event: unknown) => {
+            (
+              props.triggerSlotProps?.onPointerEnter as
+                ((event: unknown) => void) | undefined
+            )?.(event);
+            prefetchOnIntent();
+          },
+          onFocus: (event: unknown) => {
+            (
+              props.triggerSlotProps?.onFocus as
+                ((event: unknown) => void) | undefined
+            )?.(event);
+            prefetchOnIntent();
+          },
         },
         createElement(
           Text,
-          { color: 'fg.muted', fontWeight: 'medium' },
+          mergeSlotStyleProps(styles.triggerLabel, props.triggerLabelSlotProps),
           labels.search,
         ),
-        createElement(Kbd, null, '⌘K'),
+        createElement(
+          Kbd,
+          mergeSlotStyleProps(styles.shortcut, props.shortcutSlotProps),
+          '⌘K',
+        ),
       ),
     ),
     createElement(
       Portal,
       null,
-      createElement(Dialog.Backdrop),
+      createElement(
+        Dialog.Backdrop,
+        mergeSlotStyleProps(styles.backdrop, props.backdropSlotProps),
+      ),
       createElement(
         Dialog.Positioner,
-        { px: 4, pt: { base: 12, md: 20 } },
+        mergeSlotStyleProps(styles.positioner, props.positionerSlotProps),
         createElement(
           Dialog.Content,
-          { maxW: '2xl', overflow: 'hidden', p: 0 },
+          mergeSlotStyleProps(styles.root, props.contentSlotProps),
           createElement(
             Dialog.Header,
-            { borderBottomWidth: '1px', p: 4 },
-            createElement(Dialog.Title, { fontSize: 'sm' }, labels.search),
+            mergeSlotStyleProps(styles.header, props.headerSlotProps),
+            createElement(
+              Dialog.Title,
+              mergeSlotStyleProps(styles.title, props.titleSlotProps),
+              labels.search,
+            ),
           ),
           createElement(
             Dialog.Body,
-            { p: 0 },
+            mergeSlotStyleProps(styles.body, props.bodySlotProps),
             createElement(Input, {
               ref: inputRef,
               'aria-label': labels.search,
-              borderRadius: 0,
-              borderWidth: 0,
-              fontSize: 'lg',
-              h: 14,
+              role: 'combobox',
+              'aria-autocomplete': 'list',
+              'aria-haspopup': 'listbox',
+              'aria-expanded': open,
+              'aria-controls': resultsId,
+              'aria-activedescendant': activeResultId,
+              autoComplete: 'off',
               onChange: (event: DocsInputChangeEvent) =>
                 setQuery(event.currentTarget.value),
               onKeyDown: onInputKeyDown,
               placeholder: props.placeholder ?? labels.searchPlaceholder,
               value: query,
-              _focus: { boxShadow: 'none' },
-              ...props.inputSlotProps,
+              ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
             }),
             createElement(
               Box,
-              { borderTopWidth: '1px', maxH: '420px', overflowY: 'auto', p: 3 },
+              {
+                ...mergeSlotStyleProps(styles.results, props.resultsSlotProps),
+                ref: resultsRef,
+              },
               createElement(
                 Text,
                 {
-                  color: 'fg.muted',
-                  fontSize: 'xs',
-                  fontWeight: 'semibold',
-                  px: 2,
-                  py: 1,
+                  ...mergeSlotStyleProps(
+                    styles.sectionLabel,
+                    props.sectionLabelSlotProps,
+                  ),
+                  id: resultsLabelId,
                 },
-                normalizedQuery
-                  ? (labels.searchResults ?? defaultLabels.searchResults)
-                  : (labels.searchPopular ?? defaultLabels.searchPopular),
+                showDefaultResults
+                  ? (props.defaultResultsLabel ?? 'Recommended')
+                  : normalizedQuery
+                    ? (labels.searchResults ?? defaultLabels.searchResults)
+                    : (labels.searchPopular ?? defaultLabels.searchPopular),
               ),
               createElement(
                 Stack,
-                { gap: 1 },
-                isRemote && remoteSearch.status === 'loading'
-                  ? createSearchStatus(
-                      labels.searchLoading ?? defaultLabels.searchLoading,
-                      'status',
+                {
+                  ...mergeSlotStyleProps(
+                    styles.resultList,
+                    props.resultListSlotProps,
+                  ),
+                  id: resultsId,
+                  role: 'listbox',
+                  'aria-labelledby': resultsLabelId,
+                  'aria-busy':
+                    isRemote &&
+                    !showDefaultResults &&
+                    remoteSearch.status === 'loading',
+                },
+                !resultsUnavailable
+                  ? results.map((record, index) =>
+                      createElement(SearchResult, {
+                        active: index === selectedIndex,
+                        id: `${searchId}-result-${index}`,
+                        index,
+                        key: record.id,
+                        onActivate: () => setActiveIndex(index),
+                        onSelect: (event: DocsAnchorClickEvent) =>
+                          activateResult(record, event),
+                        recipe,
+                        record,
+                        resultBadgeSlotProps: props.resultBadgeSlotProps,
+                        resultContentSlotProps: props.resultContentSlotProps,
+                        resultDescriptionSlotProps:
+                          props.resultDescriptionSlotProps,
+                        resultLinkSlotProps: props.resultLinkSlotProps,
+                        resultRowSlotProps: props.resultRowSlotProps,
+                        slotProps: props.resultSlotProps,
+                        resultTitleSlotProps: props.resultTitleSlotProps,
+                      }),
                     )
-                  : isRemote && remoteSearch.status === 'error'
-                    ? createSearchStatus(
-                        labels.searchError ?? defaultLabels.searchError,
-                        'alert',
-                      )
-                    : results.length > 0
-                      ? results.map((record, index) =>
-                          createElement(SearchResult, {
-                            active: index === activeIndex,
-                            key: record.id,
-                            onSelect: (event: DocsAnchorClickEvent) =>
-                              activateResult(record, event),
-                            record,
-                            slotProps: props.resultSlotProps,
-                          }),
-                        )
-                      : createSearchStatus(
-                          labels.searchNoResults ??
-                            defaultLabels.searchNoResults,
-                          'status',
-                        ),
+                  : null,
               ),
+              isRemote &&
+                !showDefaultResults &&
+                remoteSearch.status === 'loading'
+                ? createSearchStatus(
+                    labels.searchLoading ?? defaultLabels.searchLoading,
+                    'status',
+                    styles.status,
+                    props.statusSlotProps,
+                  )
+                : isRemote &&
+                    !showDefaultResults &&
+                    remoteSearch.status === 'error'
+                  ? createSearchStatus(
+                      labels.searchError ?? defaultLabels.searchError,
+                      'alert',
+                      styles.status,
+                      props.statusSlotProps,
+                    )
+                  : results.length > 0
+                    ? null
+                    : createSearchStatus(
+                        labels.searchNoResults ?? defaultLabels.searchNoResults,
+                        'status',
+                        styles.status,
+                        props.statusSlotProps,
+                      ),
             ),
           ),
         ),
@@ -952,6 +4238,11 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
       label: collection.name ?? collection.id,
     })) ??
     [];
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.versionSelect,
+    chakraDocsVersionSelectSlotRecipe,
+  );
+  const styles = recipe();
   const hiddenLabelProps = props.labelHidden
     ? {
         border: 0,
@@ -968,20 +4259,10 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
   const selectProps: Record<string, unknown> = {
     as: 'select',
     id: selectId,
-    bg: 'bg',
-    borderColor: 'gray.200',
-    borderRadius: 'md',
-    borderWidth: '1px',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    h: 8,
-    lineHeight: 1,
-    minW: '7.5rem',
-    px: 2,
     value: props.value,
     onChange: (event: DocsInputChangeEvent) =>
       props.onValueChange?.(event.currentTarget.value),
-    ...props.selectSlotProps,
+    ...mergeSlotStyleProps(styles.select, props.selectSlotProps),
   };
 
   if (props.value === undefined) {
@@ -994,24 +4275,14 @@ export function DocsVersionSelect(props: DocsVersionSelectProps): ReactNode {
 
   return createElement(
     Box,
-    {
-      alignItems: 'center',
-      display: 'inline-flex',
-      gap: 2,
-      minW: 0,
-      ...props.slotProps,
-    },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     createElement(
       Text,
       {
         as: 'label',
-        color: 'fg.muted',
-        fontSize: 'xs',
-        fontWeight: 'semibold',
         htmlFor: selectId,
-        lineHeight: 1,
         ...hiddenLabelProps,
-        ...props.labelSlotProps,
+        ...mergeSlotStyleProps(styles.label, props.labelSlotProps),
       },
       labelText,
     ),
@@ -1044,54 +4315,309 @@ export function createDocsVersionOptions(
 
 export function MarkdownContent(props: MarkdownContentProps): ReactNode {
   const config = useDocsConfig();
-  const blocks = parseMarkdown(props.source);
-  const createNextHeadingId = createHeadingIdGenerator();
+  const documentId = useId();
+  const headings = useMemo(
+    () => getDocsMarkdownHeadings(props.source),
+    [props.source],
+  );
   const scrollMarginTop =
     config.layout?.scrollMarginTop ?? config.layout?.stickyTop ?? 8;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.markdownContent,
+    chakraDocsMarkdownContentSlotRecipe,
+  );
+  const styles = recipe();
+  const styled =
+    (tag: string, slot: string, overrides?: Record<string, unknown>) =>
+    (input: { node?: unknown; children?: ReactNode }) => {
+      const { children, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        { as: tag, ...rest, ...mergeSlotStyleProps(styles[slot], overrides) },
+        children,
+      );
+    };
+  const heading: MarkdownComponents['h2'] = ({
+    node,
+    children,
+    id: suppliedId,
+    ...rest
+  }) => {
+    const entry = headings.find(
+      (item) => item.start === node?.position?.start.offset,
+    );
+    // The generated footnote heading has no source position; retain its a11y ID.
+    if (!entry)
+      return createElement(
+        Heading,
+        {
+          as: node?.tagName ?? 'h2',
+          id:
+            suppliedId === 'footnote-label'
+              ? `docs-${documentId}-footnote-label`
+              : suppliedId,
+          ...rest,
+        },
+        children,
+      );
+    const headingStyles = recipe({
+      headingLevel: entry.level <= 2 ? 'section' : 'subsection',
+    });
+    return createElement(
+      Heading,
+      {
+        as: `h${entry.level}`,
+        id: entry.id,
+        size: entry.level <= 2 ? '2xl' : 'xl',
+        scrollMarginTop,
+        ...mergeSlotStyleProps(headingStyles.heading, props.headingSlotProps),
+      },
+      children,
+      props.headingPermalinks
+        ? createElement(DocsHeadingPermalink, {
+            headingId: entry.id,
+            href: props.getHeadingHref?.(entry.id),
+            title: entry.title,
+            indicatorSlotProps: props.headingPermalinkIndicatorSlotProps,
+            slotProps: props.headingPermalinkSlotProps,
+            triggerSlotProps: props.headingPermalinkTriggerSlotProps,
+          })
+        : null,
+    );
+  };
+  const components: MarkdownComponents = {
+    h1: heading,
+    h2: heading,
+    h3: heading,
+    h4: heading,
+    h5: heading,
+    h6: heading,
+    p: styled('p', 'paragraph', props.paragraphSlotProps),
+    ul: styled('ul', 'list', props.listSlotProps),
+    ol: styled('ol', 'list', props.listSlotProps),
+    li: styled('li', 'listItem', props.listItemSlotProps),
+    hr: styled('hr', 'separator', props.separatorSlotProps),
+    thead: styled('thead', 'tableHead', props.tableHeadSlotProps),
+    tbody: styled('tbody', 'tableBody', props.tableBodySlotProps),
+    tr: styled('tr', 'tableRow', props.tableRowSlotProps),
+    th: (input) => {
+      const { children, style, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        {
+          as: 'th',
+          ...rest,
+          scope: 'col',
+          textAlign: style?.textAlign ?? 'start',
+          ...mergeSlotStyleProps(
+            styles.tableHeader,
+            props.tableHeaderSlotProps,
+          ),
+        },
+        children,
+      );
+    },
+    td: (input) => {
+      const { children, style, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        Box,
+        {
+          as: 'td',
+          ...rest,
+          textAlign: style?.textAlign ?? 'start',
+          ...mergeSlotStyleProps(styles.tableCell, props.tableCellSlotProps),
+        },
+        children,
+      );
+    },
+    table: ({ children }) =>
+      createElement(
+        Box,
+        {
+          role: 'region',
+          tabIndex: 0,
+          'aria-label': props.tableLabel ?? 'Markdown table',
+          ...mergeSlotStyleProps(
+            styles.tableContainer,
+            props.tableContainerSlotProps,
+          ),
+        },
+        createElement(
+          Box,
+          {
+            as: 'table',
+            'data-chakra-docs-table-scroll': 'external',
+            ...mergeSlotStyleProps(styles.table, props.tableSlotProps),
+          },
+          children,
+        ),
+      ),
+    a: (input) => {
+      const { children, href, ...rest } = withoutMarkdownNode(input);
+      return createElement(
+        DocsLink,
+        {
+          href: href ?? '',
+          ...rest,
+          ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+          ...(rest['aria-describedby'] === 'footnote-label'
+            ? { 'aria-describedby': `docs-${documentId}-footnote-label` }
+            : {}),
+        },
+        children,
+      );
+    },
+    img: (input) => {
+      const { src, alt, ...rest } = withoutMarkdownNode(input);
+      return src
+        ? createElement(Box, {
+            as: 'img',
+            src,
+            alt: alt ?? '',
+            loading: 'lazy',
+            ...rest,
+            ...mergeSlotStyleProps(styles.image, props.imageSlotProps),
+          })
+        : createElement('span', null, alt);
+    },
+    input: ({ checked }) =>
+      createElement(Box, {
+        as: 'input',
+        ...mergeSlotStyleProps(
+          styles.taskCheckbox,
+          props.taskCheckboxSlotProps,
+        ),
+        type: 'checkbox',
+        checked: Boolean(checked),
+        disabled: true,
+        'aria-label': checked ? 'Completed task' : 'Incomplete task',
+      }),
+    blockquote: ({ children }) =>
+      createElement(
+        Callout,
+        {
+          title: 'Note',
+          slotProps: mergeSlotStyleProps(styles.quote, props.quoteSlotProps),
+        },
+        children,
+      ),
+    code: ({ children }) =>
+      createElement(
+        Code,
+        {
+          variant: 'subtle',
+          ...mergeSlotStyleProps(styles.inlineCode, props.inlineCodeSlotProps),
+        },
+        children,
+      ),
+    pre: ({ node }) => {
+      const code = node?.children.find(
+        (child) => child.type === 'element' && child.tagName === 'code',
+      );
+      if (!code || code.type !== 'element') return null;
+      const classes = code.properties.className;
+      const language = Array.isArray(classes)
+        ? classes.find(
+            (value) =>
+              typeof value === 'string' && value.startsWith('language-'),
+          )
+        : undefined;
+      const value = code.children
+        .map((child) => (child.type === 'text' ? child.value : ''))
+        .join('');
+      return createElement(CodeBlock, {
+        ...props.codeBlockProps,
+        code: value.replace(/\n$/, ''),
+        language: normalizeCodeLanguage(
+          typeof language === 'string' ? language.slice(9) : undefined,
+        ),
+        slotProps: mergeComponentSlotProps(
+          styles.codeBlock,
+          props.codeBlockProps?.slotProps,
+          props.codeBlockSlotProps,
+        ),
+      });
+    },
+  };
 
   return createElement(
     Stack,
-    { gap: 4, ...props.slotProps },
-    blocks.map((block, index) =>
-      renderMarkdownBlock(block, index, createNextHeadingId, scrollMarginTop),
-    ),
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    createElement(ReactMarkdown, {
+      children: props.source,
+      components,
+      remarkPlugins: [remarkGfm],
+      remarkRehypeOptions: { clobberPrefix: `docs-${documentId}-` },
+      urlTransform: (url, key) => {
+        if (!url || !isSafeLinkHref(url)) return undefined;
+        // Reject malformed scheme-like prefixes, including NULs normalized by
+        // CommonMark into an encoded replacement character.
+        if (/^[^/?#]*:/.test(url) && !/^(https?|mailto|tel):/i.test(url))
+          return undefined;
+        if (
+          key === 'src' &&
+          /^[a-z][a-z\d+.-]*:/i.test(url) &&
+          !/^https?:/i.test(url)
+        )
+          return undefined;
+        return url;
+      },
+    }),
   );
 }
 
-export function DocsPagination(props: DocsComponentProps): ReactNode {
+function withoutMarkdownNode<T extends { node?: unknown }>(
+  input: T,
+): Omit<T, 'node'> {
+  const { node, ...rest } = input;
+  void node;
+  return rest;
+}
+
+export function DocsPagination(props: DocsPaginationProps): ReactNode {
   const labels = useDocsConfig().labels ?? defaultLabels;
   const pages = flattenNav(props.nav ?? []).filter((item) => item.href);
   const index = pages.findIndex((item) => item.href === props.page?.route);
   const previous = index > 0 ? pages[index - 1] : undefined;
   const next =
     index >= 0 && index < pages.length - 1 ? pages[index + 1] : undefined;
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.pagination,
+    chakraDocsPaginationSlotRecipe,
+  );
+  const styles = recipe();
 
   if (!previous && !next) {
     return null;
   }
 
   return createElement(
-    Flex,
+    Box,
     {
       as: 'nav',
-      justify: 'space-between',
-      gap: 4,
-      mt: 12,
-      pt: 6,
-      borderTopWidth: '1px',
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
     },
     previous
       ? createElement(
           Box,
-          null,
+          {
+            'data-direction': 'previous',
+            ...mergeSlotStyleProps(
+              recipe({ direction: 'previous' }).item,
+              props.itemSlotProps,
+            ),
+          },
           createElement(
             Text,
-            { color: 'fg.muted', fontSize: 'sm' },
+            mergeSlotStyleProps(styles.label, props.labelSlotProps),
             labels.previousPage,
           ),
           createElement(
             DocsLink,
-            { href: previous.href ?? '#' },
+            {
+              href: previous.href ?? '#',
+              ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+            },
             previous.title,
           ),
         )
@@ -1099,13 +4625,26 @@ export function DocsPagination(props: DocsComponentProps): ReactNode {
     next
       ? createElement(
           Box,
-          { textAlign: 'right' },
+          {
+            'data-direction': 'next',
+            ...mergeSlotStyleProps(
+              recipe({ direction: 'next' }).item,
+              props.itemSlotProps,
+            ),
+          },
           createElement(
             Text,
-            { color: 'fg.muted', fontSize: 'sm' },
+            mergeSlotStyleProps(styles.label, props.labelSlotProps),
             labels.nextPage,
           ),
-          createElement(DocsLink, { href: next.href ?? '#' }, next.title),
+          createElement(
+            DocsLink,
+            {
+              href: next.href ?? '#',
+              ...mergeSlotStyleProps(styles.link, props.linkSlotProps),
+            },
+            next.title,
+          ),
         )
       : createElement(Box),
   );
@@ -1114,86 +4653,148 @@ export function DocsPagination(props: DocsComponentProps): ReactNode {
 export interface CalloutProps extends DocsComponentProps {
   type?: 'info' | 'warning' | 'success' | 'danger';
   title?: string;
+  contentSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export function Callout(props: CalloutProps): ReactNode {
-  const palette = {
-    info: 'blue',
-    warning: 'orange',
-    success: 'green',
-    danger: 'red',
-  }[props.type ?? 'info'];
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.callout,
+    chakraDocsCalloutSlotRecipe,
+  );
+  const styles = recipe({ status: props.type ?? 'info' });
 
   return createElement(
     Box,
-    {
-      borderWidth: '1px',
-      borderColor: `${palette}.300`,
-      bg: `${palette}.50`,
-      color: `${palette}.950`,
-      rounded: 'md',
-      p: 4,
-      ...props.slotProps,
-    },
+    mergeSlotStyleProps(styles.root, props.slotProps),
     props.title
-      ? createElement(Text, { fontWeight: 'semibold', mb: 2 }, props.title)
+      ? createElement(
+          Text,
+          mergeSlotStyleProps(styles.title, props.titleSlotProps),
+          props.title,
+        )
       : null,
-    props.children,
+    createElement(
+      Box,
+      mergeSlotStyleProps(styles.content, props.contentSlotProps),
+      props.children,
+    ),
   );
 }
 
 export interface CodeBlockProps extends DocsComponentProps {
   code?: string;
+  /** Marks this block as a package command for successful-copy analytics. */
+  packageManager?: string;
+  copy?: boolean;
+  highlightLines?: number[] | string;
   language?: string;
+  lineNumbers?: boolean;
+  maxHeight?: number | string;
+  size?: ChakraDocsCodeBlockSize;
   title?: string;
+  variant?: ChakraDocsCodeBlockVariant;
+  wrap?: boolean;
+  codeSlotProps?: Record<string, unknown>;
+  codeTextSlotProps?: Record<string, unknown>;
+  contentSlotProps?: Record<string, unknown>;
+  controlSlotProps?: Record<string, unknown>;
+  copyIndicatorSlotProps?: Record<string, unknown>;
+  copyTriggerSlotProps?: Record<string, unknown>;
+  headerSlotProps?: Record<string, unknown>;
+  languageSlotProps?: Record<string, unknown>;
+  titleSlotProps?: Record<string, unknown>;
 }
 
 export function CodeBlock(props: CodeBlockProps): ReactNode {
   const config = useDocsConfig();
   const code = props.code ?? getCodeText(props.children);
+  const codeBlockConfig = config.codeBlock ?? {};
+  const copy = props.copy ?? codeBlockConfig.copy ?? true;
+  const lineNumbers = props.lineNumbers ?? codeBlockConfig.lineNumbers ?? false;
+  const size = props.size ?? codeBlockConfig.size;
+  const variant = props.variant ?? codeBlockConfig.variant;
+  const wrap = props.wrap ?? codeBlockConfig.wrap ?? false;
   const copyLabel = config.labels?.copyCode ?? defaultLabels.copyCode;
   const copiedLabel = config.labels?.copiedCode ?? defaultLabels.copiedCode;
-  const hasHeader = Boolean(props.title || props.language || code);
+  const hasHeader = Boolean(props.title || props.language || (code && copy));
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.codeBlock,
+    chakraDocsCodeBlockSlotRecipe,
+  );
+  const styles = recipe({ variant });
 
   return createElement(
     ChakraCodeBlock.Root,
     {
       code,
       language: props.language,
-      onCopy: code
-        ? () =>
-            config.analytics?.onCodeCopy?.({
-              code,
-              language: props.language,
-              title: props.title,
-            })
-        : undefined,
-      ...props.slotProps,
+      meta: {
+        highlightLines: parseHighlightedLines(props.highlightLines),
+        showLineNumbers: lineNumbers,
+        wordWrap: wrap,
+      },
+      size,
+      ...mergeSlotStyleProps(styles.root, props.slotProps),
+      onCopy:
+        code && copy
+          ? () => {
+              emitAnalytics(config.analytics?.onCodeCopy, {
+                code,
+                language: props.language,
+                title: props.title,
+              });
+              if (props.packageManager) {
+                emitAnalytics(config.analytics?.onPackageCommandCopy, {
+                  command: code,
+                  manager: props.packageManager,
+                });
+              }
+              (props.slotProps?.onCopy as (() => void) | undefined)?.();
+            }
+          : undefined,
     },
     hasHeader
       ? createElement(
           ChakraCodeBlock.Header,
-          null,
+          mergeSlotStyleProps(styles.header, props.headerSlotProps),
           props.title || props.language
             ? createElement(
                 ChakraCodeBlock.Title,
-                null,
+                mergeSlotStyleProps(styles.title, props.titleSlotProps),
                 props.title ?? props.language,
               )
             : null,
           createElement(
             ChakraCodeBlock.Control,
-            null,
+            mergeSlotStyleProps(styles.control, props.controlSlotProps),
             props.title && props.language
-              ? createElement(Badge, null, props.language)
+              ? createElement(
+                  Badge,
+                  mergeSlotStyleProps(styles.language, props.languageSlotProps),
+                  props.language,
+                )
               : null,
-            code
+            code && copy
               ? createElement(
                   ChakraCodeBlock.CopyTrigger,
-                  { type: 'button', 'aria-label': copyLabel },
+                  {
+                    type: 'button',
+                    'aria-label': copyLabel,
+                    ...mergeSlotStyleProps(
+                      styles.copyTrigger,
+                      props.copyTriggerSlotProps,
+                    ),
+                  },
                   createElement(
                     ChakraCodeBlock.CopyIndicator,
-                    { copied: copiedLabel },
+                    {
+                      copied: copiedLabel,
+                      ...mergeSlotStyleProps(
+                        styles.copyIndicator,
+                        props.copyIndicatorSlotProps,
+                      ),
+                    },
                     copyLabel,
                   ),
                 )
@@ -1203,11 +4804,22 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
       : null,
     createElement(
       ChakraCodeBlock.Content,
-      null,
+      mergeSlotStyleProps(
+        [
+          styles.content,
+          props.maxHeight === undefined
+            ? undefined
+            : { maxHeight: props.maxHeight, overflowY: 'auto' },
+        ],
+        props.contentSlotProps,
+      ),
       createElement(
         ChakraCodeBlock.Code,
-        null,
-        createElement(ChakraCodeBlock.CodeText),
+        mergeSlotStyleProps(styles.code, props.codeSlotProps),
+        createElement(
+          ChakraCodeBlock.CodeText,
+          mergeSlotStyleProps(styles.codeText, props.codeTextSlotProps),
+        ),
       ),
     ),
   );
@@ -1215,8 +4827,18 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
 
 interface SearchResultProps {
   active: boolean;
+  id: string;
+  index: number;
+  onActivate: () => void;
   onSelect: (event: DocsAnchorClickEvent) => void;
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
   record: DocsSearchResult;
+  resultBadgeSlotProps?: Record<string, unknown>;
+  resultContentSlotProps?: Record<string, unknown>;
+  resultDescriptionSlotProps?: Record<string, unknown>;
+  resultLinkSlotProps?: Record<string, unknown>;
+  resultRowSlotProps?: Record<string, unknown>;
+  resultTitleSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
 }
 
@@ -1224,33 +4846,59 @@ function SearchResult(props: SearchResultProps): ReactNode {
   const description = props.record.sectionTitle
     ? (props.record.pageTitle ?? props.record.description)
     : props.record.description;
+  const styles = props.recipe({ active: props.active });
 
   return createElement(
     Box,
     {
-      bg: props.active ? 'teal.50' : 'transparent',
-      borderColor: props.active ? 'teal.200' : 'transparent',
-      borderRadius: 'md',
-      borderWidth: '1px',
-      display: 'block',
-      p: 3,
-      _hover: { bg: 'gray.50', textDecoration: 'none' },
-      ...props.slotProps,
+      ...mergeSlotStyleProps(styles.result, props.slotProps),
+      'data-search-result-index': props.index,
+      role: 'presentation',
     },
     createElement(
       DocsLink,
-      { href: props.record.route, onClick: props.onSelect },
+      {
+        href: props.record.route,
+        ...mergeSlotStyleProps(styles.resultLink, props.resultLinkSlotProps),
+        onClick: (event: DocsAnchorClickEvent) => {
+          (
+            props.resultLinkSlotProps?.onClick as
+              ((event: DocsAnchorClickEvent) => void) | undefined
+          )?.(event);
+          props.onSelect?.(event);
+        },
+        id: props.id,
+        role: 'option',
+        'aria-selected': props.active,
+        tabIndex: -1,
+        onPointerMove: props.onActivate,
+        onMouseDown: (event: DocsAnchorClickEvent) => {
+          // Keep typing focus in the combobox, including when a modified
+          // click opens a result in another tab. Do not cancel the click.
+          if (event.button === 0) event.preventDefault();
+        },
+      },
       createElement(
         HStack,
-        { align: 'flex-start', justify: 'space-between' },
+        mergeSlotStyleProps(styles.resultRow, props.resultRowSlotProps),
         createElement(
           Stack,
-          { gap: 1 },
-          createElement(Text, { fontWeight: 'semibold' }, props.record.title),
+          mergeSlotStyleProps(
+            styles.resultContent,
+            props.resultContentSlotProps,
+          ),
+          createElement(
+            Text,
+            mergeSlotStyleProps(styles.resultTitle, props.resultTitleSlotProps),
+            props.record.title,
+          ),
           description
             ? createElement(
                 Text,
-                { color: 'fg.muted', fontSize: 'sm' },
+                mergeSlotStyleProps(
+                  styles.resultDescription,
+                  props.resultDescriptionSlotProps,
+                ),
                 description,
               )
             : null,
@@ -1258,7 +4906,13 @@ function SearchResult(props: SearchResultProps): ReactNode {
         props.record.tags?.length
           ? createElement(
               Badge,
-              { colorPalette: 'teal', flexShrink: 0, variant: 'subtle' },
+              {
+                variant: 'subtle',
+                ...mergeSlotStyleProps(
+                  styles.resultBadge,
+                  props.resultBadgeSlotProps,
+                ),
+              },
               props.record.tags[0],
             )
           : null,
@@ -1270,16 +4924,14 @@ function SearchResult(props: SearchResultProps): ReactNode {
 function createSearchStatus(
   message: string,
   role: 'alert' | 'status',
+  styles: unknown,
+  slotProps: Record<string, unknown> | undefined,
 ): ReactNode {
   return createElement(
     Text,
     {
-      color: 'fg.muted',
-      fontSize: 'sm',
-      px: 2,
-      py: 6,
       role,
-      textAlign: 'center',
+      ...mergeSlotStyleProps(styles, slotProps),
     },
     message,
   );
@@ -1318,215 +4970,6 @@ function normalizeCollectionIds(
   return ids.length > 0 ? new Set(ids) : undefined;
 }
 
-function renderMarkdownBlock(
-  block: MarkdownBlock,
-  index: number,
-  createNextHeadingId: (title: string) => string,
-  scrollMarginTop: ChakraDocsStickyTop,
-): ReactNode {
-  if (block.type === 'heading') {
-    return createElement(
-      Heading,
-      {
-        as: headingElement(block.level),
-        id: createNextHeadingId(stripMarkdown(block.text)),
-        key: `${block.type}-${index}`,
-        size: block.level === 2 ? '2xl' : 'xl',
-        mt: block.level === 2 ? 8 : 3,
-        scrollMarginTop,
-      },
-      renderInlineMarkdown(block.text),
-    );
-  }
-
-  if (block.type === 'paragraph') {
-    return createElement(
-      Text,
-      { color: 'fg.muted', fontSize: 'md', key: `${block.type}-${index}` },
-      renderInlineMarkdown(block.text),
-    );
-  }
-
-  if (block.type === 'list') {
-    return createElement(
-      Box,
-      { as: 'ul', color: 'fg.muted', key: `${block.type}-${index}`, ps: 6 },
-      block.items.map((item) =>
-        createElement(
-          Box,
-          { as: 'li', key: item, mt: 1 },
-          renderInlineMarkdown(item),
-        ),
-      ),
-    );
-  }
-
-  if (block.type === 'quote') {
-    return createElement(
-      Callout,
-      { key: `${block.type}-${index}`, title: 'Note' },
-      renderInlineMarkdown(block.text),
-    );
-  }
-
-  return createElement(CodeBlock, {
-    code: block.code,
-    key: `${block.type}-${index}`,
-    language: normalizeCodeLanguage(block.language),
-  });
-}
-
-function parseMarkdown(source: string): MarkdownBlock[] {
-  const blocks: MarkdownBlock[] = [];
-  const lines = source.trim().split(/\r?\n/);
-  let index = 0;
-
-  while (index < lines.length) {
-    const line = lines[index];
-
-    if (!line.trim()) {
-      index += 1;
-      continue;
-    }
-
-    const fence = /^(```|~~~)(.*)$/.exec(line);
-
-    if (fence) {
-      const marker = fence[1];
-      const language = fence[2].trim() || undefined;
-      const codeLines: string[] = [];
-      index += 1;
-
-      while (index < lines.length && !lines[index].startsWith(marker)) {
-        codeLines.push(lines[index]);
-        index += 1;
-      }
-
-      if (index < lines.length) {
-        index += 1;
-      }
-
-      blocks.push({ type: 'code', language, code: codeLines.join('\n') });
-      continue;
-    }
-
-    const headingMatch = /^(#{2,6})\s+(.+)$/.exec(line);
-
-    if (headingMatch) {
-      const title = stripMarkdown(headingMatch[2]).trim();
-
-      if (!title) {
-        blocks.push({ type: 'paragraph', text: line });
-        index += 1;
-        continue;
-      }
-
-      blocks.push({
-        type: 'heading',
-        level: headingMatch[1].length,
-        text: headingMatch[2],
-      });
-      index += 1;
-      continue;
-    }
-
-    if (/^-\s+/.test(line)) {
-      const items: string[] = [];
-
-      while (index < lines.length && /^-\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^-\s+/, ''));
-        index += 1;
-      }
-
-      blocks.push({ type: 'list', items });
-      continue;
-    }
-
-    if (/^>\s?/.test(line)) {
-      const quoteLines: string[] = [];
-
-      while (index < lines.length && /^>\s?/.test(lines[index])) {
-        quoteLines.push(lines[index].replace(/^>\s?/, ''));
-        index += 1;
-      }
-
-      blocks.push({ type: 'quote', text: quoteLines.join(' ') });
-      continue;
-    }
-
-    const paragraphLines: string[] = [];
-
-    while (index < lines.length && isParagraphLine(lines[index])) {
-      paragraphLines.push(lines[index]);
-      index += 1;
-    }
-
-    blocks.push({ type: 'paragraph', text: paragraphLines.join(' ') });
-  }
-
-  return blocks;
-}
-
-function isParagraphLine(line: string): boolean {
-  return (
-    Boolean(line.trim()) &&
-    !/^(```|~~~)/.test(line) &&
-    !/^(#{2,6})\s+/.test(line) &&
-    !/^-\s+/.test(line) &&
-    !/^>\s?/.test(line)
-  );
-}
-
-function renderInlineMarkdown(text: string): ReactNode[] {
-  return text
-    .split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g)
-    .filter(Boolean)
-    .map((part, index) => renderInlineMarkdownPart(part, index));
-}
-
-function renderInlineMarkdownPart(part: string, index: number): ReactNode {
-  const key = `${part}-${index}`;
-
-  if (part.startsWith('`') && part.endsWith('`')) {
-    return createElement(
-      Code,
-      { colorPalette: 'teal', key, variant: 'subtle' },
-      part.slice(1, -1),
-    );
-  }
-
-  if (part.startsWith('**') && part.endsWith('**')) {
-    return createElement('strong', { key }, part.slice(2, -2));
-  }
-
-  const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
-
-  if (linkMatch) {
-    return createElement(
-      DocsLink,
-      {
-        color: 'blue.700',
-        fontWeight: 'semibold',
-        href: linkMatch[2],
-        key,
-        textDecoration: 'underline',
-        textUnderlineOffset: '3px',
-      },
-      linkMatch[1],
-    );
-  }
-
-  return part;
-}
-
-function headingElement(level: number): string {
-  if (level === 2) return 'h2';
-  if (level === 3) return 'h3';
-  if (level === 4) return 'h4';
-  if (level === 5) return 'h5';
-  return 'h6';
-}
-
 function normalizeCodeLanguage(
   language: string | undefined,
 ): string | undefined {
@@ -1534,6 +4977,34 @@ function normalizeCodeLanguage(
   if (language === 'txt') return 'text';
   if (language === 'sh') return 'bash';
   return language;
+}
+
+function parseHighlightedLines(value: number[] | string | undefined): number[] {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(value.filter((line) => Number.isInteger(line) && line > 0)),
+    ];
+  }
+
+  const lines = new Set<number>();
+
+  for (const part of value?.split(',') ?? []) {
+    const [startValue, endValue] = part.trim().split('-');
+    const start = Number(startValue);
+    const end = Number(endValue ?? startValue);
+
+    if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
+
+    for (
+      let line = Math.max(1, start);
+      line <= Math.min(end, start + 500);
+      line += 1
+    ) {
+      lines.add(line);
+    }
+  }
+
+  return [...lines];
 }
 
 function getCodeText(children: ReactNode): string {
@@ -1580,41 +5051,199 @@ function isInternalHref(href: string): boolean {
 function NavList(props: {
   items: DocsNavItem[];
   activeRoute?: string;
+  badgeSlotProps?: Record<string, unknown>;
+  collapsible: boolean;
+  contentIdPrefix: string;
+  contentSlotProps?: Record<string, unknown>;
+  childrenSlotProps?: Record<string, unknown>;
+  expandedIds: ReadonlySet<string>;
+  indicatorSlotProps?: Record<string, unknown>;
+  itemSlotProps?: Record<string, unknown>;
+  linkSlotProps?: Record<string, unknown>;
+  listSlotProps?: Record<string, unknown>;
+  path?: readonly number[];
+  recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
+  sectionTitleSlotProps?: Record<string, unknown>;
+  toggleExpanded: (id: string) => void;
+  triggerSlotProps?: Record<string, unknown>;
 }): ReactNode {
+  const styles = props.recipe();
+  const path = props.path ?? [];
+
   return createElement(
     Box,
-    { as: 'ol', listStyleType: 'none', ps: 0, m: 0 },
+    {
+      as: 'ol',
+      ...mergeSlotStyleProps(styles.list, props.listSlotProps),
+    },
     props.items
       .filter((item) => !item.hidden)
-      .map((item) =>
-        createElement(
+      .map((item, index) => {
+        const children = (item.children ?? []).filter((child) => !child.hidden);
+        const hasChildren = children.length > 0;
+        const expanded = !props.collapsible || props.expandedIds.has(item.id);
+        const active = item.href === props.activeRoute;
+        const itemStyles = props.recipe({
+          active,
+          expanded,
+          linked: Boolean(item.href),
+        });
+        const contentId = `${props.contentIdPrefix}-section-${[
+          ...path,
+          index,
+        ].join('-')}`;
+        const indicator =
+          hasChildren && props.collapsible
+            ? createElement(
+                Box,
+                {
+                  ...mergeSlotStyleProps(
+                    itemStyles.indicator,
+                    props.indicatorSlotProps,
+                  ),
+                  as: 'span',
+                  'aria-hidden': 'true',
+                  'data-state': expanded ? 'open' : 'closed',
+                },
+                '›',
+              )
+            : null;
+        const disclosureTrigger =
+          hasChildren && props.collapsible
+            ? createElement(
+                Box,
+                {
+                  ...(item.href
+                    ? mergeSlotStyleProps(
+                        itemStyles.trigger,
+                        props.triggerSlotProps,
+                      )
+                    : mergeSidebarSlotProps(
+                        [styles.sectionTitle, itemStyles.trigger],
+                        props.sectionTitleSlotProps,
+                        props.triggerSlotProps,
+                      )),
+                  as: 'button',
+                  type: 'button',
+                  'aria-controls': contentId,
+                  'aria-expanded': expanded,
+                  'aria-label': item.href
+                    ? `${expanded ? 'Collapse' : 'Expand'} ${item.title}`
+                    : undefined,
+                  'data-state': expanded ? 'open' : 'closed',
+                  onClick: () => props.toggleExpanded(item.id),
+                },
+                item.href ? null : item.title,
+                indicator,
+              )
+            : null;
+
+        return createElement(
           Box,
-          { as: 'li', key: item.id, py: 1 },
+          {
+            as: 'li',
+            key: item.id,
+            ...mergeSlotStyleProps(styles.item, props.itemSlotProps),
+          },
           item.href
             ? createElement(
                 DocsLink,
                 {
                   href: item.href,
-                  'aria-current':
-                    item.href === props.activeRoute ? 'page' : undefined,
+                  'aria-current': active ? 'page' : undefined,
+                  ...mergeSlotStyleProps(itemStyles.link, props.linkSlotProps),
                 },
                 item.title,
               )
-            : createElement(Text, { fontWeight: 'semibold' }, item.title),
-          item.badge ? createElement(Badge, { ms: 2 }, item.badge) : null,
-          item.children
+            : (disclosureTrigger ??
+                createElement(
+                  Text,
+                  mergeSlotStyleProps(
+                    styles.sectionTitle,
+                    props.sectionTitleSlotProps,
+                  ),
+                  item.title,
+                )),
+          item.href ? disclosureTrigger : null,
+          item.badge
+            ? createElement(
+                Badge,
+                {
+                  'data-badge': item.badge,
+                  title: item.badge,
+                  ...mergeSlotStyleProps(styles.badge, props.badgeSlotProps),
+                },
+                item.badge,
+              )
+            : null,
+          hasChildren
             ? createElement(
                 Box,
-                { ps: 4, mt: 1 },
+                {
+                  ...mergeSidebarSlotProps(
+                    [styles.children, itemStyles.content],
+                    props.childrenSlotProps,
+                    props.contentSlotProps,
+                  ),
+                  id: contentId,
+                  'data-state': expanded ? 'open' : 'closed',
+                },
                 createElement(NavList, {
-                  items: item.children,
                   activeRoute: props.activeRoute,
+                  badgeSlotProps: props.badgeSlotProps,
+                  collapsible: props.collapsible,
+                  contentIdPrefix: props.contentIdPrefix,
+                  contentSlotProps: props.contentSlotProps,
+                  childrenSlotProps: props.childrenSlotProps,
+                  expandedIds: props.expandedIds,
+                  indicatorSlotProps: props.indicatorSlotProps,
+                  itemSlotProps: props.itemSlotProps,
+                  items: children,
+                  linkSlotProps: props.linkSlotProps,
+                  listSlotProps: props.listSlotProps,
+                  path: [...path, index],
+                  recipe: props.recipe,
+                  sectionTitleSlotProps: props.sectionTitleSlotProps,
+                  toggleExpanded: props.toggleExpanded,
+                  triggerSlotProps: props.triggerSlotProps,
                 }),
               )
             : null,
-        ),
-      ),
+        );
+      }),
   );
+}
+
+function mergeSidebarSlotProps(
+  styles: unknown,
+  legacySlotProps: Record<string, unknown> | undefined,
+  slotProps: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const { css: legacyCss, ...legacyProps } = legacySlotProps ?? {};
+  const { css, ...props } = slotProps ?? {};
+
+  return {
+    css: [styles, legacyCss, css],
+    ...legacyProps,
+    ...props,
+  };
+}
+
+function mergeComponentSlotProps(
+  styles: unknown,
+  ...slotProps: (Record<string, unknown> | undefined)[]
+): Record<string, unknown> {
+  const mergedProps: Record<string, unknown> = {};
+  const css: unknown[] = [styles];
+
+  for (const current of slotProps) {
+    const { css: currentCss, ...currentProps } = current ?? {};
+
+    css.push(currentCss);
+    Object.assign(mergedProps, currentProps);
+  }
+
+  return { css, ...mergedProps };
 }
 
 function flattenNav(items: DocsNavItem[]): DocsNavItem[] {

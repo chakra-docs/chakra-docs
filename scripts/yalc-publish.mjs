@@ -5,6 +5,7 @@ import path from 'node:path';
 const workspaceRoot = process.cwd();
 const packageOrder = [
   '@chakra-docs/core',
+  '@chakra-docs/shiki',
   '@chakra-docs/search',
   '@chakra-docs/source-filesystem',
   '@chakra-docs/source-git',
@@ -19,6 +20,7 @@ const packageOrder = [
 
 const packageRoots = new Map([
   ['@chakra-docs/core', 'packages/core'],
+  ['@chakra-docs/shiki', 'packages/shiki'],
   ['@chakra-docs/search', 'packages/search'],
   ['@chakra-docs/source-filesystem', 'packages/source-filesystem'],
   ['@chakra-docs/source-git', 'packages/source-git'],

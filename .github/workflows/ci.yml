@@ -57,6 +57,12 @@ jobs:
       - name: Build
         run: npm exec nx -- run-many -t build --parallel=3
 
+      - name: Check public theme declaration performance
+        run: npm run types:performance:check
+
+      - name: Check search performance
+        run: npm run search:performance:check
+
       - name: Browser tests
         run: npm exec nx -- run docs:e2e --skipNxCache
 

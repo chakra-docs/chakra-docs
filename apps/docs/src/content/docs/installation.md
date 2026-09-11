@@ -28,7 +28,7 @@ Wrap the Pages Router app with Chakra and Chakra Docs providers in `_app.tsx`. T
 ```tsx
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { DocsProvider } from '@chakra-docs/chakra';
-import { NextLink } from '@chakra-docs/next';
+import { NextLink } from '@chakra-docs/next/link';
 
 export default function App({ Component, pageProps }) {
   return (

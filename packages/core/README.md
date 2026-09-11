@@ -57,6 +57,23 @@ const published = getPublishedPages(manifest.pages, { includeDrafts: false });
 
 `createDocsManifest` derives `byCollection`, `bySlug`, and `byRoute` indexes plus `search`, `sitemap`, and `feeds` records from the pages in each collection. Draft (`frontmatter.draft`) and hidden (`frontmatter.hidden`) pages are excluded from the derived search, sitemap, and feed outputs. Duplicate collection ids, page ids, slugs, or routes throw, as do pages whose `collectionId` does not match their containing collection.
 
+Machine-readable document helpers are also framework-independent:
+
+```ts
+const markdown = createDocsMarkdown(page);
+const llms = createDocsLlmsText(manifest, {
+  title: 'Example Docs',
+  description: 'Documentation for Example.',
+  siteUrl: 'https://example.com',
+});
+const full = createDocsLlmsFullText(manifest, {
+  title: 'Example Docs',
+  siteUrl: 'https://example.com',
+});
+```
+
+The Markdown serializer includes a small public frontmatter set and accepts a transformed `body` for MDX pipelines. The LLM helpers exclude drafts and hidden pages by default and support collection sections, optional pages, custom Markdown URL resolution, and `llms-full.txt` output.
+
 ## API
 
 ### Manifest helpers
@@ -72,6 +89,9 @@ const published = getPublishedPages(manifest.pages, { includeDrafts: false });
 - `createSitemapEntries(pages, config)` / `createFeedEntries(pages, config)` — sitemap and feed inputs resolved against `config.siteUrl`.
 - `createCollectionIndex(collections)` / `createSlugIndex(pages)` / `createRouteIndex(pages)` — lookup indexes (throw on duplicates).
 - `stripMarkdown(value)` — strip basic Markdown syntax from a string.
+- `createDocsMarkdown(page, options?)` — serialize one page as deterministic Markdown.
+- `createDocsLlmsText(manifest, options?)` — create a concise collection-aware Markdown file list.
+- `createDocsLlmsFullText(manifest, options?)` — create an expanded document containing every published page body.
 
 ### Slug and route helpers
 

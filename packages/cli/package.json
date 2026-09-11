@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI for generating, validating, and watching Markdown and MDX documentation manifests.",
   "keywords": [
     "chakra-ui",
@@ -61,9 +61,9 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.1.0",
-    "@chakra-docs/source-filesystem": "0.1.0",
-    "@chakra-docs/source-git": "0.1.0",
+    "@chakra-docs/core": "0.2.0",
+    "@chakra-docs/source-filesystem": "0.2.0",
+    "@chakra-docs/source-git": "0.2.0",
     "tslib": "^2.3.0"
   },
   "engines": {

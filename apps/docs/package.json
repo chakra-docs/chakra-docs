@@ -2,6 +2,9 @@
   "name": "docs",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "yalc:link": "yalc link --no-pure @postkit/core @postkit/react @postkit/unfurl"
+  },
   "nx": {
     "targets": {
       "typecheck": {
@@ -13,15 +16,22 @@
   },
   "dependencies": {
     "@chakra-docs/chakra": "*",
+    "@chakra-docs/shiki": "*",
     "@chakra-docs/core": "*",
     "@chakra-docs/next": "*",
     "@chakra-docs/search": "*",
     "@chakra-docs/source-filesystem": "*",
     "@chakra-ui/react": "^3.36.0",
-    "next": "~16.2.10",
+    "@postkit/react": "0.2.0",
+    "next": "~16.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "react-structured": "^0.1.0",
-    "shiki": "^4.3.1"
+    "remark-directive": "^4.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.3.1",
+    "unified": "^11.0.5"
   }
 }
