@@ -187,11 +187,12 @@ test('public registry verification does not require an npm token', () => {
   );
 
   assert.match(verificationStep, /NODE_AUTH_TOKEN: ''/);
-  assert.match(
+  assert.match(publishedVersionVerifier, /credentials: 'omit'/);
+  assert.match(publishedVersionVerifier, /https:\/\/registry\.npmjs\.org/);
+  assert.doesNotMatch(
     publishedVersionVerifier,
-    /NODE_AUTH_TOKEN: process\.env\.NODE_AUTH_TOKEN \?\? ''/,
+    /execFile|process\.env|Authorization/,
   );
-  assert.match(publishedVersionVerifier, /String\(error\.stderr\)\.trim\(\)/);
 });
 
 function runVersionAssertion(version) {

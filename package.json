@@ -85,7 +85,7 @@
       "release-validation": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "node --test scripts/release-workflow.spec.mjs"
+          "command": "node --test scripts/release-workflow.spec.mjs scripts/verify-published-version.spec.mjs"
         }
       },
       "yalc-publish": {

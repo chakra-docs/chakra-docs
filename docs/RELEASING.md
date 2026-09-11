@@ -122,6 +122,23 @@ verifies that all twelve versions and `latest` tags are public. The registry
 check remains enabled during bootstrap so the exact run can safely resume after
 a partial publish.
 
+Public verification reads npm directly without credentials or npm's local
+metadata cache. Every attempt has a unique cache-busting URL and requests cache
+revalidation. It checks both the exact version and `latest` from the same
+response for each package. Transient failures retry with 10s, 20s, then 30s
+delays for up to five minutes; requests time out after 15 seconds (or the
+remaining deadline). Each attempt logs the packages still missing or stale.
+
+If publication succeeded but verification timed out, check again without
+publishing anything:
+
+```bash
+node scripts/verify-published-version.mjs 0.2.0
+```
+
+A successful verification means no republish or version bump is needed. If
+packages are still missing, follow the partial-publish recovery steps below.
+
 After publication succeeds, create the `vX.Y.Z` tag and GitHub release at the
 exact published commit. Do not create either before registry verification.
 
