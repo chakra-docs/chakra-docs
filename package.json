@@ -40,7 +40,7 @@
     "@nx/web": "22.7.8",
     "@swc-node/register": "1.11.1",
     "@swc/cli": "~0.8.0",
-    "@swc/core": "1.15.43",
+    "@swc/core": "1.15.47",
     "@swc/helpers": "0.5.23",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.14",
