@@ -32,6 +32,7 @@
 
 ### 🩹 Fixes
 
+- **docs:** pin published Postkit 0.2.0 with locked transitive dependencies, replacing the required local yalc setup and removing MDX dependency workarounds.
 - **chakra:** position page-action overlays above sticky headers with viewport-fixed positioning and keyboard scroll padding; positioning and stacking remain overridable.
 
 - **chakra:** wrap long navigation, breadcrumb, card, pagination and prose content without changing code whitespace; respect reduced motion for disclosure indicators and dialogs.

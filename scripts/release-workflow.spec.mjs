@@ -28,6 +28,27 @@ for (const directory of packageDirectories) {
 const versions = new Set(publicPackages.map(({ version }) => version));
 const [committedVersion] = versions;
 
+test('docs Postkit dependencies resolve from the registry without yalc', async () => {
+  const manifest = JSON.parse(await read('apps/docs/package.json'));
+  const lock = JSON.parse(await read('package-lock.json'));
+  const version = manifest.dependencies['@postkit/react'];
+  assert.match(version, /^\d+\.\d+\.\d+$/);
+  assert.equal(
+    lock.packages['apps/docs'].dependencies['@postkit/react'],
+    version,
+  );
+  for (const name of ['react', 'core', 'unfurl']) {
+    const entry = lock.packages[`node_modules/@postkit/${name}`];
+    assert.equal(entry.version, version);
+    assert.equal(
+      entry.resolved,
+      `https://registry.npmjs.org/@postkit/${name}/-/${name}-${version}.tgz`,
+    );
+    assert.ok(entry.integrity);
+    assert.notEqual(entry.link, true);
+  }
+});
+
 test('all public packages form one fixed, committed release group', () => {
   assert.equal(publicPackages.length, 12);
   assert.deepEqual(

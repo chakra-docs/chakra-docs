@@ -16,10 +16,10 @@ The body you are reading is rendered by `Prose`, `react-markdown`, and Postkit's
 Install Postkit alongside the Chakra Docs packages and the Markdown runtime used by this example.
 
 ```bash
-npm install @chakra-docs/chakra @chakra-docs/core @chakra-docs/next @chakra-docs/shiki @postkit/react react-markdown
+npm install @chakra-docs/chakra @chakra-docs/core @chakra-docs/next @chakra-docs/shiki @postkit/react@0.2.0 react-markdown
 ```
 
-When developing both libraries locally, link the unpublished Postkit builds from yalc instead:
+The docs site uses published Postkit `0.2.0` packages by default. When developing both libraries locally, you can optionally override them with Postkit builds from yalc:
 
 ```bash
 yalc link --no-pure @postkit/core @postkit/react @postkit/unfurl
