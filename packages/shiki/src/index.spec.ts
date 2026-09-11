@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Highlighter } from 'shiki';
 import {
@@ -92,13 +94,54 @@ describe('createChakraDocsShikiAdapter', () => {
       expect(result.code).toContain('data-diff="added"');
       expect(result.code).toContain('data-diff="removed"');
       expect(result.code).toContain('data-focused=""');
+      const document = new DOMParser().parseFromString(
+        result.code,
+        'text/html',
+      );
+      expect(document.body.textContent).toBe(code);
+    }
+  });
+
+  it.each([
+    '<script>alert(1)</script>',
+    '<script',
+    '<scrip<script>t>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '<svg onload=alert(1)><a href="javascript:alert(1)">link</a></svg>',
+    '</code></pre><iframe srcdoc="<script>alert(1)</script>"></iframe>',
+    '  &lt;script&gt; &amp; &#x3C; "quoted"\n\nlast  ',
+  ])('keeps markup inert and preserves source text: %s', async (code) => {
+    const adapter = create({ languages: ['html'] });
+    // Uninitialized fallback is explicitly text, never trusted HTML.
+    expect(adapter.getHighlighter(null)({ code })).toEqual({
+      code,
+      highlighted: false,
+    });
+    const highlight = adapter.getHighlighter(await adapter.loadContext());
+    for (const language of ['html', 'unknown-lang', 'text', 'js', undefined]) {
+      const result = highlight({ code, language });
+      expect(result.highlighted).toBe(true);
+      // Parse into a detached, inert document; never execute fixture markup.
+      const document = new DOMParser().parseFromString(
+        result.code,
+        'text/html',
+      );
+      expect(document.body.textContent).toBe(code);
       expect(
-        result.code
-          .replace(/<[^>]*>/g, '')
-          .replaceAll('&lt;', '<')
-          .replaceAll('&#x3C;', '<')
-          .replaceAll('&gt;', '>'),
-      ).toBe(code);
+        document.querySelector('script, img, svg, iframe, a, pre, code'),
+      ).toBeNull();
+      // Highlighting may add spans, but must not introduce source elements or
+      // event-handler attributes, including ones not listed in the fixtures.
+      for (const element of document.body.querySelectorAll('*')) {
+        expect(element.localName).toBe('span');
+      }
+      for (const element of document.querySelectorAll('*')) {
+        expect(
+          element
+            .getAttributeNames()
+            .some((name) => name.toLowerCase().startsWith('on')),
+        ).toBe(false);
+      }
     }
   });
 
