@@ -68,6 +68,20 @@ test('docs Postkit dependencies resolve from the registry without yalc', async (
   }
 });
 
+test('docs and workspace UI packages share one Chakra runtime', async () => {
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  const docsChakra =
+    lock.importers['apps/docs'].dependencies['@chakra-ui/react'].version;
+  const packageChakra =
+    lock.importers['packages/chakra'].dependencies['@chakra-ui/react'].version;
+
+  assert.equal(
+    packageChakra,
+    docsChakra,
+    'pnpm peer contexts must not install a second Chakra runtime for the workspace package',
+  );
+});
+
 test('all public packages form one fixed, committed release group', () => {
   assert.equal(publicPackages.length, 12);
   assert.deepEqual(

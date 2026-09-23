@@ -5,6 +5,7 @@ packages:
 linkWorkspacePackages: true
 preferWorkspacePackages: true
 strictPeerDependencies: true
+dedupePeerDependents: true
 
 allowBuilds:
   '@parcel/watcher': true
@@ -27,6 +28,7 @@ overrides:
   postcss: ^8.5.24
   qs: ^6.16.0
   sharp: ^0.35.4
+  supports-color: 8.1.1
   'svgo@3': ^3.3.5
   'svgo@4': ^4.1.0
   undici: ^7.29.0
