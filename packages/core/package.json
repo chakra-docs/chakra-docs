@@ -46,7 +46,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/core:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/core:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",

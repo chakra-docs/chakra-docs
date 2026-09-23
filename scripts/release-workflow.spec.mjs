@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import { parse as parseYaml } from 'yaml';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
 const releaseWorkflow = await read('.github/workflows/release.yml');
@@ -30,16 +31,13 @@ const [committedVersion] = versions;
 
 test('packed consumers include pinned DOM declarations without weakening compatibility checks', async () => {
   const manifest = JSON.parse(await read('package.json'));
-  const lock = JSON.parse(await read('package-lock.json'));
-  const domTypes = lock.packages['node_modules/@typescript/lib-dom'];
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  const domTypes = lock.importers['.'].devDependencies['@typescript/lib-dom'];
   assert.equal(
-    manifest.devDependencies['@typescript/lib-dom'],
-    `npm:@types/web@${domTypes.version}`,
-  );
-  assert.equal(
-    lock.packages[''].devDependencies['@typescript/lib-dom'],
+    domTypes.specifier,
     manifest.devDependencies['@typescript/lib-dom'],
   );
+  assert.equal(domTypes.version, '@types/web@0.0.356');
 
   const smoke = await read('scripts/release-smoke.mjs');
   assert.match(smoke, /dependencies\['@typescript\/lib-dom'\]/);
@@ -53,22 +51,20 @@ test('packed consumers include pinned DOM declarations without weakening compati
 
 test('docs Postkit dependencies resolve from the registry without yalc', async () => {
   const manifest = JSON.parse(await read('apps/docs/package.json'));
-  const lock = JSON.parse(await read('package-lock.json'));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
   const version = manifest.dependencies['@postkit/react'];
   assert.match(version, /^\d+\.\d+\.\d+$/);
   assert.equal(
-    lock.packages['apps/docs'].dependencies['@postkit/react'],
+    lock.importers['apps/docs'].dependencies['@postkit/react'].specifier,
     version,
   );
   for (const name of ['react', 'core', 'unfurl']) {
-    const entry = lock.packages[`node_modules/@postkit/${name}`];
-    assert.equal(entry.version, version);
-    assert.equal(
-      entry.resolved,
-      `https://registry.npmjs.org/@postkit/${name}/-/${name}-${version}.tgz`,
+    const packageKey = Object.keys(lock.packages).find((key) =>
+      key.startsWith(`@postkit/${name}@${version}`),
     );
-    assert.ok(entry.integrity);
-    assert.notEqual(entry.link, true);
+    assert.ok(packageKey, `pnpm must lock @postkit/${name}@${version}`);
+    const entry = lock.packages[packageKey];
+    assert.ok(entry.resolution.integrity);
   }
 });
 
