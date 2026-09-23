@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### 🚀 Features
+
+- **core:** add framework-neutral documentation preference definitions,
+  validation, value resolution, persistence contracts, and change events.
+- **chakra:** add controlled or persistent site-wide preferences, accessible
+  selectors, conditional content, hooks, analytics, recipe slots, and preference-bound
+  tab groups with non-destructive local fallback behavior.
+
 ## 0.2.0 (2026-09-04)
 
 ### 🚀 Features

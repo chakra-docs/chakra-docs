@@ -295,7 +295,7 @@ should also use `min-width: 0` so it can shrink.
 </DocsSteps.Root>
 ```
 
-`DocsTabs` can synchronize separate groups on the same page. This is useful for package-manager or framework choices repeated across a guide.
+`DocsTabs` can synchronize separate groups on the same page. This is useful for temporary package-manager or framework choices repeated across a guide.
 
 ```tsx
 <DocsTabs.Root defaultValue="npm" syncKey="package-manager">
@@ -313,6 +313,53 @@ should also use `min-width: 0` so it can shrink.
 ```
 
 Use `value` and `onValueChange` to control a tab group. The trigger and panel IDs, `aria-controls`, `aria-labelledby`, and selected state are handled by the component.
+
+For preferences that should follow a reader across pages, declare dimensions once and bind selectors, conditional content, and tabs to them.
+
+```tsx
+const preferences = [
+  {
+    id: 'package-manager',
+    label: 'Package manager',
+    options: ['npm', 'pnpm', 'yarn', 'bun'],
+    defaultValue: 'npm',
+  },
+  {
+    id: 'api-style',
+    label: 'API style',
+    options: ['rest', 'graphql'],
+    defaultValue: 'rest',
+  },
+] as const;
+
+<DocsPreferences.Root definitions={preferences} storage="local">
+  <DocsPreferences.Select preference="package-manager" />
+
+  <DocsTabs.Root preference="package-manager">
+    <DocsTabs.List>
+      <DocsTabs.Trigger value="npm">npm</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="pnpm">pnpm</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="yarn">Yarn</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="bun">Bun</DocsTabs.Trigger>
+    </DocsTabs.List>
+    <DocsTabs.Content value="npm">npm install package-name</DocsTabs.Content>
+    <DocsTabs.Content value="pnpm">pnpm add package-name</DocsTabs.Content>
+    <DocsTabs.Content value="yarn">yarn add package-name</DocsTabs.Content>
+    <DocsTabs.Content value="bun">bun add package-name</DocsTabs.Content>
+  </DocsTabs.Root>
+
+  <DocsPreferences.When preference="api-style" value="rest">
+    <RestExample />
+  </DocsPreferences.When>
+  <DocsPreferences.When preference="api-style" value="graphql">
+    <GraphqlExample />
+  </DocsPreferences.When>
+</DocsPreferences.Root>;
+```
+
+Local persistence reads after hydration, so the declared default remains deterministic during SSR. Stored and programmatic values are validated against enabled options. Use a custom `DocsPreferenceStorage` for cookie or account-backed preferences, controlled `values` and `onValuesChange` for application state, or the `useDocsPreferences` and `useDocsPreference` hooks for custom controls. Preference changes can be observed through `onPreferenceChange` or `DocsProvider` analytics. Inactive `When` branches remain server-rendered and hidden unless `unmountOnExit` is enabled.
+
+A preference-bound tab group can contain only a subset of the global options. If it cannot display the selected value, it uses its `defaultValue`, the preference default, or its first tab locally—without changing the reader's saved preference. `preference` cannot be combined with controlled `value` or the older in-memory `syncKey`.
 
 ```tsx
 <DocsApiTable

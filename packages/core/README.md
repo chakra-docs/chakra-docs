@@ -93,6 +93,16 @@ The Markdown serializer includes a small public frontmatter set and accepts a tr
 - `createDocsLlmsText(manifest, options?)` — create a concise collection-aware Markdown file list.
 - `createDocsLlmsFullText(manifest, options?)` — create an expanded document containing every published page body.
 
+### Preference helpers
+
+- `normalizeDocsPreferenceDefinition(s)` — validate preference ids, options,
+  defaults, disabled states, and duplicate dimensions.
+- `resolveDocsPreferenceValue(s)` — accept only declared, enabled values and
+  fall back to deterministic defaults.
+- `DocsPreferenceDefinition`, `DocsPreferenceStorage`,
+  `DocsPreferenceValues`, and `DocsPreferenceChangeEvent` provide lightweight,
+  framework-neutral contracts for site-wide documentation choices.
+
 ### Slug and route helpers
 
 - `slugToKey(slug)` — join slug segments into an index key.
@@ -102,7 +112,7 @@ The Markdown serializer includes a small public frontmatter set and accepts a tr
 
 ### Types
 
-`DocsPage`, `DocsFrontmatter`, `DocsHeading`, `DocsNavItem`, `DocsCollection`, `DocsManifest`, `DocsSearchRecord`, `DocsSitemapEntry`, `DocsFeedEntry`, `DocsSource`, `DocsConfig`, `DocsRepository`, `DocsDiscoveryConfig`, `DocsCollectionConfig`, `DocsRepositoryConfig` (local, workspace, git, and custom variants), `CreateDocsManifestOptions`, and more.
+`DocsPage`, `DocsFrontmatter`, `DocsHeading`, `DocsNavItem`, `DocsCollection`, `DocsManifest`, `DocsSearchRecord`, `DocsSitemapEntry`, `DocsFeedEntry`, `DocsSource`, `DocsConfig`, `DocsRepository`, `DocsDiscoveryConfig`, `DocsCollectionConfig`, `DocsRepositoryConfig` (local, workspace, git, and custom variants), `DocsPreferenceDefinition`, `DocsPreferenceOption`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `CreateDocsManifestOptions`, and more.
 
 ## Help and contributing
 

@@ -1,9 +1,11 @@
 'use client';
 
 import {
+  Children,
   Fragment,
   createContext,
   createElement,
+  isValidElement,
   useContext,
   useEffect,
   useId,
@@ -689,6 +691,8 @@ export interface DocsTabsRootProps {
   children?: ReactNode;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
+  /** Bind this tab group to a site-wide DocsPreferences dimension. */
+  preference?: string;
   slotProps?: Record<string, unknown>;
   syncKey?: string;
   value?: string;
@@ -2972,6 +2976,28 @@ interface DocsTabsContextValue {
   value: string;
 }
 
+function getDocsTabsValues(children: ReactNode): readonly string[] {
+  const values = new Set<string>();
+  const visit = (nodes: ReactNode) => {
+    Children.forEach(nodes, (child) => {
+      if (!isValidElement(child)) return;
+      const childProps = child.props as {
+        value?: unknown;
+        children?: ReactNode;
+      };
+      if (
+        (child.type === DocsTabsTrigger || child.type === DocsTabsContent) &&
+        typeof childProps.value === 'string'
+      ) {
+        values.add(childProps.value);
+      }
+      visit(childProps.children);
+    });
+  };
+  visit(children);
+  return [...values];
+}
+
 const DocsTabsContext = createContext<DocsTabsContextValue | undefined>(
   undefined,
 );
@@ -2994,11 +3020,57 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
     chakraDocsTabsSlotRecipe,
   );
   const styles = recipe();
-  const controlled = props.value !== undefined;
+  const preferences = useContext(DocsPreferencesContext);
+  if (props.preference && props.value !== undefined) {
+    throw new Error(
+      'DocsTabs.Root cannot use both preference and controlled value props.',
+    );
+  }
+  if (props.preference && props.syncKey) {
+    throw new Error(
+      'DocsTabs.Root cannot use both preference and syncKey; the preference already synchronizes groups.',
+    );
+  }
+  const preferenceDefinition = props.preference
+    ? preferences?.definitions.find(
+        (definition) => definition.id === props.preference,
+      )
+    : undefined;
+  if (props.preference && !preferences) {
+    throw new Error(
+      'DocsTabs.Root preference requires an ancestor DocsPreferences.Root.',
+    );
+  }
+  if (props.preference && !preferenceDefinition) {
+    throw new Error(`Unknown documentation preference "${props.preference}".`);
+  }
+  const tabValues = useMemo(
+    () => getDocsTabsValues(props.children),
+    [props.children],
+  );
+  const preferredValue = props.preference
+    ? preferences?.values[props.preference]
+    : undefined;
+  const localFallback =
+    (props.defaultValue && tabValues.includes(props.defaultValue)
+      ? props.defaultValue
+      : undefined) ??
+    (preferenceDefinition &&
+    tabValues.includes(preferenceDefinition.defaultValue)
+      ? preferenceDefinition.defaultValue
+      : tabValues[0]) ??
+    '';
+  const preferenceValue = props.preference
+    ? preferredValue && tabValues.includes(preferredValue)
+      ? preferredValue
+      : localFallback
+    : undefined;
+  const controlled =
+    props.value !== undefined || props.preference !== undefined;
   const [uncontrolledValue, setUncontrolledValue] = useState<string>(
     props.defaultValue ?? '',
   );
-  const value = props.value ?? uncontrolledValue;
+  const value = props.value ?? preferenceValue ?? uncontrolledValue;
   const valueRef = useRef(value);
   const onValueChangeRef = useRef(props.onValueChange);
   valueRef.current = value;
@@ -3042,7 +3114,9 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
     valueRef.current = nextValue;
     props.onValueChange?.(nextValue);
 
-    if (props.syncKey) {
+    if (props.preference) {
+      preferences?.setValue(props.preference, nextValue, 'tabs');
+    } else if (props.syncKey) {
       publishDocsTabsSyncValue(props.syncKey, nextValue);
     }
   };

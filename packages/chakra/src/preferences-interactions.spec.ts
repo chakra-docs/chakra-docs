@@ -9,6 +9,7 @@ import type { DocsPreferenceStorage } from '@chakra-docs/core';
 import {
   DocsPreferences,
   DocsProvider,
+  DocsTabs,
   createDocsLocalPreferenceStorage,
   useDocsPreference,
   useDocsPreferences,
@@ -39,6 +40,26 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+    window.setTimeout(() => callback(performance.now()), 0),
+  );
+  vi.stubGlobal('cancelAnimationFrame', (id: number) =>
+    window.clearTimeout(id),
+  );
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {
+        /* No layout in jsdom. */
+      }
+      unobserve() {
+        /* No layout in jsdom. */
+      }
+      disconnect() {
+        /* No layout in jsdom. */
+      }
+    },
+  );
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -102,6 +123,27 @@ function PreferenceProbe() {
       'button',
       { type: 'button', onClick: () => preferences.reset() },
       'Reset all',
+    ),
+  );
+}
+
+function preferenceTabs(values: readonly string[], defaultValue?: string) {
+  return createElement(
+    DocsTabs.Root,
+    { preference: 'package-manager', defaultValue },
+    createElement(
+      DocsTabs.List,
+      { slotProps: { 'aria-label': 'Package manager examples' } },
+      ...values.map((value) =>
+        createElement(DocsTabs.Trigger, { key: value, value }, value),
+      ),
+    ),
+    ...values.map((value) =>
+      createElement(
+        DocsTabs.Content,
+        { key: value, value },
+        `${value} install`,
+      ),
     ),
   );
 }
@@ -258,5 +300,58 @@ describe('DocsPreferences', () => {
     expect(await storage.get('language')).toBe('typescript');
     await storage.remove?.('language');
     expect(await storage.get('language')).toBeNull();
+  });
+
+  it('binds tab groups while retaining a local fallback for subsets', async () => {
+    const onPreferenceChange = vi.fn();
+    const storage: DocsPreferenceStorage = {
+      get: () => null,
+      set: vi.fn(),
+    };
+    await render(
+      createElement(
+        DocsPreferences.Root,
+        {
+          definitions,
+          defaultValues: {
+            'package-manager': 'yarn',
+            'api-style': 'rest',
+          },
+          storage,
+          onPreferenceChange,
+        },
+        createElement(PreferenceProbe),
+        preferenceTabs(['npm', 'pnpm'], 'npm'),
+        preferenceTabs(['npm', 'pnpm', 'yarn']),
+      ),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const triggers = [
+      ...container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ];
+    expect(
+      triggers.map((trigger) => trigger.getAttribute('aria-selected')),
+    ).toEqual(['true', 'false', 'false', 'false', 'true']);
+    expect(container.querySelector('output')?.getAttribute('data-value')).toBe(
+      'yarn',
+    );
+    expect(onPreferenceChange).not.toHaveBeenCalled();
+
+    await act(async () => triggers[1].click());
+    expect(container.querySelector('output')?.getAttribute('data-value')).toBe(
+      'pnpm',
+    );
+    expect(triggers[1].getAttribute('aria-selected')).toBe('true');
+    expect(triggers[3].getAttribute('aria-selected')).toBe('true');
+    expect(storage.set).toHaveBeenCalledWith('package-manager', 'pnpm');
+    expect(onPreferenceChange).toHaveBeenCalledWith({
+      id: 'package-manager',
+      value: 'pnpm',
+      previousValue: 'yarn',
+      source: 'tabs',
+    });
   });
 });

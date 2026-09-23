@@ -213,7 +213,7 @@ context changes invisibly to these props. Only ship authorized suggestions.
 - `linkComponent` — a `DocsLinkComponent` used for internal navigation, including Markdown, sidebar, pagination, and search-result links (for example `DocsLink` from `@chakra-docs/next/link`). External URLs continue to render as ordinary anchors.
 - `labels` — `Partial<DocsLabels>` overrides for UI copy (`search`, `searchPlaceholder`, `searchLoading`, `searchError`, `previousPage`, `nextPage`, `onThisPage`, `copyCode`, ...).
 - `analytics` — `DocsAnalyticsCallbacks` for search, code/package copies,
-  page actions/copies, heading-link copies, and feedback. Callbacks are optional,
+  page actions/copies, heading-link copies, feedback, and preference changes. Callbacks are optional,
   provider-neutral observers; thrown errors and rejected promises are isolated
   from the UI. Report integration failures inside your callback if needed.
 - `codeBlock` — shared `CodeBlock` defaults. `adapter` configures syntax highlighting; `copy`, `lineNumbers`, `size`, `variant`, and `wrap` configure every nested code block unless an instance overrides them.
@@ -227,6 +227,59 @@ package commands. A root `slotProps.onCopy` observer runs alongside analytics.
 Standalone Postkit components have their own callbacks; this provider does not
 automatically instrument another renderer. Only forward query/content fields
 to your analytics service when appropriate for your privacy and consent policy.
+
+### Site-wide content preferences
+
+Use `DocsPreferences` for choices that should follow readers across pages, such
+as package manager, language, framework, platform, or REST versus GraphQL.
+Definitions use lightweight types from `@chakra-docs/core` and validate every
+default, stored value, and programmatic update.
+
+```tsx
+const definitions = [
+  {
+    id: 'package-manager',
+    label: 'Package manager',
+    options: ['npm', 'pnpm', { value: 'yarn', label: 'Yarn' }, 'bun'],
+    defaultValue: 'npm',
+  },
+  {
+    id: 'api-style',
+    label: 'API style',
+    options: ['rest', 'graphql'],
+    defaultValue: 'rest',
+  },
+] as const;
+
+<DocsPreferences.Root definitions={definitions} storage="local">
+  <DocsPreferences.Select preference="package-manager" />
+  <DocsPreferences.When preference="api-style" value="rest">
+    <RestExample />
+  </DocsPreferences.When>
+  <DocsPreferences.When preference="api-style" value="graphql">
+    <GraphqlExample />
+  </DocsPreferences.When>
+</DocsPreferences.Root>;
+```
+
+`storage="local"` persists under `chakra-docs.preference.{id}` and reads only
+after hydration, keeping the declared default deterministic during SSR. Pass
+`storageKeyPrefix` to namespace it, a custom synchronous or asynchronous
+`DocsPreferenceStorage` for cookies/account settings, or omit `storage` for
+session-only state. Invalid, unknown, or disabled stored values are ignored.
+Storage failures are isolated and reported through `onStorageError`.
+
+Use `values` and `onValuesChange` for controlled state, or `defaultValues` for
+uncontrolled overrides. `onPreferenceChange` and
+`DocsProvider.config.analytics.onPreferenceChange` receive the id, new and
+previous values, and a `selector`, `tabs`, `api`, `storage`, or `reset` source.
+`useDocsPreferences()` exposes the complete state plus `setValue` and `reset`;
+`useDocsPreference(id)` scopes those operations to one dimension.
+
+`DocsPreferences.When` keeps every branch server-rendered and hides the inactive
+branch by default, which preserves indexable content and avoids hydration
+mismatches. Set `unmountOnExit` for expensive interactive branches. A `fallback`
+can be rendered while a branch is inactive.
 
 Search callbacks include `onSearchOpen`, `onSearchClose({ reason })`,
 `onSearch(query)`, `onSearchResults(event)`, `onSearchError(context)`, and
@@ -309,6 +362,7 @@ Per-instance slot props still take precedence over recipe defaults.
 | `chakraDocsHeadingPermalink`      | `root`, `trigger`, `indicator`                                                                                                                                                                                                                                                                                                             |
 | `chakraDocsFeedback`              | `root`, `prompt`, `choices`, `option`, `comment`, `actions`, `submit`, `status`                                                                                                                                                                                                                                                            |
 | `chakraDocsPageActions`           | `root`, `copyRoot`, `trigger`, `primaryTrigger`, `icon`, `actionContent`, `label`, `indicator`, `menu`, `menuTrigger`, `menuIndicator`, `menuPositioner`, `menuContent`, `menuItem`, `menuGroup`, `menuGroupLabel`, `menuSeparator`, `submenu`, `submenuTrigger`, `submenuIndicator`, `submenuPositioner`, `submenuContent`, `description` |
+| `chakraDocsPreferences`           | `root`, `label`, `control`, `select`, `indicator`, `content`                                                                                                                                                                                                                                                                               |
 | `chakraDocsSidebar`               | `root`, `list`, `item`, `link`, `sectionTitle`, `badge`, `children`, `trigger`, `indicator`, `content`                                                                                                                                                                                                                                     |
 | `chakraDocsSteps`                 | `root`, `item`, `indicator`, `content`, `title`, `description`                                                                                                                                                                                                                                                                             |
 | `chakraDocsTabs`                  | `root`, `list`, `trigger`, `content`                                                                                                                                                                                                                                                                                                       |
@@ -361,7 +415,8 @@ const sidebarRecipe = {
 - `DocsPageFeedback` — compound feedback form with controlled or uncontrolled choice/comment state, async submission status, and application-owned persistence.
 - `DocsCards` — compound responsive card grid with `Root` and safe linked `Card` parts.
 - `DocsSteps` — semantic ordered procedure with `Root` and independently composable `Item` parts.
-- `DocsTabs` — compound tabs powered by Chakra Tabs, with arrow/Home/End keyboard navigation, roving focus, controlled/uncontrolled state, and optional same-page synchronization through `syncKey`. Styling remains owned by `chakraDocsTabs` and per-instance slot props.
+- `DocsTabs` — compound tabs powered by Chakra Tabs, with arrow/Home/End keyboard navigation, roving focus, controlled/uncontrolled state, optional same-page synchronization through `syncKey`, and site-wide binding through `preference`. A group missing the global value falls back locally without overwriting the saved preference. Styling remains owned by `chakraDocsTabs` and per-instance slot props.
+- `DocsPreferences` — site-wide preference state with `Root`, accessible `Select`, and conditional `When`; supports controlled state, validated sync/async persistence, SSR-safe defaults, hooks, reset, analytics, and recipe slots.
 - `DocsApiTable` — responsive semantic API-reference table for names, types, defaults, descriptions, and required markers.
 - `DocsBadge` — neutral metadata badge with an opt-in `accent` tone.
 - `DocsSidebar` — sticky nav list built from `DocsNavItem[]`, highlighting the active route. Children render above the navigation list. Its direct disclosure props are `collapsible`, `defaultExpanded`, `expandedIds`, and `onExpandedChange`, with matching `triggerSlotProps`, `indicatorSlotProps`, and `contentSlotProps` overrides. Branch headings become buttons with `aria-expanded` and `aria-controls`; linked branches retain their link and add a separately labeled disclosure button. Badge elements expose their value through `data-badge` and `title`. The legacy `children` recipe slot remains supported alongside the new `trigger`, `indicator`, and `content` slots.
@@ -378,13 +433,15 @@ const sidebarRecipe = {
 ### Hooks and helpers
 
 - `useDocsConfig()` — read the merged `ChakraDocsConfig` (with default labels applied).
+- `useDocsPreferences()` / `useDocsPreference(id)` — read and update all preferences or one declared dimension.
+- `createDocsLocalPreferenceStorage(options?)` — create the local-storage adapter used by `storage="local"`.
 - `createDocsVersionOptions(collections)` — map collections to `DocsVersionOption[]`.
 - `filterSearchRecordsByCollections(records, collectionIds)` — scope search records to a set of collections.
 - `createDocsBreadcrumbItems(nav, activeRoute)` — return every nav ancestor and the active page for breadcrumb rendering.
 
 ### Types
 
-`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsArticleProps`, `DocsBreadcrumbsProps`, `DocsBreadcrumbItem`, `DocsPageActionsRootProps`, `DocsPageActionsSize`, `DocsPageActionProps`, `DocsPageActionsMenuProps`, `DocsPageActionsSubmenuProps`, `DocsPageActionsGroupProps`, `DocsPageActionsSeparatorProps`, `DocsPageActionsOpenChangeDetails`, `DocsPageActionsPositioning`, `DocsPageActionsPlacement`, `DocsHeadingPermalinkProps`, `DocsPageFeedbackRootProps`, `DocsPageFeedbackValue`, `DocsPageFeedbackSubmitDetails`, `DocsCardsRootProps`, `DocsCardProps`, `DocsStepsRootProps`, `DocsStepProps`, `DocsTabsRootProps`, `DocsTabsValuePartProps`, `DocsApiTableProps`, `DocsApiTableItem`, `DocsBadgeProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsMobileNavigationRootProps`, `DocsMobileNavigationTriggerProps`, `DocsMobileNavigationContentProps`, `DocsMobileNavigationPartProps`, `DocsMobileNavigationCloseTriggerProps`, `DocsMobileNavigationSidebarProps`, `DocsMobileNavigationOpenChangeDetails`, `DocsTableOfContentsProps`, `DocsMobileTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
+`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsArticleProps`, `DocsBreadcrumbsProps`, `DocsBreadcrumbItem`, `DocsPageActionsRootProps`, `DocsPageActionsSize`, `DocsPageActionProps`, `DocsPageActionsMenuProps`, `DocsPageActionsSubmenuProps`, `DocsPageActionsGroupProps`, `DocsPageActionsSeparatorProps`, `DocsPageActionsOpenChangeDetails`, `DocsPageActionsPositioning`, `DocsPageActionsPlacement`, `DocsHeadingPermalinkProps`, `DocsPageFeedbackRootProps`, `DocsPageFeedbackValue`, `DocsPageFeedbackSubmitDetails`, `DocsCardsRootProps`, `DocsCardProps`, `DocsStepsRootProps`, `DocsStepProps`, `DocsTabsRootProps`, `DocsTabsValuePartProps`, `DocsPreferencesRootProps`, `DocsPreferenceSelectProps`, `DocsPreferenceWhenProps`, `DocsPreferenceDefinition`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `DocsApiTableProps`, `DocsApiTableItem`, `DocsBadgeProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsMobileNavigationRootProps`, `DocsMobileNavigationTriggerProps`, `DocsMobileNavigationContentProps`, `DocsMobileNavigationPartProps`, `DocsMobileNavigationCloseTriggerProps`, `DocsMobileNavigationSidebarProps`, `DocsMobileNavigationOpenChangeDetails`, `DocsTableOfContentsProps`, `DocsMobileTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
 
 ## Help and contributing
 
