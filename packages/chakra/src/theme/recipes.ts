@@ -36,6 +36,7 @@ export const chakraDocsRecipeKeys = {
   mobileTableOfContents: 'chakraDocsMobileTableOfContents',
   pageActions: 'chakraDocsPageActions',
   pagination: 'chakraDocsPagination',
+  preferences: 'chakraDocsPreferences',
   search: 'chakraDocsSearch',
   sidebar: 'chakraDocsSidebar',
   steps: 'chakraDocsSteps',
@@ -172,6 +173,65 @@ export const chakraDocsTabsSlotRecipe = defineSlotRecipe({
     },
   },
   defaultVariants: { selected: false },
+});
+
+export const chakraDocsPreferencesSlotRecipe = defineSlotRecipe({
+  className: 'chakra-docs-preferences',
+  slots: ['root', 'label', 'control', 'select', 'indicator', 'content'],
+  base: {
+    root: {
+      alignItems: 'center',
+      color: 'fg',
+      display: 'inline-flex',
+      gap: 2,
+    },
+    label: { color: 'fg.muted', fontSize: 'sm', fontWeight: 'medium' },
+    control: { minW: '10rem', position: 'relative' },
+    select: {
+      appearance: 'none',
+      bg: 'bg',
+      borderColor: 'border',
+      borderRadius: 'md',
+      borderWidth: '1px',
+      color: 'fg',
+      cursor: 'pointer',
+      minH: '44px',
+      pe: 10,
+      ps: 3,
+      py: 2,
+      width: '100%',
+      _hover: { bg: 'bg.subtle' },
+      _focusVisible: interactiveFocus,
+    },
+    indicator: {
+      color: 'fg.muted',
+      insetEnd: 3,
+      pointerEvents: 'none',
+      position: 'absolute',
+      top: '50%',
+      transform: 'translateY(-50%)',
+    },
+    content: { color: 'fg' },
+  },
+  variants: {
+    labelHidden: {
+      true: {
+        label: {
+          border: 0,
+          clip: 'rect(0, 0, 0, 0)',
+          height: '1px',
+          margin: '-1px',
+          overflow: 'hidden',
+          padding: 0,
+          position: 'absolute',
+          whiteSpace: 'nowrap',
+          width: '1px',
+        },
+      },
+      false: {},
+    },
+  },
+  defaultVariants: { labelHidden: false },
 });
 
 export const chakraDocsApiTableSlotRecipe = defineSlotRecipe({
@@ -1463,6 +1523,7 @@ export const chakraDocsSlotRecipes: Record<
     chakraDocsMobileTableOfContentsSlotRecipe,
   [chakraDocsRecipeKeys.pageActions]: chakraDocsPageActionsSlotRecipe,
   [chakraDocsRecipeKeys.pagination]: chakraDocsPaginationSlotRecipe,
+  [chakraDocsRecipeKeys.preferences]: chakraDocsPreferencesSlotRecipe,
   [chakraDocsRecipeKeys.search]: chakraDocsSearchSlotRecipe,
   [chakraDocsRecipeKeys.sidebar]: chakraDocsSidebarSlotRecipe,
   [chakraDocsRecipeKeys.steps]: chakraDocsStepsSlotRecipe,

@@ -14,6 +14,7 @@ export interface ChakraDocsRecipeKeyMap {
   readonly mobileTableOfContents: 'chakraDocsMobileTableOfContents';
   readonly pageActions: 'chakraDocsPageActions';
   readonly pagination: 'chakraDocsPagination';
+  readonly preferences: 'chakraDocsPreferences';
   readonly search: 'chakraDocsSearch';
   readonly sidebar: 'chakraDocsSidebar';
   readonly steps: 'chakraDocsSteps';

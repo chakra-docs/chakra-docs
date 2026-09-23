@@ -21,6 +21,8 @@ import {
   getDocsMarkdownHeadings,
   isSafeDocsRoute,
   isSafeLinkHref,
+  normalizeDocsPreferenceDefinitions,
+  resolveDocsPreferenceValues,
 } from '@chakra-docs/core';
 import type {
   DocsCollection,
@@ -29,7 +31,13 @@ import type {
   DocsHeading,
   DocsNavItem,
   DocsPage,
+  DocsPreferenceChangeEvent,
+  DocsPreferenceChangeSource,
+  DocsPreferenceDefinition,
+  DocsPreferenceStorage,
+  DocsPreferenceValues,
   DocsSearchRecord,
+  NormalizedDocsPreferenceDefinition,
 } from '@chakra-docs/core';
 import { createDocsSearchEngine } from '@chakra-docs/search';
 import type {
@@ -41,6 +49,16 @@ import { activateSearchResult } from './search-activation.js';
 import { emitAnalytics } from './analytics.js';
 import { useSearchAnalytics } from './search-analytics.js';
 import type { DocsSearchAnalyticsCallbacks } from './search-analytics.js';
+export type {
+  DocsPreferenceChangeEvent,
+  DocsPreferenceChangeSource,
+  DocsPreferenceDefinition,
+  DocsPreferenceOption,
+  DocsPreferenceOptionInput,
+  DocsPreferenceStorage,
+  DocsPreferenceValues,
+  NormalizedDocsPreferenceDefinition,
+} from '@chakra-docs/core';
 export type {
   DocsSearchAnalyticsCallbacks,
   DocsSearchAnalyticsContext,
@@ -99,6 +117,7 @@ import {
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
+  chakraDocsPreferencesSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
@@ -140,6 +159,7 @@ export {
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
+  chakraDocsPreferencesSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
@@ -169,6 +189,10 @@ const Input = Chakra.Input;
 const Kbd = Chakra.Kbd;
 const Link = Chakra.Link;
 const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
+const NativeSelect = Chakra.NativeSelect as unknown as Record<
+  string,
+  ElementType
+>;
 const Portal = Chakra.Portal;
 const Stack = Chakra.Stack;
 const Text = Chakra.Text;
@@ -260,6 +284,7 @@ export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
     value: DocsPageFeedbackValue;
     comment: string;
   }) => void;
+  onPreferenceChange?: (event: DocsPreferenceChangeEvent) => void;
 }
 
 export interface ChakraDocsCodeBlockHighlightResult {
@@ -676,6 +701,63 @@ export interface DocsTabsPartProps {
 
 export interface DocsTabsValuePartProps extends DocsTabsPartProps {
   value: string;
+}
+
+export interface DocsPreferencesRootProps {
+  children?: ReactNode;
+  definitions: readonly DocsPreferenceDefinition[];
+  values?: DocsPreferenceValues;
+  defaultValues?: DocsPreferenceValues;
+  onValuesChange?: (values: DocsPreferenceValues) => void;
+  onPreferenceChange?: (event: DocsPreferenceChangeEvent) => void;
+  storage?: DocsPreferenceStorage | 'local' | false;
+  storageKeyPrefix?: string;
+  onStorageError?: (details: {
+    error: unknown;
+    id: string;
+    operation: 'get' | 'set' | 'remove';
+  }) => void;
+}
+
+export interface DocsPreferenceSelectProps {
+  preference: string;
+  label?: ReactNode;
+  labelHidden?: boolean;
+  slotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  controlSlotProps?: Record<string, unknown>;
+  selectSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPreferenceWhenProps {
+  preference: string;
+  value: string | readonly string[];
+  children?: ReactNode;
+  fallback?: ReactNode;
+  fallbackSlotProps?: Record<string, unknown>;
+  unmountOnExit?: boolean;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPreferencesContextValue {
+  definitions: readonly NormalizedDocsPreferenceDefinition[];
+  values: DocsPreferenceValues;
+  hydrated: boolean;
+  setValue: (
+    id: string,
+    value: string,
+    source?: DocsPreferenceChangeSource,
+  ) => void;
+  reset: (id?: string) => void;
+}
+
+export interface DocsPreferenceValue {
+  definition: NormalizedDocsPreferenceDefinition;
+  value: string;
+  hydrated: boolean;
+  setValue: (value: string, source?: DocsPreferenceChangeSource) => void;
+  reset: () => void;
 }
 
 export interface DocsApiTableItem {
@@ -2518,6 +2600,370 @@ export function DocsStep(props: DocsStepProps): ReactNode {
 export const DocsSteps = {
   Root: DocsStepsRoot,
   Item: DocsStep,
+} as const;
+
+export interface DocsLocalPreferenceStorageOptions {
+  prefix?: string;
+  storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+}
+
+export function createDocsLocalPreferenceStorage(
+  options: DocsLocalPreferenceStorageOptions = {},
+): DocsPreferenceStorage {
+  const key = (id: string) =>
+    `${options.prefix ?? 'chakra-docs.preference'}.${id}`;
+  const storage = () => options.storage ?? globalThis.localStorage;
+
+  return {
+    get: (id) => storage().getItem(key(id)),
+    set: (id, value) => storage().setItem(key(id), value),
+    remove: (id) => storage().removeItem(key(id)),
+  };
+}
+
+const DocsPreferencesContext = createContext<
+  DocsPreferencesContextValue | undefined
+>(undefined);
+
+export function useDocsPreferences(): DocsPreferencesContextValue {
+  const context = useContext(DocsPreferencesContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPreferences components and hooks must be rendered inside DocsPreferences.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function useDocsPreference(id: string): DocsPreferenceValue {
+  const context = useDocsPreferences();
+  const definition = context.definitions.find((item) => item.id === id);
+
+  if (!definition) {
+    throw new Error(`Unknown documentation preference "${id}".`);
+  }
+
+  return {
+    definition,
+    value: context.values[id] ?? definition.defaultValue,
+    hydrated: context.hydrated,
+    setValue: (value, source = 'api') => context.setValue(id, value, source),
+    reset: () => context.reset(id),
+  };
+}
+
+export function DocsPreferencesRoot(
+  props: DocsPreferencesRootProps,
+): ReactNode {
+  const docsConfig = useDocsConfig();
+  const definitions = useMemo(
+    () => normalizeDocsPreferenceDefinitions(props.definitions),
+    [props.definitions],
+  );
+  const initialValues = useMemo(
+    () => resolveDocsPreferenceValues(definitions, props.defaultValues),
+    [definitions, props.defaultValues],
+  );
+  const controlled = props.values !== undefined;
+  const controlledValues = controlled
+    ? resolveDocsPreferenceValues(definitions, props.values)
+    : undefined;
+  const [uncontrolledValues, setUncontrolledValues] =
+    useState<DocsPreferenceValues>(initialValues);
+  const values = controlledValues ?? uncontrolledValues;
+  const valuesRef = useRef(values);
+  const touchedRef = useRef(new Set<string>());
+  const onValuesChangeRef = useRef(props.onValuesChange);
+  const onPreferenceChangeRef = useRef(props.onPreferenceChange);
+  const analyticsRef = useRef(docsConfig.analytics?.onPreferenceChange);
+  const onStorageErrorRef = useRef(props.onStorageError);
+  valuesRef.current = values;
+  onValuesChangeRef.current = props.onValuesChange;
+  onPreferenceChangeRef.current = props.onPreferenceChange;
+  analyticsRef.current = docsConfig.analytics?.onPreferenceChange;
+  onStorageErrorRef.current = props.onStorageError;
+  const storage = useMemo(() => {
+    if (props.storage === 'local') {
+      return createDocsLocalPreferenceStorage({
+        prefix: props.storageKeyPrefix,
+      });
+    }
+
+    return props.storage || undefined;
+  }, [props.storage, props.storageKeyPrefix]);
+  const storageRef = useRef(storage);
+  storageRef.current = storage;
+  const [hydrated, setHydrated] = useState(!storage);
+
+  const reportStorageError = (
+    error: unknown,
+    id: string,
+    operation: 'get' | 'set' | 'remove',
+  ) => onStorageErrorRef.current?.({ error, id, operation });
+
+  const runStorageOperation = (
+    id: string,
+    operation: 'get' | 'set' | 'remove',
+    callback: () => unknown,
+  ) => {
+    try {
+      Promise.resolve(callback()).catch((error) =>
+        reportStorageError(error, id, operation),
+      );
+    } catch (error) {
+      reportStorageError(error, id, operation);
+    }
+  };
+
+  const emitPreferenceChange = (event: DocsPreferenceChangeEvent) => {
+    onPreferenceChangeRef.current?.(event);
+    if (analyticsRef.current !== onPreferenceChangeRef.current) {
+      emitAnalytics(analyticsRef.current, event);
+    }
+  };
+
+  const applyValues = (
+    nextValues: DocsPreferenceValues,
+    events: readonly DocsPreferenceChangeEvent[],
+  ) => {
+    valuesRef.current = nextValues;
+    if (!controlled) {
+      setUncontrolledValues(nextValues);
+    }
+    onValuesChangeRef.current?.(nextValues);
+    events.forEach(emitPreferenceChange);
+  };
+
+  const setValue = (
+    id: string,
+    nextValue: string,
+    source: DocsPreferenceChangeSource = 'api',
+  ) => {
+    const definition = definitions.find((item) => item.id === id);
+
+    if (!definition) {
+      throw new Error(`Unknown documentation preference "${id}".`);
+    }
+
+    const option = definition.options.find(
+      (item) => item.value === nextValue && !item.disabled,
+    );
+
+    if (!option) {
+      throw new Error(
+        `Invalid value "${nextValue}" for documentation preference "${id}".`,
+      );
+    }
+
+    const previousValue = valuesRef.current[id] ?? definition.defaultValue;
+    if (previousValue === nextValue) {
+      return;
+    }
+
+    if (source !== 'storage') {
+      touchedRef.current.add(id);
+    }
+    const nextValues = { ...valuesRef.current, [id]: nextValue };
+    applyValues(nextValues, [{ id, value: nextValue, previousValue, source }]);
+    if (source !== 'storage' && storageRef.current) {
+      const currentStorage = storageRef.current;
+      runStorageOperation(id, 'set', () => currentStorage.set(id, nextValue));
+    }
+  };
+
+  const reset = (id?: string) => {
+    const resetDefinitions = id
+      ? definitions.filter((definition) => definition.id === id)
+      : definitions;
+    if (id && resetDefinitions.length === 0) {
+      throw new Error(`Unknown documentation preference "${id}".`);
+    }
+
+    const nextValues = { ...valuesRef.current };
+    const events: DocsPreferenceChangeEvent[] = [];
+    resetDefinitions.forEach((definition) => {
+      touchedRef.current.add(definition.id);
+      const previousValue =
+        nextValues[definition.id] ?? definition.defaultValue;
+      nextValues[definition.id] = definition.defaultValue;
+      if (previousValue !== definition.defaultValue) {
+        events.push({
+          id: definition.id,
+          value: definition.defaultValue,
+          previousValue,
+          source: 'reset',
+        });
+      }
+      const currentStorage = storageRef.current;
+      if (currentStorage) {
+        const operation = currentStorage.remove ? 'remove' : 'set';
+        runStorageOperation(definition.id, operation, () =>
+          currentStorage.remove
+            ? currentStorage.remove(definition.id)
+            : currentStorage.set(definition.id, definition.defaultValue),
+        );
+      }
+    });
+    if (events.length > 0) {
+      applyValues(nextValues, events);
+    }
+  };
+
+  useEffect(() => {
+    if (!storage) {
+      setHydrated(true);
+      return;
+    }
+
+    let active = true;
+    setHydrated(false);
+    void Promise.all(
+      definitions.map(async (definition) => {
+        try {
+          return [definition, await storage.get(definition.id)] as const;
+        } catch (error) {
+          reportStorageError(error, definition.id, 'get');
+          return [definition, undefined] as const;
+        }
+      }),
+    ).then((stored) => {
+      if (!active) return;
+      const nextValues = { ...valuesRef.current };
+      const events: DocsPreferenceChangeEvent[] = [];
+      stored.forEach(([definition, candidate]) => {
+        if (touchedRef.current.has(definition.id)) return;
+        const option = definition.options.find(
+          (item) => item.value === candidate && !item.disabled,
+        );
+        if (!option) return;
+        const previousValue =
+          nextValues[definition.id] ?? definition.defaultValue;
+        if (previousValue === option.value) return;
+        nextValues[definition.id] = option.value;
+        events.push({
+          id: definition.id,
+          value: option.value,
+          previousValue,
+          source: 'storage',
+        });
+      });
+      if (events.length > 0) {
+        applyValues(nextValues, events);
+      }
+      setHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [definitions, storage]);
+
+  return createElement(
+    DocsPreferencesContext.Provider,
+    { value: { definitions, values, hydrated, setValue, reset } },
+    props.children,
+  );
+}
+
+export function DocsPreferenceSelect(
+  props: DocsPreferenceSelectProps,
+): ReactNode {
+  const preference = useDocsPreference(props.preference);
+  const id = useId();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.preferences,
+    chakraDocsPreferencesSlotRecipe,
+  );
+  const styles = recipe({ labelHidden: props.labelHidden ?? false });
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    createElement(
+      Text,
+      {
+        ...mergeSlotStyleProps(styles.label, props.labelSlotProps),
+        as: 'label',
+        htmlFor: id,
+      },
+      props.label ?? preference.definition.label ?? preference.definition.id,
+    ),
+    createElement(
+      NativeSelect.Root,
+      {
+        ...mergeSlotStyleProps(styles.control, props.controlSlotProps),
+        unstyled: true,
+      },
+      createElement(
+        NativeSelect.Field,
+        {
+          ...mergeSlotStyleProps(styles.select, props.selectSlotProps),
+          id,
+          value: preference.value,
+          onChange: (event: DocsInputChangeEvent) =>
+            preference.setValue(event.currentTarget.value, 'selector'),
+        },
+        ...preference.definition.options.map((option) =>
+          createElement(
+            'option',
+            {
+              key: option.value,
+              value: option.value,
+              disabled: option.disabled,
+            },
+            option.label ?? option.value,
+          ),
+        ),
+      ),
+      createElement(NativeSelect.Indicator, {
+        ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+        'aria-hidden': true,
+      }),
+    ),
+  );
+}
+
+export function DocsPreferenceWhen(props: DocsPreferenceWhenProps): ReactNode {
+  const preference = useDocsPreference(props.preference);
+  const values = Array.isArray(props.value) ? props.value : [props.value];
+  const selected = values.includes(preference.value);
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.preferences,
+    chakraDocsPreferencesSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (props.unmountOnExit && !selected) {
+    return props.fallback ?? null;
+  }
+
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      Box,
+      {
+        ...mergeSlotStyleProps(styles.content, props.slotProps),
+        hidden: !selected,
+      },
+      props.children,
+    ),
+    !selected && props.fallback
+      ? createElement(
+          Box,
+          mergeSlotStyleProps(styles.content, props.fallbackSlotProps),
+          props.fallback,
+        )
+      : null,
+  );
+}
+
+export const DocsPreferences = {
+  Root: DocsPreferencesRoot,
+  Select: DocsPreferenceSelect,
+  When: DocsPreferenceWhen,
 } as const;
 
 interface DocsTabsContextValue {
