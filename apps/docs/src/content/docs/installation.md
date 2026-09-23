@@ -5,20 +5,20 @@ order: 1
 tags: [setup]
 ---
 
-The demo app is an npm workspace package named `docs`. It declares the local Chakra Docs packages it imports and keeps Next, React, and Chakra UI as application dependencies.
+The demo app is a pnpm workspace package named `docs`. It declares the local Chakra Docs packages it imports and keeps Next, React, and Chakra UI as application dependencies.
 
 ## Workspace dependencies
 
 Use the package manager to link local packages into the app workspace.
 
 ```bash
-npm install @chakra-docs/core @chakra-docs/chakra @chakra-docs/next @chakra-docs/search @chakra-docs/source-filesystem @chakra-ui/react --workspace docs
+pnpm --filter docs add @chakra-docs/core @chakra-docs/chakra @chakra-docs/next @chakra-docs/search @chakra-docs/source-filesystem @chakra-ui/react
 ```
 
 For Pagefind indexing, add the optional search adapter too.
 
 ```bash
-npm install @chakra-docs/search-pagefind --workspace docs
+pnpm --filter docs add @chakra-docs/search-pagefind
 ```
 
 ## App provider

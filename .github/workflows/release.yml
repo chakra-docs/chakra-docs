@@ -94,11 +94,10 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: '.nvmrc'
-          cache: npm
 
-      - run: npm install --global npm@11.13.0
+      - run: corepack enable
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Validate committed release version
         env:
@@ -106,7 +105,7 @@ jobs:
         run: node scripts/assert-release-version.mjs "$RELEASE_VERSION"
 
       - name: Build packages
-        run: npm exec nx -- run-many -t build --parallel=3
+        run: pnpm nx run-many -t build --parallel=3
 
       - name: Preview package publication
         env:
@@ -116,7 +115,7 @@ jobs:
           if [ "$FIRST_RELEASE" = 'true' ]; then
             publish_args+=(--first-release)
           fi
-          npm exec nx -- release publish "${publish_args[@]}"
+          pnpm nx release publish "${publish_args[@]}"
 
   publish:
     name: Publish release
@@ -143,9 +142,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - run: npm install --global npm@11.13.0
+      - run: corepack enable
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Require the verified default-branch commit
         env:
@@ -176,7 +175,7 @@ jobs:
         run: node scripts/assert-release-version.mjs "$RELEASE_VERSION"
 
       - name: Build packages
-        run: npm exec nx -- run-many -t build --parallel=3
+        run: pnpm nx run-many -t build --parallel=3
 
       - name: Validate the one-time bootstrap token
         if: inputs.first_release
@@ -187,7 +186,7 @@ jobs:
             echo 'NPM_BOOTSTRAP_TOKEN is required for the first publish.' >&2
             exit 1
           fi
-          npm whoami --registry=https://registry.npmjs.org >/dev/null
+          pnpm whoami --registry=https://registry.npmjs.org >/dev/null
 
       - name: Publish packages
         env:
@@ -196,7 +195,7 @@ jobs:
         run: |
           # Keep the registry existence check enabled, including during bootstrap,
           # so retrying this exact release skips packages that already published.
-          npm exec nx -- release publish
+          pnpm nx release publish
 
       - name: Verify all packages are public
         env:

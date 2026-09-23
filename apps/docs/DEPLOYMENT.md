@@ -6,13 +6,14 @@ execute `next start`.
 
 ## Required production contract
 
-- Use the Node and npm versions declared in the repository `.nvmrc` and
+- Use the Node and pnpm versions declared in the repository `.nvmrc` and
   `packageManager` field.
-- Install with `npm ci`, then build with `npm exec nx -- run docs:build`.
+- Enable Corepack, install with `pnpm install --frozen-lockfile`, then build
+  with `pnpm nx run docs:build`.
 - Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin and set
   `CHAKRA_DOCS_REQUIRE_SITE_URL=true`. The build fails if that origin is absent
   or unsafe. Analytics variables in `.env.example` are optional.
-- Start with `npm exec nx -- run docs:start`. Route all traffic through HTTPS;
+- Start with `pnpm nx run docs:start`. Route all traffic through HTTPS;
   do not strip the security headers emitted by Next.js.
 - Preserve Next output-file tracing for `src/content/docs`; the server search
   route builds its process-cached index from those published Markdown files.

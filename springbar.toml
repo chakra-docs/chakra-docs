@@ -15,8 +15,8 @@ setup = []
 [[unit]]
 name = "docs"
 working_dir = "apps/docs"
-command = 'NX_DAEMON=false npx nx run docs:dev -- --port "$PORT"'
-package_manager = "npm"
+command = 'NX_DAEMON=false pnpm nx run docs:dev -- --port "$PORT"'
+package_manager = "pnpm"
 port = 4361
 hostnames = ["chakra-docs.test"]
 mode = "lazy"

@@ -131,7 +131,13 @@ test('release workflow publishes an immutable, CI-verified commit', () => {
   assert.match(releaseWorkflow, /-f status=success/);
   assert.match(releaseWorkflow, /ref: \$\{\{ github\.sha \}\}/);
   assert.match(releaseWorkflow, /default_branch_sha/);
-  assert.match(releaseWorkflow, /npm exec nx -- release publish/);
+  assert.match(releaseWorkflow, /pnpm nx release publish/);
+  assert.match(releaseWorkflow, /corepack enable/);
+  assert.match(releaseWorkflow, /pnpm install --frozen-lockfile/);
+  assert.doesNotMatch(
+    releaseWorkflow,
+    /npm ci|npm install --global|package-lock\.json/,
+  );
   assert.match(releaseWorkflow, /node scripts\/verify-published-version\.mjs/);
 
   const disabledGitOperations = {
@@ -155,7 +161,7 @@ test('release workflow publishes an immutable, CI-verified commit', () => {
 
   assert.doesNotMatch(
     releaseWorkflow,
-    /create-github-app-token|RELEASE_APP_|contents:\s*write|persist-credentials:\s*true|git push|npm exec nx -- release (?:version|changelog)|gh release(?:\s|$)/,
+    /create-github-app-token|RELEASE_APP_|contents:\s*write|persist-credentials:\s*true|git push|pnpm nx release (?:version|changelog)|gh release(?:\s|$)/,
   );
 });
 
@@ -169,7 +175,7 @@ test('first release uses only the protected bootstrap credential', () => {
   assert.match(releaseWorkflow, /secrets\.NPM_BOOTSTRAP_TOKEN/);
   assert.match(
     releaseWorkflow,
-    /npm whoami --registry=https:\/\/registry\.npmjs\.org/,
+    /pnpm whoami --registry=https:\/\/registry\.npmjs\.org/,
   );
   assert.match(releaseWorkflow, /--first-release/);
   assert.doesNotMatch(releaseWorkflow, /secrets\.NPM_TOKEN/);

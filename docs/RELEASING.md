@@ -12,13 +12,14 @@ All twelve public packages use one fixed version.
 
 The docs application pins the published `@postkit/react@0.2.0` package. Its
 `@postkit/core` and `@postkit/unfurl` dependencies are also versioned at `0.2.0`
-and resolved from npm through the committed `package-lock.json`. The docs site
+and resolved from npm through the committed `pnpm-lock.yaml`. The docs site
 uses the first-party `@chakra-docs/shiki` workspace package for highlighting.
 
-Use `npm ci` for release validation so local yalc overrides cannot mask missing
-registry dependencies. Yalc remains an optional development override through
-`npm run yalc:link --workspace=docs`, not a CI prerequisite. Postkit is never
-published implicitly as part of a Chakra Docs release.
+Use `pnpm install --frozen-lockfile` for release validation so local yalc
+overrides cannot mask missing registry dependencies. Yalc remains an optional
+development override through `pnpm --filter docs run yalc:link`, not a CI
+prerequisite. Postkit is never published implicitly as part of a Chakra Docs
+release.
 
 ## Prepare a release pull request
 
@@ -28,30 +29,30 @@ published implicitly as part of a Chakra Docs release.
 3. Update the fixed package group and changelog:
 
    ```bash
-   npm exec nx -- release version 0.2.0
-   npm exec nx -- release changelog 0.2.0
+   pnpm nx release version 0.2.0
+   pnpm nx release changelog 0.2.0
    ```
 
    Nx is configured not to commit, tag, push, or create a GitHub release.
 
-4. Review every changed package manifest, `package-lock.json`, and
+4. Review every changed package manifest, `pnpm-lock.yaml`, and
    `CHANGELOG.md`. Keep all internal `@chakra-docs/*` dependencies on the same
    exact fixed version.
 5. Run the release checks:
 
    ```bash
-   npm audit --omit=dev --audit-level=moderate
-   npm audit --audit-level=high
-   npm exec nx -- format:check --all
-   npm run test:release
-   npm run lint
-   npm run typecheck
-   npm run test:coverage
-   npm run build
-   npm run types:performance:check
-   npm run search:performance:check
-   npm exec nx -- run docs:e2e --skipNxCache
-   npm run release:smoke
+   pnpm audit --prod --audit-level=moderate
+   pnpm audit --audit-level=high
+   pnpm nx format:check --all
+   pnpm run test:release
+   pnpm run lint
+   pnpm run typecheck
+   pnpm run test:coverage
+   pnpm run build
+   pnpm run types:performance:check
+   pnpm run search:performance:check
+   pnpm nx run docs:e2e --skipNxCache
+   pnpm run release:smoke
    ```
 
    These commands intentionally mirror the main CI job that authorizes a
