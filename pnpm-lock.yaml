@@ -39,6 +39,45 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@chakra-docs/astro':
+        specifier: workspace:*
+        version: link:packages/astro
+      '@chakra-docs/chakra':
+        specifier: workspace:*
+        version: link:packages/chakra
+      '@chakra-docs/cli':
+        specifier: workspace:*
+        version: link:packages/cli
+      '@chakra-docs/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@chakra-docs/feed':
+        specifier: workspace:*
+        version: link:packages/feed
+      '@chakra-docs/next':
+        specifier: workspace:*
+        version: link:packages/next
+      '@chakra-docs/react-router':
+        specifier: workspace:*
+        version: link:packages/react-router
+      '@chakra-docs/search':
+        specifier: workspace:*
+        version: link:packages/search
+      '@chakra-docs/search-pagefind':
+        specifier: workspace:*
+        version: link:packages/search-pagefind
+      '@chakra-docs/shiki':
+        specifier: workspace:*
+        version: link:packages/shiki
+      '@chakra-docs/source-filesystem':
+        specifier: workspace:*
+        version: link:packages/source-filesystem
+      '@chakra-docs/source-git':
+        specifier: workspace:*
+        version: link:packages/source-git
+      '@chakra-ui/react':
+        specifier: 3.36.0
+        version: 3.36.0(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.7)(supports-color@8.1.1))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.2.14)(react@19.2.7)(supports-color@8.1.1)
@@ -99,6 +138,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 4.1.11
         version: 4.1.11(vitest@4.1.11)
+      astro:
+        specifier: 7.3.2
+        version: 7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@22.20.2)(jiti@2.4.2)(less@4.9.1(supports-color@8.1.1))(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.47.1)(yaml@2.9.0)
       cypress:
         specifier: ^15.8.0
         version: 15.18.1
@@ -135,6 +177,9 @@ importers:
       prettier:
         specifier: ^3.9.5
         version: 3.9.5
+      react-router:
+        specifier: 8.3.0
+        version: 8.3.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
