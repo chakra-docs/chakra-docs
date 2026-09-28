@@ -151,7 +151,8 @@ authorization must still govern every response.
 
 Open search with **Command+K** on macOS or **Ctrl+K** on other platforms, or
 focus the Search button and press Enter or Space. The search field receives
-focus automatically.
+focus automatically. It uses native search-input semantics, places a magnifier
+inside the field, and shows an accessible clear button whenever a query exists.
 
 - **Up/Down arrows** highlight results and scroll the active row into view.
 - **Enter** opens the highlighted result.
@@ -164,9 +165,10 @@ focus automatically.
 
 The dialog fits the available viewport height. Its results pane scrolls
 independently, including on short screens. Customize its appearance through
-the existing `chakraDocsSearch` slot recipe or per-instance slot props; preserve
-the component's roles, IDs, focus handlers, and scroll container when composing
-overrides.
+the existing `chakraDocsSearch` slot recipe or per-instance slot props. The
+`inputGroup`, `searchIcon`, and `clearTrigger` slots customize the compact field;
+preserve the component's roles, IDs, focus handlers, and scroll container when
+composing overrides.
 
 ## Collection scoping
 

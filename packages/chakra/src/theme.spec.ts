@@ -100,7 +100,7 @@ describe('Chakra Docs theme entry point', () => {
       mobileTableOfContents: ['trigger', 'link'],
       versionSelect: ['select'],
       pagination: ['link'],
-      search: ['trigger', 'input', 'resultLink'],
+      search: ['trigger', 'input', 'clearTrigger', 'resultLink'],
       feedback: ['option', 'comment', 'submit'],
     } as const;
     for (const [key, slots] of Object.entries(controls)) {
@@ -114,6 +114,16 @@ describe('Chakra Docs theme entry point', () => {
         );
       }
     }
+  });
+  it('keeps the search dialog title accessible without a visible header row', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.search];
+    expect(recipe.base.header).toMatchObject({
+      clip: 'rect(0, 0, 0, 0)',
+      h: '1px',
+      overflow: 'hidden',
+      position: 'absolute',
+      w: '1px',
+    });
   });
   it('bounds page-action menus while keeping long rows readable and scrollable', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];

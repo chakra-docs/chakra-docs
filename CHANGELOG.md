@@ -15,6 +15,8 @@
   text-only presentation through `preset="minimal"`.
 - **core:** add an SSR-safe `resolveDocsUrl` helper and a shared Markdown
   serializer contract for page actions and machine-readable routes.
+- **chakra:** streamline the search dialog around a native search field with a
+  built-in magnifier, accessible clear action, and themeable input slots.
 
 ## 0.2.0 (2026-09-04)
 

@@ -76,6 +76,7 @@ import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
 import { createDocsBreadcrumbItems } from './breadcrumbs.js';
 import type { DocsBreadcrumbItem } from './breadcrumbs.js';
+import { SearchClearIcon, SearchMagnifierIcon } from './search-icons.js';
 import {
   PageActionsChevronIcon,
   PageActionsCopyIcon,
@@ -199,6 +200,8 @@ const Tabs = Chakra.Tabs as unknown as Record<string, ElementType>;
 const Heading = Chakra.Heading;
 const HStack = Chakra.HStack;
 const Input = Chakra.Input;
+const InputGroup = Chakra.InputGroup;
+const IconButton = Chakra.IconButton;
 const Kbd = Chakra.Kbd;
 const Link = Chakra.Link;
 const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
@@ -228,6 +231,7 @@ export type DocsLinkComponent = ComponentType<DocsLinkProps>;
 
 export interface DocsLabels {
   search: string;
+  clearSearch: string;
   searchPlaceholder: string;
   searchNoResults: string;
   searchLoading: string;
@@ -856,8 +860,10 @@ export interface DocsSearchProps {
   onResultSelect?: (result: DocsSearchResult) => void;
   backdropSlotProps?: Record<string, unknown>;
   bodySlotProps?: Record<string, unknown>;
+  clearTriggerSlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
   headerSlotProps?: Record<string, unknown>;
+  inputGroupSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
   positionerSlotProps?: Record<string, unknown>;
   resultBadgeSlotProps?: Record<string, unknown>;
@@ -869,6 +875,7 @@ export interface DocsSearchProps {
   triggerLabelSlotProps?: Record<string, unknown>;
   shortcutSlotProps?: Record<string, unknown>;
   inputSlotProps?: Record<string, unknown>;
+  searchIconSlotProps?: Record<string, unknown>;
   resultSlotProps?: Record<string, unknown>;
   resultRowSlotProps?: Record<string, unknown>;
   resultTitleSlotProps?: Record<string, unknown>;
@@ -953,6 +960,7 @@ type DocsKeyboardEvent = {
 
 const defaultLabels: DocsLabels = {
   search: 'Search',
+  clearSearch: 'Clear search',
   searchPlaceholder: 'Search docs',
   searchNoResults: 'No results found',
   searchLoading: 'Searching…',
@@ -4696,23 +4704,67 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
           createElement(
             Dialog.Body,
             mergeSlotStyleProps(styles.body, props.bodySlotProps),
-            createElement(Input, {
-              ref: inputRef,
-              'aria-label': labels.search,
-              role: 'combobox',
-              'aria-autocomplete': 'list',
-              'aria-haspopup': 'listbox',
-              'aria-expanded': open,
-              'aria-controls': resultsId,
-              'aria-activedescendant': activeResultId,
-              autoComplete: 'off',
-              onChange: (event: DocsInputChangeEvent) =>
-                setQuery(event.currentTarget.value),
-              onKeyDown: onInputKeyDown,
-              placeholder: props.placeholder ?? labels.searchPlaceholder,
-              value: query,
-              ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
-            }),
+            createElement(
+              InputGroup,
+              {
+                ...mergeSlotStyleProps(
+                  styles.inputGroup,
+                  props.inputGroupSlotProps,
+                ),
+                startElement: createElement(
+                  Box,
+                  mergeSlotStyleProps(
+                    styles.searchIcon,
+                    props.searchIconSlotProps,
+                  ),
+                  createElement(SearchMagnifierIcon),
+                ),
+                endElement: query
+                  ? createElement(
+                      IconButton,
+                      {
+                        'aria-label':
+                          labels.clearSearch ?? defaultLabels.clearSearch,
+                        size: 'sm',
+                        variant: 'ghost',
+                        ...mergeSlotStyleProps(
+                          styles.clearTrigger,
+                          props.clearTriggerSlotProps,
+                        ),
+                        onClick: (event: unknown) => {
+                          (
+                            props.clearTriggerSlotProps?.onClick as
+                              ((event: unknown) => void) | undefined
+                          )?.(event);
+                          setQuery('');
+                          setActiveIndex(0);
+                          inputRef.current?.focus();
+                        },
+                      },
+                      createElement(SearchClearIcon),
+                    )
+                  : undefined,
+                endElementProps: { pointerEvents: 'auto' },
+              },
+              createElement(Input, {
+                ref: inputRef,
+                'aria-label': labels.search,
+                role: 'combobox',
+                type: 'search',
+                'aria-autocomplete': 'list',
+                'aria-haspopup': 'listbox',
+                'aria-expanded': open,
+                'aria-controls': resultsId,
+                'aria-activedescendant': activeResultId,
+                autoComplete: 'off',
+                onChange: (event: DocsInputChangeEvent) =>
+                  setQuery(event.currentTarget.value),
+                onKeyDown: onInputKeyDown,
+                placeholder: props.placeholder ?? labels.searchPlaceholder,
+                value: query,
+                ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
+              }),
+            ),
             createElement(
               Box,
               {

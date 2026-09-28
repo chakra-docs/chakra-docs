@@ -1015,6 +1015,21 @@ describe('DocsSearch keyboard interactions', () => {
     }
   });
 
+  it('uses search semantics and clears the query without leaving the field', async () => {
+    const input = await openSearch();
+    expect(input.type).toBe('search');
+    await typeQuery(input, 'Page 11');
+    const filteredCount = document.querySelectorAll('[role="option"]').length;
+    expect(filteredCount).toBeGreaterThan(0);
+    expect(filteredCount).toBeLessThan(searchRecords.length);
+    const clear = button('Clear search');
+    await act(async () => clear.click());
+    expect(input.value).toBe('');
+    expect(document.activeElement).toBe(input);
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(12);
+    expect(document.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('keeps the active row visible in both directions without moving focus or scrolling the page', async () => {
     const input = await openSearch();
     const list = required(
