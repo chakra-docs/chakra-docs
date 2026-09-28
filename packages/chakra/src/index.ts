@@ -20,10 +20,12 @@ import type { Components as MarkdownComponents } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   createCollectionOptions,
+  createDocsMarkdown,
   getDocsMarkdownHeadings,
   isSafeDocsRoute,
   isSafeLinkHref,
   normalizeDocsPreferenceDefinitions,
+  resolveDocsUrl,
   resolveDocsPreferenceValues,
 } from '@chakra-docs/core';
 import type {
@@ -31,6 +33,7 @@ import type {
   DocsCollectionOption,
   DocsConfig,
   DocsHeading,
+  DocsMarkdownSerializer,
   DocsNavItem,
   DocsPage,
   DocsPreferenceChangeEvent,
@@ -73,6 +76,14 @@ import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
 import { createDocsBreadcrumbItems } from './breadcrumbs.js';
 import type { DocsBreadcrumbItem } from './breadcrumbs.js';
+import {
+  PageActionsChevronIcon,
+  PageActionsCopyIcon,
+  PageActionsDocumentIcon,
+  PageActionsEditIcon,
+  PageActionsLinkIcon,
+  PageActionsSubmenuIcon,
+} from './page-action-icons.js';
 import {
   getActiveHeadingId,
   getHeadingScrollOffset,
@@ -348,6 +359,7 @@ export interface ChakraDocsConfig extends DocsConfig {
   analytics?: DocsAnalyticsCallbacks;
   codeBlock?: ChakraDocsCodeBlockConfig;
   layout?: ChakraDocsLayoutConfig;
+  pageActions?: ChakraDocsPageActionsConfig;
 }
 
 export interface DocsComponentProps {
@@ -408,12 +420,32 @@ export interface DocsPageActionsRootProps {
   markdownUrl?: string;
   page?: DocsPage;
   pageUrl?: string;
+  preset?: DocsPageActionsPreset;
   size?: DocsPageActionsSize;
   slotProps?: Record<string, unknown>;
-  variant?: 'default' | 'split';
+  variant?: DocsPageActionsVariant;
 }
 
+export type DocsPageActionsPreset = 'minimal' | 'standard';
 export type DocsPageActionsSize = 'sm' | 'md' | 'lg';
+export type DocsPageActionsVariant = 'default' | 'split';
+
+export interface DocsPageActionsIcons {
+  copyPage?: ReactNode;
+  copyLink?: ReactNode;
+  edit?: ReactNode;
+  menuIndicator?: ReactNode;
+  submenuIndicator?: ReactNode;
+  viewMarkdown?: ReactNode;
+}
+
+export interface ChakraDocsPageActionsConfig {
+  icons?: DocsPageActionsIcons;
+  preset?: DocsPageActionsPreset;
+  serializeMarkdown?: DocsMarkdownSerializer;
+  size?: DocsPageActionsSize;
+  variant?: DocsPageActionsVariant;
+}
 
 export interface DocsPageActionProps {
   children?: ReactNode;
@@ -999,7 +1031,9 @@ interface DocsPageActionsContextValue {
   markdownUrl?: string;
   page?: DocsPage;
   pageUrl?: string;
+  preset: DocsPageActionsPreset;
   styles: Record<string, unknown>;
+  variant: DocsPageActionsVariant;
   portalCss: unknown;
   portalStyle: Record<string, unknown>;
 }
@@ -1024,8 +1058,18 @@ export function DocsPageActionsRoot(
   props: DocsPageActionsRootProps,
 ): ReactNode {
   const config = useDocsConfig();
+  const configured = config.pageActions;
+  const preset = props.preset ?? configured?.preset ?? 'standard';
   const page = props.page;
-  const markdown = props.markdown ?? page?.body;
+  const markdown =
+    props.markdown ??
+    (page
+      ? configured?.serializeMarkdown
+        ? configured.serializeMarkdown(page)
+        : preset === 'standard'
+          ? createDocsMarkdown(page)
+          : page.body
+      : undefined);
   const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
   const markdownUrl = props.markdownUrl;
   const editUrl =
@@ -1034,8 +1078,12 @@ export function DocsPageActionsRoot(
   const automaticComposition = props.children === undefined;
   const hasPrimaryAction = markdown !== undefined;
   const hasMenu = Boolean(pageUrl || markdownUrl || editUrl);
+  const requestedVariant =
+    props.variant ??
+    configured?.variant ??
+    (preset === 'standard' && automaticComposition ? 'split' : 'default');
   const effectiveVariant =
-    props.variant === 'split' &&
+    requestedVariant === 'split' &&
     (!automaticComposition || (hasPrimaryAction && hasMenu))
       ? 'split'
       : 'default';
@@ -1044,7 +1092,7 @@ export function DocsPageActionsRoot(
     chakraDocsPageActionsSlotRecipe,
   );
   const styles = recipe({
-    size: props.size ?? 'md',
+    size: props.size ?? configured?.size ?? 'md',
     variant: effectiveVariant,
   });
   const context: DocsPageActionsContextValue = {
@@ -1055,7 +1103,9 @@ export function DocsPageActionsRoot(
     markdownUrl,
     page,
     pageUrl,
+    preset,
     styles,
+    variant: effectiveVariant,
     portalCss: extractSlotCssVariables([styles.root, props.slotProps?.css]),
     portalStyle: extractSlotCssVariables(props.slotProps?.style) as Record<
       string,
@@ -1075,7 +1125,6 @@ export function DocsPageActionsRoot(
               ? {
                   ariaLabel:
                     config.labels?.moreActions ?? defaultLabels.moreActions,
-                  indicator: createElement(PageActionsChevronIcon),
                   label: null,
                 }
               : null,
@@ -1118,7 +1167,13 @@ export function DocsPageActionsCopyPage(props: DocsPageActionProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'markdown',
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.copyPage,
+      context.preset === 'standard'
+        ? createElement(PageActionsCopyIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     indicatorSlotProps: props.indicatorSlotProps,
     label: props.label ?? labels.copyPage ?? defaultLabels.copyPage,
@@ -1148,7 +1203,13 @@ export function DocsPageActionsCopyLink(props: DocsPageActionProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'link',
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.copyLink,
+      context.preset === 'standard'
+        ? createElement(PageActionsLinkIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     indicatorSlotProps: props.indicatorSlotProps,
     label: props.label ?? labels.copyLink ?? defaultLabels.copyLink,
@@ -1180,7 +1241,13 @@ export function DocsPageActionsViewMarkdown(
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.viewMarkdown,
+      context.preset === 'standard'
+        ? createElement(PageActionsDocumentIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     label: props.label ?? labels.viewMarkdown ?? defaultLabels.viewMarkdown,
     labelSlotProps: props.labelSlotProps,
@@ -1208,7 +1275,13 @@ export function DocsPageActionsEdit(props: DocsPageActionLinkProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.edit,
+      context.preset === 'standard'
+        ? createElement(PageActionsEditIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     label: props.label ?? labels.editPage ?? defaultLabels.editPage,
     labelSlotProps: props.labelSlotProps,
@@ -1222,6 +1295,13 @@ export function DocsPageActionsMenu(
   const context = useDocsPageActionsContext();
   const labels = context.config.labels ?? defaultLabels;
   const defaultLabel = labels.moreActions ?? defaultLabels.moreActions;
+  const indicator = resolvePageActionIcon(
+    props.indicator,
+    context.config.pageActions?.icons?.menuIndicator,
+    context.preset === 'standard' && context.variant === 'split'
+      ? createElement(PageActionsChevronIcon)
+      : undefined,
+  );
 
   return usePageActionsDisclosure({
     ...props,
@@ -1232,9 +1312,10 @@ export function DocsPageActionsMenu(
     label:
       props.label !== undefined
         ? props.label
-        : props.icon || props.indicator
+        : props.icon || indicator
           ? undefined
           : defaultLabel,
+    indicator,
     slots: {
       content: context.styles.menuContent,
       indicator: context.styles.menuIndicator,
@@ -1243,26 +1324,6 @@ export function DocsPageActionsMenu(
       trigger: [context.styles.trigger, context.styles.menuTrigger],
     },
   });
-}
-
-function PageActionsChevronIcon(): ReactNode {
-  return createElement(
-    'svg',
-    {
-      'aria-hidden': 'true',
-      fill: 'none',
-      height: '1em',
-      viewBox: '0 0 16 16',
-      width: '1em',
-    },
-    createElement('path', {
-      d: 'm4 6 4 4 4-4',
-      stroke: 'currentColor',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      strokeWidth: '1.5',
-    }),
-  );
 }
 
 export function DocsPageActionsSubmenu(
@@ -1276,7 +1337,13 @@ export function DocsPageActionsSubmenu(
       props.ariaLabel ??
       (typeof props.label === 'string' ? props.label : undefined),
     context,
-    indicator: props.indicator ?? '›',
+    indicator: resolvePageActionIcon(
+      props.indicator,
+      context.config.pageActions?.icons?.submenuIndicator,
+      context.preset === 'standard'
+        ? createElement(PageActionsSubmenuIcon)
+        : '›',
+    ),
     nested: true,
     slots: {
       content: context.styles.submenuContent,
@@ -1777,6 +1844,20 @@ function resolvePageActionDescription(
   return context.inMenu ? defaultDescription : undefined;
 }
 
+function resolvePageActionIcon(
+  instance: ReactNode | undefined,
+  configured: ReactNode | undefined,
+  fallback: ReactNode | undefined,
+): ReactNode | undefined {
+  if (instance !== undefined) {
+    return instance;
+  }
+  if (configured !== undefined) {
+    return configured;
+  }
+  return fallback;
+}
+
 function getPageActionSlotProps(
   context: DocsPageActionsContextValue,
   slotProps: Record<string, unknown> | undefined,
@@ -1862,16 +1943,7 @@ function resolvePageActionUrl(
   if (!page) {
     return undefined;
   }
-
-  if (!siteUrl) {
-    return page.route;
-  }
-
-  try {
-    return new URL(page.route, siteUrl).toString();
-  } catch {
-    return page.route;
-  }
+  return resolveDocsUrl(page.route, { siteUrl }) ?? page.route;
 }
 
 export function DocsLayout(props: DocsLayoutProps): ReactNode {
@@ -5784,6 +5856,14 @@ function mergeConfig(
     layout: {
       ...inherited.layout,
       ...next?.layout,
+    },
+    pageActions: {
+      ...inherited.pageActions,
+      ...next?.pageActions,
+      icons: {
+        ...inherited.pageActions?.icons,
+        ...next?.pageActions?.icons,
+      },
     },
     labels: {
       ...defaultLabels,

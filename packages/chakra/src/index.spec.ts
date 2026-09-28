@@ -830,7 +830,7 @@ describe('DocsPageActions', () => {
     expect(markup).toContain('Suggest changes to this page');
   });
 
-  it('renders a complete compact split composition without children', () => {
+  it('renders the standard compact split composition without children', () => {
     const page = {
       ...createPage('/docs/split', 'Split'),
       body: '# Split actions',
@@ -842,14 +842,62 @@ describe('DocsPageActions', () => {
         createElement(DocsPageActions.Root, {
           markdownUrl: '/docs/split.md',
           page,
-          variant: 'split',
         }),
       ),
     );
 
     expect(markup).toContain('aria-label="More page actions"');
     expect(markup).toContain('viewBox="0 0 16 16"');
+    expect(markup).toContain('M11 5V3.5');
+    expect(markup).toContain('m4 6 4 4 4-4');
     expect(markup).not.toContain('>More page actions<');
+  });
+
+  it('keeps the previous text-only composition available as the minimal preset', () => {
+    const page = {
+      ...createPage('/docs/minimal', 'Minimal'),
+      body: '# Minimal actions',
+    };
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { siteUrl: 'https://docs.example.com' } },
+        createElement(DocsPageActions.Root, { page, preset: 'minimal' }),
+      ),
+    );
+
+    expect(markup).toContain('>More page actions<');
+    expect(markup).not.toContain('<svg');
+  });
+
+  it('supports provider icon overrides and per-action icon opt-out', () => {
+    const providerIcon = createElement('span', { 'data-provider-icon': true });
+    const configured = render(
+      createElement(
+        DocsProvider,
+        { config: { pageActions: { icons: { copyPage: providerIcon } } } },
+        createElement(
+          DocsPageActions.Root,
+          { markdown: '# Configured' },
+          createElement(DocsPageActions.CopyPage),
+        ),
+      ),
+    );
+    expect(configured).toContain('data-provider-icon="true"');
+
+    const optedOut = render(
+      createElement(
+        DocsProvider,
+        { config: { pageActions: { icons: { copyPage: providerIcon } } } },
+        createElement(
+          DocsPageActions.Root,
+          { markdown: '# No icon' },
+          createElement(DocsPageActions.CopyPage, { icon: null }),
+        ),
+      ),
+    );
+    expect(optedOut).not.toContain('data-provider-icon');
+    expect(optedOut).not.toContain('<svg');
   });
 
   it('keeps a visible menu label when a split composition has no primary', () => {

@@ -646,6 +646,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       '--chakra-docs-page-actions-font-size': 'fontSizes.sm',
       '--chakra-docs-page-actions-gap': 'spacing.2',
       '--chakra-docs-page-actions-height': 'sizes.11',
+      '--chakra-docs-page-actions-icon-size': 'sizes.4',
       '--chakra-docs-page-actions-menu-padding': 'spacing.3',
       '--chakra-docs-page-actions-radius': 'radii.md',
       '--chakra-docs-page-actions-trigger-padding': 'spacing.4',
@@ -690,7 +691,14 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       },
     },
     primaryTrigger: {},
-    icon: { display: 'inline-flex', flexShrink: 0 },
+    icon: {
+      alignItems: 'center',
+      boxSize: 'var(--chakra-docs-page-actions-icon-size)',
+      display: 'inline-flex',
+      flexShrink: 0,
+      justifyContent: 'center',
+      '& > svg': { boxSize: 'full' },
+    },
     actionContent: {
       display: 'flex',
       flexDirection: 'column',

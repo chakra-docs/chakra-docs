@@ -6,6 +6,11 @@ export interface DocsMarkdownOptions {
   includeFrontmatter?: boolean;
 }
 
+export type DocsMarkdownSerializer = (
+  page: DocsPage,
+  options?: DocsMarkdownOptions,
+) => string;
+
 export interface DocsLlmsTextOptions {
   description?: string;
   details?: string;

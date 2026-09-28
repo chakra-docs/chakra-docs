@@ -306,6 +306,55 @@ describe('DocsPageActions copy confirmation', () => {
       }
     },
   );
+
+  it('copies the standard serialized page and supports provider serialization', async () => {
+    const writeText = vi.fn(async () => undefined);
+    mockClipboard(writeText);
+    const page = {
+      id: 'docs:page',
+      slug: ['page'],
+      path: 'docs/page.md',
+      route: '/docs/page',
+      title: 'Page title',
+      description: 'Page description',
+      frontmatter: {},
+      body: '## Details\n\nPage body.',
+    };
+
+    await render(createElement(DocsPageActions.Root, { page }));
+    await act(async () => button('Copy page').click());
+    expect(writeText).toHaveBeenLastCalledWith(
+      [
+        '---',
+        'title: "Page title"',
+        'description: "Page description"',
+        '---',
+        '',
+        '## Details',
+        '',
+        'Page body.',
+        '',
+      ].join('\n'),
+    );
+
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await render(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            pageActions: {
+              serializeMarkdown: (current) => `# Shared ${current.title}`,
+            },
+          },
+        },
+        createElement(DocsPageActions.Root, { page }),
+      ),
+    );
+    await act(async () => button('Copy page').click());
+    expect(writeText).toHaveBeenLastCalledWith('# Shared Page title');
+  });
 });
 
 describe('CodeBlock copy analytics', () => {
