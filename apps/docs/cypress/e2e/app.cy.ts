@@ -240,10 +240,12 @@ describe('docs', () => {
     cy.get('@pageActionsMenu')
       .should('have.attr', 'aria-expanded', 'false')
       .and('be.focused');
+    cy.get('[role="menu"]:visible').should('not.exist');
 
     cy.get('@pageActionsMenu').click();
     cy.get('h1').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[role="menu"]:visible').should('not.exist');
   });
 
   it('keeps page actions scrollable and readable in a small viewport', () => {

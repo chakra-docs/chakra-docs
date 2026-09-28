@@ -140,6 +140,7 @@ describe('Chakra Docs theme entry point', () => {
   it('owns focus appearance for portaled menus and submenus', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
     for (const slot of ['menuContent', 'submenuContent']) {
+      expect(recipe.base[slot]['&[hidden]']).toEqual({ display: 'none' });
       expect(recipe.base[slot]._focusVisible).toEqual({
         outline: '1px solid',
         outlineColor: 'fg.muted',

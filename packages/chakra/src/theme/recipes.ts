@@ -743,6 +743,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       overscrollBehavior: 'contain',
       scrollPaddingBlock: 2,
       p: 2,
+      '&[hidden]': { display: 'none' },
     },
     menuItem: {
       alignItems: 'flex-start',
@@ -832,6 +833,7 @@ export const chakraDocsPageActionsSlotRecipe = defineSlotRecipe({
       overscrollBehavior: 'contain',
       scrollPaddingBlock: 2,
       p: 2,
+      '&[hidden]': { display: 'none' },
     },
     description: {
       color: 'fg.muted',
