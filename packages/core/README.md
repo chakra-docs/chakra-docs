@@ -60,7 +60,17 @@ const published = getPublishedPages(manifest.pages, { includeDrafts: false });
 Machine-readable document helpers are also framework-independent:
 
 ```ts
+import {
+  createDocsLlmsFullText,
+  createDocsLlmsText,
+  createDocsMarkdown,
+  resolveDocsUrl,
+} from '@chakra-docs/core';
+
 const markdown = createDocsMarkdown(page);
+const canonicalUrl = resolveDocsUrl(page.route, {
+  siteUrl: 'https://example.com',
+});
 const llms = createDocsLlmsText(manifest, {
   title: 'Example Docs',
   description: 'Documentation for Example.',
@@ -72,7 +82,7 @@ const full = createDocsLlmsFullText(manifest, {
 });
 ```
 
-The Markdown serializer includes a small public frontmatter set and accepts a transformed `body` for MDX pipelines. The LLM helpers exclude drafts and hidden pages by default and support collection sections, optional pages, custom Markdown URL resolution, and `llms-full.txt` output.
+The Markdown serializer includes title and description in a small public frontmatter set and accepts a transformed `body` for MDX pipelines. `resolveDocsUrl` resolves canonical or document-relative links without browser globals and rejects unsafe hrefs. The LLM helpers exclude drafts and hidden pages by default and support collection sections, optional pages, custom Markdown URL resolution, and `llms-full.txt` output.
 
 ## API
 
@@ -92,6 +102,7 @@ The Markdown serializer includes a small public frontmatter set and accepts a tr
 - `createDocsMarkdown(page, options?)` — serialize one page as deterministic Markdown.
 - `createDocsLlmsText(manifest, options?)` — create a concise collection-aware Markdown file list.
 - `createDocsLlmsFullText(manifest, options?)` — create an expanded document containing every published page body.
+- `resolveDocsUrl(href, { siteUrl?, baseUrl? })` — safely resolve documentation links in server or browser code.
 
 ### Preference helpers
 
@@ -112,7 +123,7 @@ The Markdown serializer includes a small public frontmatter set and accepts a tr
 
 ### Types
 
-`DocsPage`, `DocsFrontmatter`, `DocsHeading`, `DocsNavItem`, `DocsCollection`, `DocsManifest`, `DocsSearchRecord`, `DocsSitemapEntry`, `DocsFeedEntry`, `DocsSource`, `DocsConfig`, `DocsRepository`, `DocsDiscoveryConfig`, `DocsCollectionConfig`, `DocsRepositoryConfig` (local, workspace, git, and custom variants), `DocsPreferenceDefinition`, `DocsPreferenceOption`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `CreateDocsManifestOptions`, and more.
+`DocsPage`, `DocsFrontmatter`, `DocsHeading`, `DocsNavItem`, `DocsCollection`, `DocsManifest`, `DocsSearchRecord`, `DocsSitemapEntry`, `DocsFeedEntry`, `DocsSource`, `DocsConfig`, `DocsRepository`, `DocsDiscoveryConfig`, `DocsCollectionConfig`, `DocsRepositoryConfig` (local, workspace, git, and custom variants), `DocsMarkdownSerializer`, `ResolveDocsUrlOptions`, `DocsPreferenceDefinition`, `DocsPreferenceOption`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `CreateDocsManifestOptions`, and more.
 
 ## Help and contributing
 

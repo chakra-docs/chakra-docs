@@ -78,6 +78,29 @@ export function DocsRoutePage(props: {
 }
 ```
 
+`DocsPageActions.Root` uses the `standard` preset by default. With only `page`,
+it renders the available split actions, supplies accessible package icons, and
+copies deterministic Markdown containing the page title, description, and body.
+Pass the host-owned `markdownUrl` only when the site actually exposes a Markdown
+endpoint. Configure defaults once or override any action locally:
+
+```tsx
+<DocsProvider
+  config={{
+    pageActions: {
+      icons: { copyLink: <BrandLinkIcon /> },
+      size: 'sm',
+    },
+  }}
+>
+  <DocsPageActions.Root page={page} markdownUrl={markdownUrl} />
+  <DocsPageActions.Root page={page} preset="minimal" />
+  <DocsPageActions.Root markdown={markdown}>
+    <DocsPageActions.CopyPage icon={null} />
+  </DocsPageActions.Root>
+</DocsProvider>
+```
+
 Sidebar disclosures are opt-in so existing navigation remains unchanged:
 
 ```tsx
@@ -376,7 +399,7 @@ Per-instance slot props still take precedence over recipe defaults.
 | `chakraDocsCallout`               | `root`, `title`, `content`                                                                                                                                                                                                                                                                                                                 |
 | `chakraDocsCodeBlock`             | `root`, `header`, `title`, `control`, `language`, `copyTrigger`, `copyIndicator`, `content`, `code`, `codeText`                                                                                                                                                                                                                            |
 
-Page actions stack their label and description vertically inside `actionContent`, while the icon remains alongside the text. Override `chakraDocsPageActions.base.actionContent` to customize the text layout or spacing; `label` and `description` continue to control typography independently.
+Page actions stack their label and description vertically inside `actionContent`, while the consistently sized icon remains alongside the text. Override `chakraDocsPageActions.base.actionContent` to customize the text layout or spacing; `icon`, `label`, and `description` remain independently themeable.
 
 The individual recipe definitions, `chakraDocsSlotRecipes`,
 `chakraDocsThemeConfig`, and `chakraDocsRecipeKeys` are public exports. Named
@@ -406,11 +429,11 @@ const sidebarRecipe = {
 
 ### Components
 
-- `DocsProvider` — merges and provides `ChakraDocsConfig` (labels, link component, analytics, code block adapter, layout offsets) to descendants.
+- `DocsProvider` — merges and provides `ChakraDocsConfig` (labels, link component, analytics, code block adapter, layout offsets, and page-action defaults) to descendants.
 - `DocsLayout` — responsive shell that renders `DocsSidebar` at `lg` and above, an automatic `DocsMobileNavigation` below `lg` (when `nav` is passed), a content area, and `DocsTableOfContents` (when `headings` is passed). Its content wrapper is a `div` by default so it can safely sit inside an application's existing `main`; standalone pages can opt in with `contentSlotProps={{ as: 'main' }}`. Use `sidebarContent` for a legend, version control, or other content above the navigation, and `sidebarBadgeSlotProps` to style nav badges. Collapsible desktop navigation is enabled with `sidebarCollapsible`; configure its initial state with `sidebarDefaultExpanded`, or control it with `sidebarExpandedIds` and `onSidebarExpandedChange`. The mobile drawer uses collapsible active-path navigation by default. Pass `mobileNavigation={false}` to opt out or `mobileNavigationProps` to configure its title, search content, controlled state, slots, and sidebar. Props: `page`, `nav`, `headings`, `stickyTop`, `scrollMarginTop`, `slotProps`, `contentSlotProps`, `sidebarContent`, `sidebarBadgeSlotProps`, `sidebarCollapsible`, `sidebarDefaultExpanded`, `sidebarExpandedIds`, `onSidebarExpandedChange`, `sidebarTriggerSlotProps`, `sidebarIndicatorSlotProps`, `sidebarContentSlotProps`, `sidebarSlotProps`, `mobileNavigation`, `mobileNavigationProps`, `tocSlotProps`, `children`.
 - `DocsArticle` — article wrapper that renders the page title and description header, with optional `breadcrumbs` and `actions` regions.
 - `DocsBreadcrumbs` — navigation path derived from `nav` and `page.route`, with optional site-level home item.
-- `DocsPageActions` — compound page action API with `Root`, `CopyPage`, `CopyLink`, `ViewMarkdown`, `Edit`, `Menu`, `Submenu`, `Group`, `Separator`, and `Item` components. Without children, `Root` composes Copy page with a menu of the available standard actions; its `split` variant uses a compact chevron trigger while safely falling back when either half is unavailable. Defaults are transparent `fg` triggers, a shared `border` outline with one split divider, and `bg` menu surfaces with hover, keyboard-highlight and focus states. Appearance belongs to `chakraDocsPageActions`, not the generic Button/Clipboard/Link recipes; per-instance slot overrides remain supported. `Root` supports `sm`, `md`, and `lg` sizes, and its Chakra Menu-backed overlays provide controlled or uncontrolled state, nested menus, automatic close on selection, Escape and outside-click dismissal, focus restoration, keyboard navigation, typeahead, and collision-aware positioning.
+- `DocsPageActions` — compound page action API with `Root`, `CopyPage`, `CopyLink`, `ViewMarkdown`, `Edit`, `Menu`, `Submenu`, `Group`, `Separator`, and `Item` components. The default `standard` preset automatically composes a split Copy page button and compact menu, supplies lightweight action icons, serializes the page title/description/body, and omits unavailable actions. Use `preset="minimal"` for the previous text-only, separated presentation. Provider-level `pageActions` config can replace icons, serialization, size, or variant; root/action props, `icon={null}`, custom children, slot props, and recipes remain the final overrides. Defaults are transparent `fg` triggers, a shared `border` outline with one divider, and `bg` menu surfaces with hover, keyboard-highlight and focus states. `Root` supports `sm`, `md`, and `lg` sizes, and its Chakra Menu-backed overlays provide controlled or uncontrolled state, nested menus, automatic close on selection, Escape and outside-click dismissal, focus restoration, keyboard navigation, typeahead, and collision-aware positioning.
 - `DocsHeadingPermalink` — accessible clipboard action for a section URL.
 - `DocsPageFeedback` — compound feedback form with controlled or uncontrolled choice/comment state, async submission status, and application-owned persistence.
 - `DocsCards` — compound responsive card grid with `Root` and safe linked `Card` parts.
@@ -441,7 +464,7 @@ const sidebarRecipe = {
 
 ### Types
 
-`ChakraDocsConfig`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsArticleProps`, `DocsBreadcrumbsProps`, `DocsBreadcrumbItem`, `DocsPageActionsRootProps`, `DocsPageActionsSize`, `DocsPageActionProps`, `DocsPageActionsMenuProps`, `DocsPageActionsSubmenuProps`, `DocsPageActionsGroupProps`, `DocsPageActionsSeparatorProps`, `DocsPageActionsOpenChangeDetails`, `DocsPageActionsPositioning`, `DocsPageActionsPlacement`, `DocsHeadingPermalinkProps`, `DocsPageFeedbackRootProps`, `DocsPageFeedbackValue`, `DocsPageFeedbackSubmitDetails`, `DocsCardsRootProps`, `DocsCardProps`, `DocsStepsRootProps`, `DocsStepProps`, `DocsTabsRootProps`, `DocsTabsValuePartProps`, `DocsPreferencesRootProps`, `DocsPreferenceSelectProps`, `DocsPreferenceWhenProps`, `DocsPreferenceDefinition`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `DocsApiTableProps`, `DocsApiTableItem`, `DocsBadgeProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsMobileNavigationRootProps`, `DocsMobileNavigationTriggerProps`, `DocsMobileNavigationContentProps`, `DocsMobileNavigationPartProps`, `DocsMobileNavigationCloseTriggerProps`, `DocsMobileNavigationSidebarProps`, `DocsMobileNavigationOpenChangeDetails`, `DocsTableOfContentsProps`, `DocsMobileTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
+`ChakraDocsConfig`, `ChakraDocsPageActionsConfig`, `DocsPageActionsIcons`, `DocsPageActionsPreset`, `DocsPageActionsVariant`, `DocsLabels`, `DocsAnalyticsCallbacks`, `DocsLinkProps`, `DocsLinkComponent`, `DocsComponentProps`, `DocsLayoutProps`, `DocsArticleProps`, `DocsBreadcrumbsProps`, `DocsBreadcrumbItem`, `DocsPageActionsRootProps`, `DocsPageActionsSize`, `DocsPageActionProps`, `DocsPageActionsMenuProps`, `DocsPageActionsSubmenuProps`, `DocsPageActionsGroupProps`, `DocsPageActionsSeparatorProps`, `DocsPageActionsOpenChangeDetails`, `DocsPageActionsPositioning`, `DocsPageActionsPlacement`, `DocsHeadingPermalinkProps`, `DocsPageFeedbackRootProps`, `DocsPageFeedbackValue`, `DocsPageFeedbackSubmitDetails`, `DocsCardsRootProps`, `DocsCardProps`, `DocsStepsRootProps`, `DocsStepProps`, `DocsTabsRootProps`, `DocsTabsValuePartProps`, `DocsPreferencesRootProps`, `DocsPreferenceSelectProps`, `DocsPreferenceWhenProps`, `DocsPreferenceDefinition`, `DocsPreferenceStorage`, `DocsPreferenceValues`, `DocsPreferenceChangeEvent`, `DocsApiTableProps`, `DocsApiTableItem`, `DocsBadgeProps`, `DocsSidebarProps`, `DocsSidebarDefaultExpanded`, `DocsMobileNavigationRootProps`, `DocsMobileNavigationTriggerProps`, `DocsMobileNavigationContentProps`, `DocsMobileNavigationPartProps`, `DocsMobileNavigationCloseTriggerProps`, `DocsMobileNavigationSidebarProps`, `DocsMobileNavigationOpenChangeDetails`, `DocsTableOfContentsProps`, `DocsMobileTableOfContentsProps`, `DocsSearchProps`, `DocsVersionSelectProps`, `DocsVersionOption`, `CalloutProps`, `CodeBlockProps`, `MarkdownContentProps`, `ChakraDocsLayoutConfig`, `ChakraDocsStickyTop`, `ChakraDocsCodeBlockConfig`, `ChakraDocsCodeBlockAdapter`, `ChakraDocsCodeBlockHighlighter`, and related code block types.
 
 ## Help and contributing
 

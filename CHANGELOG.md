@@ -9,6 +9,12 @@
 - **chakra:** add controlled or persistent site-wide preferences, accessible
   selectors, conditional content, hooks, analytics, recipe slots, and preference-bound
   tab groups with non-destructive local fallback behavior.
+- **chakra:** make the polished `standard` page-action preset the default, with
+  automatic split composition, lightweight icons, deterministic page Markdown,
+  provider-level defaults, and per-action icon opt-out. Retain the previous
+  text-only presentation through `preset="minimal"`.
+- **core:** add an SSR-safe `resolveDocsUrl` helper and a shared Markdown
+  serializer contract for page actions and machine-readable routes.
 
 ## 0.2.0 (2026-09-04)
 
@@ -41,6 +47,9 @@
 - **skill:** add chakra docs composition skill ([bb84b66](https://github.com/chakra-docs/chakra-docs/commit/bb84b66))
 
 ### 🩹 Fixes
+
+- **chakra:** keep closed page-action menus and submenus hidden even when their
+  flex recipe styles would otherwise override the browser's hidden-element rule.
 
 - **deps:** patch Vitest, Nx's TOML parser, module-federation ZIP extraction, and both SVGO major versions without downgrading Nx or changing the test-runner major version.
 - **deps:** update the docs site to Next.js 16.3.4 and patch Sharp and YAML dependencies. Adapter peers now require Next.js 15.5.24+/16.3.3+ or Astro 7.2.8+ to exclude affected framework releases.

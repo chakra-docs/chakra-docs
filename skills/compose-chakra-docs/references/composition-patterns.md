@@ -25,11 +25,7 @@ The host owns the Chakra provider and system. The docs provider owns only docs-l
       page={page}
       breadcrumbs={<DocsBreadcrumbs nav={nav} page={page} />}
       actions={
-        <DocsPageActions.Root
-          markdown={page.body}
-          markdownUrl={`${page.route}.md`}
-          page={page}
-        />
+        <DocsPageActions.Root markdownUrl={getMarkdownUrl(page)} page={page} />
       }
     >
       <MdxContent />
@@ -53,7 +49,9 @@ Pass header-aware `stickyTop` and `scrollMarginTop` values. Check both desktop s
 ## Page affordances
 
 - `DocsBreadcrumbs` derives ancestors from the navigation tree and current route.
-- `DocsPageActions` composes copy-page, copy-link, Markdown, edit, menu, and custom actions. Supply canonical URLs and Markdown routes when they cannot be derived.
+- Start with automatic `DocsPageActions.Root` composition. Its default `standard` preset supplies the split layout, icons, serialized page metadata/body, descriptions, and every available standard action. Use custom children only for product-specific actions or a genuinely different structure.
+- Supply the real host-owned Markdown endpoint through `markdownUrl`; never assume `${page.route}.md` exists. Set `siteUrl` for canonical absolute links, or pass `pageUrl` explicitly when the host has a different public URL.
+- Configure shared page-action size, variant, serializer, and icons through `DocsProvider.config.pageActions`. Per-instance props remain authoritative, and `icon={null}` opts an action out of its configured/default icon. Use `preset="minimal"` only when the site intentionally wants the earlier text-only, separated layout.
 - `DocsHeadingPermalink` can be placed in custom MDX headings; `MarkdownContent` can add it with `headingPermalinks`.
 - `DocsPageFeedback` owns presentation and async status, while the host owns persistence.
 - `DocsMobileTableOfContents` is included by `DocsLayout` when headings exist unless `mobileToc={false}`.
@@ -79,4 +77,5 @@ Keep these concerns in the application:
 - analytics destinations;
 - global header and shell;
 - router navigation callbacks;
+- Markdown endpoint routing and rewrites;
 - the Chakra color system and brand palette.
