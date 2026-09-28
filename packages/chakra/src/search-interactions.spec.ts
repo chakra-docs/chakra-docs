@@ -1030,6 +1030,16 @@ describe('DocsSearch keyboard interactions', () => {
     expect(document.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
   });
 
+  it('uses the visible header recipe when a title is supplied', async () => {
+    const input = await openSearch({ title: 'Search the handbook' });
+    const dialog = required(document.querySelector('[role="dialog"]'));
+    const titleId = required(dialog.getAttribute('aria-labelledby'));
+    expect(document.getElementById(titleId)?.textContent).toBe(
+      'Search the handbook',
+    );
+    expect(document.activeElement).toBe(input);
+  });
+
   it('keeps the active row visible in both directions without moving focus or scrolling the page', async () => {
     const input = await openSearch();
     const list = required(

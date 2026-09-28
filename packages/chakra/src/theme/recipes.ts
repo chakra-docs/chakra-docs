@@ -1244,6 +1244,23 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
     },
   },
   variants: {
+    visibleHeader: {
+      true: {
+        header: {
+          borderBottomWidth: '1px',
+          clip: 'auto',
+          flexShrink: 0,
+          h: 'auto',
+          m: 0,
+          overflow: 'visible',
+          p: 4,
+          position: 'static',
+          whiteSpace: 'normal',
+          w: 'auto',
+        },
+        title: { fontSize: 'sm' },
+      },
+    },
     active: {
       true: {
         result: {
@@ -1254,7 +1271,7 @@ export const chakraDocsSearchSlotRecipe = defineSlotRecipe({
       false: {},
     },
   },
-  defaultVariants: { active: false },
+  defaultVariants: { active: false, visibleHeader: false },
 });
 
 export const chakraDocsVersionSelectSlotRecipe = defineSlotRecipe({

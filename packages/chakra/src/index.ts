@@ -840,6 +840,8 @@ export interface DocsBadgeProps {
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
+  /** Optional visible dialog heading. The accessible title remains available when omitted. */
+  title?: ReactNode;
   /** Curated, ordered results shown only for an empty query. An empty array opts out of provider defaults. */
   defaultResults?: readonly DocsSearchResult[];
   /** Heading for curated results. Defaults to "Recommended". */
@@ -4428,7 +4430,8 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     chakraDocsRecipeKeys.search,
     chakraDocsSearchSlotRecipe,
   );
-  const styles = recipe();
+  const visibleHeader = props.title != null;
+  const styles = recipe({ visibleHeader });
 
   if (!remoteRequesterRef.current) {
     remoteRequesterRef.current = createRemoteSearchRequester((state) => {
@@ -4698,7 +4701,7 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
             createElement(
               Dialog.Title,
               mergeSlotStyleProps(styles.title, props.titleSlotProps),
-              labels.search,
+              props.title ?? labels.search,
             ),
           ),
           createElement(

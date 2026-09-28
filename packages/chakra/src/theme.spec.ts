@@ -124,6 +124,11 @@ describe('Chakra Docs theme entry point', () => {
       position: 'absolute',
       w: '1px',
     });
+    expect(recipe.variants?.visibleHeader?.true?.header).toMatchObject({
+      borderBottomWidth: '1px',
+      clip: 'auto',
+      position: 'static',
+    });
   });
   it('bounds page-action menus while keeping long rows readable and scrollable', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];

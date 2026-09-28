@@ -153,6 +153,9 @@ Open search with **Command+K** on macOS or **Ctrl+K** on other platforms, or
 focus the Search button and press Enter or Space. The search field receives
 focus automatically. It uses native search-input semantics, places a magnifier
 inside the field, and shows an accessible clear button whenever a query exists.
+The dialog omits its visible header by default while retaining an accessible
+title. Pass `title="Search documentation"` to opt into the full header row;
+customize it through the existing `header` and `title` recipe slots.
 
 - **Up/Down arrows** highlight results and scroll the active row into view.
 - **Enter** opens the highlighted result.
