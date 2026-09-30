@@ -650,6 +650,7 @@ describe('DocsLayout', () => {
         sidebarCollapsible: true,
         sidebarDefaultExpanded: 'active',
         sidebarContentSlotProps: { 'data-sidebar-content': 'custom' },
+        sidebarIndicator: createElement('span', null, 'Expand section'),
         sidebarIndicatorSlotProps: { 'data-sidebar-indicator': 'custom' },
         sidebarTriggerSlotProps: { 'data-sidebar-trigger': 'custom' },
       }),
@@ -660,6 +661,7 @@ describe('DocsLayout', () => {
     expect(markup.match(/data-sidebar-trigger="custom"/g)).toHaveLength(2);
     expect(markup.match(/data-sidebar-indicator="custom"/g)).toHaveLength(2);
     expect(markup.match(/data-sidebar-content="custom"/g)).toHaveLength(2);
+    expect(markup.match(/Expand section/g)).toHaveLength(2);
   });
 
   it('supports explicit and controlled expansion state', () => {
@@ -1234,6 +1236,7 @@ describe('DocsMobileTableOfContents', () => {
     const markup = render(
       createElement(DocsMobileTableOfContents, {
         headings,
+        indicator: createElement('span', null, 'Toggle contents'),
         triggerSlotProps: { 'data-mobile-toc-trigger': 'custom' },
       }),
     );
@@ -1241,6 +1244,7 @@ describe('DocsMobileTableOfContents', () => {
     expect(markup).toContain('<details');
     expect(markup).toContain('<summary');
     expect(markup).toContain('data-mobile-toc-trigger="custom"');
+    expect(markup).toContain('Toggle contents');
     expect(markup).toContain('href="#overview"');
     expect(markup).toContain('href="#install"');
   });
@@ -1464,6 +1468,16 @@ describe('DocsProvider / useDocsConfig', () => {
     );
   }
 
+  function IconsProbe(): ReactNode {
+    const config = useDocsConfig();
+    return createElement(
+      'div',
+      null,
+      config.icons?.sidebarIndicator,
+      config.icons?.mobileTocIndicator,
+    );
+  }
+
   it('provides default labels without a provider', () => {
     const markup = renderToStaticMarkup(createElement(LabelsProbe));
 
@@ -1501,6 +1515,36 @@ describe('DocsProvider / useDocsConfig', () => {
 
     expect(markup).toBe(
       '<div>Find|Nothing here|Searching…|Search is temporarily unavailable|On this page</div>',
+    );
+  });
+
+  it('merges navigation icon overrides across nested providers', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            icons: {
+              sidebarIndicator: createElement('span', null, 'Sidebar icon'),
+            },
+          },
+        },
+        createElement(
+          DocsProvider,
+          {
+            config: {
+              icons: {
+                mobileTocIndicator: createElement('span', null, 'TOC icon'),
+              },
+            },
+          },
+          createElement(IconsProbe),
+        ),
+      ),
+    );
+
+    expect(markup).toBe(
+      '<div><span>Sidebar icon</span><span>TOC icon</span></div>',
     );
   });
 });

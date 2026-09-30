@@ -357,11 +357,17 @@ export interface ChakraDocsLayoutConfig {
   scrollMarginTop?: ChakraDocsStickyTop;
 }
 
+export interface ChakraDocsIcons {
+  mobileTocIndicator?: ReactNode;
+  sidebarIndicator?: ReactNode;
+}
+
 export interface ChakraDocsConfig extends DocsConfig {
   linkComponent?: DocsLinkComponent;
   labels?: Partial<DocsLabels>;
   analytics?: DocsAnalyticsCallbacks;
   codeBlock?: ChakraDocsCodeBlockConfig;
+  icons?: ChakraDocsIcons;
   layout?: ChakraDocsLayoutConfig;
   pageActions?: ChakraDocsPageActionsConfig;
 }
@@ -386,6 +392,7 @@ export interface DocsLayoutProps extends DocsComponentProps {
   mobileTocActiveIndicatorSlotProps?: Record<string, unknown>;
   mobileTocContentSlotProps?: Record<string, unknown>;
   mobileTocCurrentSlotProps?: Record<string, unknown>;
+  mobileTocIndicator?: ReactNode;
   mobileTocIndicatorSlotProps?: Record<string, unknown>;
   mobileTocItemSlotProps?: Record<string, unknown>;
   mobileTocLinkSlotProps?: Record<string, unknown>;
@@ -399,6 +406,7 @@ export interface DocsLayoutProps extends DocsComponentProps {
   sidebarContent?: ReactNode;
   sidebarDefaultExpanded?: DocsSidebarDefaultExpanded;
   sidebarExpandedIds?: readonly string[];
+  sidebarIndicator?: ReactNode;
   sidebarIndicatorSlotProps?: Record<string, unknown>;
   onSidebarExpandedChange?: (expandedIds: readonly string[]) => void;
   sidebarSlotProps?: Record<string, unknown>;
@@ -555,6 +563,7 @@ export interface DocsSidebarProps extends DocsStickyComponentProps {
   contentSlotProps?: Record<string, unknown>;
   defaultExpanded?: DocsSidebarDefaultExpanded;
   expandedIds?: readonly string[];
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   onExpandedChange?: (expandedIds: readonly string[]) => void;
   triggerSlotProps?: Record<string, unknown>;
@@ -623,6 +632,7 @@ export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
 export interface DocsMobileTableOfContentsProps extends DocsTableOfContentsProps {
   contentSlotProps?: Record<string, unknown>;
   currentSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   triggerLabelSlotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
@@ -1983,6 +1993,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
             contentSlotProps: props.sidebarContentSlotProps,
             defaultExpanded: props.sidebarDefaultExpanded,
             expandedIds: props.sidebarExpandedIds,
+            indicator: props.sidebarIndicator,
             indicatorSlotProps: props.sidebarIndicatorSlotProps,
             onExpandedChange: props.onSidebarExpandedChange,
             triggerSlotProps: props.sidebarTriggerSlotProps,
@@ -2008,6 +2019,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               contentSlotProps: props.sidebarContentSlotProps,
               defaultExpanded: props.sidebarDefaultExpanded,
               expandedIds: props.sidebarExpandedIds,
+              indicator: props.sidebarIndicator,
               indicatorSlotProps: props.sidebarIndicatorSlotProps,
               onExpandedChange: props.onSidebarExpandedChange,
               triggerSlotProps: props.sidebarTriggerSlotProps,
@@ -2032,6 +2044,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               contentSlotProps: props.mobileTocContentSlotProps,
               currentSlotProps: props.mobileTocCurrentSlotProps,
               headings: props.headings,
+              indicator: props.mobileTocIndicator,
               indicatorSlotProps: props.mobileTocIndicatorSlotProps,
               itemSlotProps: props.mobileTocItemSlotProps,
               linkSlotProps: props.mobileTocLinkSlotProps,
@@ -3523,6 +3536,7 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
       contentSlotProps: props.contentSlotProps,
       childrenSlotProps: props.childrenSlotProps,
       expandedIds: new Set(expandedIds),
+      indicator: props.indicator ?? config.icons?.sidebarIndicator,
       indicatorSlotProps: props.indicatorSlotProps,
       itemSlotProps: props.itemSlotProps,
       linkSlotProps: props.linkSlotProps,
@@ -4060,7 +4074,7 @@ export function DocsMobileTableOfContents(
           'aria-hidden': 'true',
           ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
         },
-        '⌄',
+        props.indicator ?? config.icons?.mobileTocIndicator ?? '⌄',
       ),
     ),
     createElement(
@@ -5704,6 +5718,7 @@ function NavList(props: {
   contentSlotProps?: Record<string, unknown>;
   childrenSlotProps?: Record<string, unknown>;
   expandedIds: ReadonlySet<string>;
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   itemSlotProps?: Record<string, unknown>;
   linkSlotProps?: Record<string, unknown>;
@@ -5752,7 +5767,7 @@ function NavList(props: {
                   'aria-hidden': 'true',
                   'data-state': expanded ? 'open' : 'closed',
                 },
-                '›',
+                props.indicator ?? '›',
               )
             : null;
         const disclosureTrigger =
@@ -5843,6 +5858,7 @@ function NavList(props: {
                   contentSlotProps: props.contentSlotProps,
                   childrenSlotProps: props.childrenSlotProps,
                   expandedIds: props.expandedIds,
+                  indicator: props.indicator,
                   indicatorSlotProps: props.indicatorSlotProps,
                   itemSlotProps: props.itemSlotProps,
                   items: children,
@@ -5907,6 +5923,10 @@ function mergeConfig(
     codeBlock: {
       ...inherited.codeBlock,
       ...next?.codeBlock,
+    },
+    icons: {
+      ...inherited.icons,
+      ...next?.icons,
     },
     layout: {
       ...inherited.layout,
