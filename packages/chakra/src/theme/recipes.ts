@@ -461,6 +461,7 @@ export const chakraDocsArticleSlotRecipe = defineSlotRecipe({
     root: {
       maxW: '3xl',
       minW: 0,
+      mx: 'auto',
       w: 'full',
       // Custom Markdown renderers may emit bare tables. Contain those locally;
       // tables with an external scroll area keep their native table layout.

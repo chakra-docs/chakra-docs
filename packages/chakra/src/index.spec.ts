@@ -1849,6 +1849,7 @@ describe('Docs content primitives', () => {
     expect(recipes[chakraDocsRecipeKeys.article].base.root).toMatchObject({
       minW: 0,
       maxW: '3xl',
+      mx: 'auto',
       w: 'full',
       '& :where(table:not([data-chakra-docs-table-scroll="external"]))': {
         display: 'block',
