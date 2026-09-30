@@ -1372,6 +1372,31 @@ describe('Callout', () => {
 });
 
 describe('CodeBlock', () => {
+  it('supports provider copy icons and per-block overrides with accessible labels', () => {
+    const markup = render(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            codeBlock: {
+              copyIcon: createElement('svg', { 'data-copy': 'provider' }),
+            },
+            labels: { copyCode: 'Copy example' },
+          },
+        },
+        createElement(CodeBlock, { code: 'first example' }),
+        createElement(CodeBlock, {
+          code: 'second example',
+          copyIcon: createElement('svg', { 'data-copy': 'instance' }),
+        }),
+      ),
+    );
+
+    expect(markup).toContain('data-copy="provider"');
+    expect(markup).toContain('data-copy="instance"');
+    expect(markup.match(/aria-label="Copy example"/g)).toHaveLength(2);
+  });
+
   it('uses neutral display defaults', () => {
     const markup = render(
       createElement(CodeBlock, { code: 'npm install', language: 'bash' }),

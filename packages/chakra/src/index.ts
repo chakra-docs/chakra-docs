@@ -344,6 +344,8 @@ export type ChakraDocsCodeBlockVariant = 'outline' | 'subtle' | 'plain';
 export interface ChakraDocsCodeBlockConfig {
   adapter?: ChakraDocsCodeBlockAdapter;
   copy?: boolean;
+  copyIcon?: ReactNode;
+  copiedIcon?: ReactNode;
   lineNumbers?: boolean;
   size?: ChakraDocsCodeBlockSize;
   variant?: ChakraDocsCodeBlockVariant;
@@ -5350,6 +5352,8 @@ export interface CodeBlockProps extends DocsComponentProps {
   /** Marks this block as a package command for successful-copy analytics. */
   packageManager?: string;
   copy?: boolean;
+  copyIcon?: ReactNode;
+  copiedIcon?: ReactNode;
   highlightLines?: number[] | string;
   language?: string;
   lineNumbers?: boolean;
@@ -5452,13 +5456,16 @@ export function CodeBlock(props: CodeBlockProps): ReactNode {
                   createElement(
                     ChakraCodeBlock.CopyIndicator,
                     {
-                      copied: copiedLabel,
+                      copied:
+                        props.copiedIcon ??
+                        codeBlockConfig.copiedIcon ??
+                        copiedLabel,
                       ...mergeSlotStyleProps(
                         styles.copyIndicator,
                         props.copyIndicatorSlotProps,
                       ),
                     },
-                    copyLabel,
+                    props.copyIcon ?? codeBlockConfig.copyIcon ?? copyLabel,
                   ),
                 )
               : null,
