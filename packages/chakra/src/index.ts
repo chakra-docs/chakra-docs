@@ -4074,7 +4074,9 @@ export function DocsMobileTableOfContents(
           'aria-hidden': 'true',
           ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
         },
-        props.indicator ?? config.icons?.mobileTocIndicator ?? '⌄',
+        props.indicator ??
+          config.icons?.mobileTocIndicator ??
+          createElement(PageActionsChevronIcon),
       ),
     ),
     createElement(
@@ -5767,7 +5769,7 @@ function NavList(props: {
                   'aria-hidden': 'true',
                   'data-state': expanded ? 'open' : 'closed',
                 },
-                props.indicator ?? '›',
+                props.indicator ?? createElement(PageActionsSubmenuIcon),
               )
             : null;
         const disclosureTrigger =

@@ -709,6 +709,8 @@ describe('DocsLayout', () => {
 
     expect(markup).toContain('href="/docs/guides"');
     expect(markup).toContain('aria-label="Expand Guides"');
+    expect(markup).toContain('<svg aria-hidden="true"');
+    expect(markup).not.toContain('>›<');
   });
 
   it('uses mobile navigation by default and supports opting out', () => {
@@ -1262,6 +1264,8 @@ describe('DocsMobileTableOfContents', () => {
     );
 
     expect(enabled).toContain('<details');
+    expect(enabled).toContain('<svg aria-hidden="true"');
+    expect(enabled).not.toContain('>⌄<');
     expect(disabled).not.toContain('<details');
     expect(disabled).toContain('Body');
   });

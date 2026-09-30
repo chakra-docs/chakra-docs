@@ -914,7 +914,12 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       w: { base: '100%', lg: '16rem' },
     },
     list: { listStyleType: 'none', m: 0, ps: 0 },
-    item: { py: 1 },
+    item: {
+      alignItems: 'center',
+      display: 'flex',
+      flexWrap: 'wrap',
+      py: 1,
+    },
     link: {
       alignItems: 'center',
       display: 'inline-flex',
@@ -925,7 +930,7 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
     },
     sectionTitle: { ...wrapContent, fontWeight: 'semibold' },
     badge: { ms: 2 },
-    children: { mt: 1, ps: 4 },
+    children: { flex: '0 0 100%', mt: 1, ps: 4, w: 'full' },
     trigger: {
       alignItems: 'center',
       appearance: 'none',
@@ -975,7 +980,10 @@ export const chakraDocsSidebarSlotRecipe = defineSlotRecipe({
       },
     },
     linked: {
-      true: { trigger: { ms: 2, w: 'auto' } },
+      true: {
+        link: { flex: '1 1 0' },
+        trigger: { ms: 2, w: 'auto' },
+      },
       false: {},
     },
   },

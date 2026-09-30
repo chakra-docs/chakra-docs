@@ -60,6 +60,25 @@ describe('Chakra Docs theme entry point', () => {
         });
     }
   });
+
+  it('aligns linked and label-only sidebar disclosure indicators', () => {
+    const sidebar = chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar];
+
+    expect(sidebar.base.item).toMatchObject({
+      alignItems: 'center',
+      display: 'flex',
+      flexWrap: 'wrap',
+    });
+    expect(sidebar.base.children).toMatchObject({
+      flex: '0 0 100%',
+      w: 'full',
+    });
+    expect(sidebar.variants?.linked?.true).toMatchObject({
+      link: { flex: '1 1 0' },
+      trigger: { ms: 2, w: 'auto' },
+    });
+  });
+
   it('gives standalone mobile controls 44px hit areas without enlarging inline links', () => {
     const controls = {
       tabs: ['trigger'],
