@@ -14,9 +14,18 @@ describe('Chakra Docs theme entry point', () => {
       borderWidth: '1px',
       display: 'flex',
       alignItems: 'flex-start',
+      gap: 3,
     });
     expect(recipe.base.body).toMatchObject({ minW: 0, flex: '1' });
     expect(recipe.base.icon.flexShrink).toBe(0);
+    for (const side of ['left', 'right']) {
+      expect(recipe.base[side]).toMatchObject({
+        display: 'inline-flex',
+        flexShrink: 0,
+        maxW: 'full',
+        minW: 0,
+      });
+    }
     for (const [status, foreground] of Object.entries({
       info: 'fg.info',
       warning: 'fg.warning',

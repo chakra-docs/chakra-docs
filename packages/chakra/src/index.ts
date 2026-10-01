@@ -5328,7 +5328,13 @@ export interface CalloutProps extends DocsComponentProps {
   title?: string;
   /** Optional leading icon or custom component. Set decorative icons' aria-hidden attribute on the icon itself. */
   icon?: ReactNode;
+  /** Leading component. Overrides icon when provided; null explicitly hides the leading slot. */
+  left?: ReactNode;
+  /** Trailing component, such as an action button or status badge. */
+  right?: ReactNode;
   iconSlotProps?: Record<string, unknown>;
+  leftSlotProps?: Record<string, unknown>;
+  rightSlotProps?: Record<string, unknown>;
   bodySlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
   titleSlotProps?: Record<string, unknown>;
@@ -5340,15 +5346,22 @@ export function Callout(props: CalloutProps): ReactNode {
     chakraDocsCalloutSlotRecipe,
   );
   const styles = recipe({ status: props.type ?? 'info' });
+  const left = props.left !== undefined ? props.left : props.icon;
 
   return createElement(
     Box,
     mergeSlotStyleProps(styles.root, props.slotProps),
-    props.icon != null && props.icon !== false
+    left != null && left !== false
       ? createElement(
           Box,
-          mergeSlotStyleProps(styles.icon, props.iconSlotProps),
-          props.icon,
+          mergeSlotStyleProps(styles.left, props.leftSlotProps),
+          props.left !== undefined
+            ? left
+            : createElement(
+                Box,
+                mergeSlotStyleProps(styles.icon, props.iconSlotProps),
+                props.icon,
+              ),
         )
       : null,
     createElement(
@@ -5367,6 +5380,13 @@ export function Callout(props: CalloutProps): ReactNode {
         props.children,
       ),
     ),
+    props.right != null && props.right !== false
+      ? createElement(
+          Box,
+          mergeSlotStyleProps(styles.right, props.rightSlotProps),
+          props.right,
+        )
+      : null,
   );
 }
 

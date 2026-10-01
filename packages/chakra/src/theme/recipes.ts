@@ -1421,7 +1421,7 @@ export const chakraDocsPaginationSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-callout',
-  slots: ['root', 'icon', 'body', 'title', 'content'],
+  slots: ['root', 'left', 'icon', 'body', 'right', 'title', 'content'],
   base: {
     root: {
       alignItems: 'flex-start',
@@ -1433,6 +1433,13 @@ export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
       p: 4,
       rounded: 'md',
     },
+    left: {
+      alignItems: 'center',
+      display: 'inline-flex',
+      flexShrink: 0,
+      maxW: 'full',
+      minW: 0,
+    },
     icon: {
       alignItems: 'center',
       display: 'inline-flex',
@@ -1441,6 +1448,13 @@ export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
       '& > svg': { boxSize: '1.25em' },
     },
     body: { flex: '1', minW: 0, overflowWrap: 'anywhere' },
+    right: {
+      alignItems: 'center',
+      display: 'inline-flex',
+      flexShrink: 0,
+      maxW: 'full',
+      minW: 0,
+    },
     title: { fontWeight: 'semibold', mb: 2 },
   },
   variants: {

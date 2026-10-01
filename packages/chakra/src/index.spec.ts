@@ -1426,6 +1426,122 @@ describe('Callout', () => {
     );
   });
 
+  it('renders left, body and right components in order with independent styling and accessible actions', () => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          title: 'Compatibility',
+          left: createElement('svg', {
+            'aria-hidden': 'true',
+            'data-testid': 'leading-svg',
+          }),
+          right: createElement(
+            'button',
+            { type: 'button', 'aria-label': 'View guide' },
+            'Guide',
+          ),
+          leftSlotProps: {
+            'data-testid': 'callout-left',
+            style: { marginTop: '3px' },
+          },
+          bodySlotProps: { 'data-testid': 'callout-body' },
+          rightSlotProps: {
+            'data-testid': 'callout-right',
+            style: { alignSelf: 'center' },
+          },
+        },
+        createElement('a', { href: '/guide' }, 'Read the documentation'),
+      ),
+    );
+    expect(markup).toContain('data-testid="callout-left"');
+    expect(markup).toContain('margin-top:3px');
+    expect(markup).toContain('align-self:center');
+    expect(markup).toContain('aria-label="View guide"');
+    expect(markup.indexOf('callout-left')).toBeLessThan(
+      markup.indexOf('callout-body'),
+    );
+    expect(markup.indexOf('callout-body')).toBeLessThan(
+      markup.indexOf('callout-right'),
+    );
+    expect(markup).toContain('href="/guide"');
+    expect(markup).not.toContain('callout-icon');
+  });
+
+  it('uses left instead of icon when both are supplied', () => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          icon: 'Fallback icon',
+          left: 'Leading component',
+        },
+        'Body',
+      ),
+    );
+    expect(markup).toContain('Leading component');
+    expect(markup).not.toContain('Fallback icon');
+  });
+
+  it.each([null, false])('lets left=%s suppress the icon fallback', (left) => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          left,
+          icon: 'Fallback icon',
+          leftSlotProps: { 'data-testid': 'callout-left' },
+        },
+        'Body',
+      ),
+    );
+    expect(markup).not.toContain('callout-left');
+    expect(markup).not.toContain('Fallback icon');
+  });
+
+  it.each([undefined, null, false])(
+    'does not render empty side slots for %s',
+    (side) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            left: side,
+            right: side,
+            leftSlotProps: { 'data-testid': 'callout-left' },
+            rightSlotProps: { 'data-testid': 'callout-right' },
+            bodySlotProps: { 'data-testid': 'callout-body' },
+          },
+          'Body',
+        ),
+      );
+      expect(markup).not.toContain('callout-left');
+      expect(markup).not.toContain('callout-right');
+      expect(markup).toContain('callout-body');
+    },
+  );
+
+  it.each(['left', 'right'] as const)(
+    'supports the %s slot by itself',
+    (side) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            [side]: 'Side component',
+            leftSlotProps: { 'data-testid': 'callout-left' },
+            rightSlotProps: { 'data-testid': 'callout-right' },
+          },
+          'Body',
+        ),
+      );
+      expect(markup).toContain(`callout-${side}`);
+      expect(markup).not.toContain(
+        `callout-${side === 'left' ? 'right' : 'left'}`,
+      );
+    },
+  );
+
   it.each([undefined, null, false])(
     'omits the leading icon slot for %s',
     (icon) => {
@@ -2348,7 +2464,7 @@ describe('Chakra Docs slot recipes', () => {
     ],
     [
       chakraDocsRecipeKeys.callout,
-      ['root', 'icon', 'body', 'title', 'content'],
+      ['root', 'left', 'icon', 'body', 'right', 'title', 'content'],
     ],
     [
       chakraDocsRecipeKeys.pageActions,
