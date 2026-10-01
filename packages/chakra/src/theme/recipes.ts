@@ -1421,9 +1421,24 @@ export const chakraDocsPaginationSlotRecipe = defineSlotRecipe({
 
 export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
   className: 'chakra-docs-callout',
-  slots: ['root', 'title', 'content'],
+  slots: ['root', 'icon', 'body', 'title', 'content'],
   base: {
-    root: { borderWidth: '1px', p: 4, rounded: 'md' },
+    root: {
+      alignItems: 'flex-start',
+      borderWidth: '1px',
+      display: 'flex',
+      gap: 3,
+      p: 4,
+      rounded: 'md',
+    },
+    icon: {
+      alignItems: 'center',
+      display: 'inline-flex',
+      flexShrink: 0,
+      lineHeight: 'inherit',
+      '& > svg': { boxSize: '1.25em' },
+    },
+    body: { flex: '1', minW: 0, overflowWrap: 'anywhere' },
     title: { fontWeight: 'semibold', mb: 2 },
   },
   variants: {

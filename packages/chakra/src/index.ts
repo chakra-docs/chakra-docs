@@ -5326,6 +5326,10 @@ export function DocsPagination(props: DocsPaginationProps): ReactNode {
 export interface CalloutProps extends DocsComponentProps {
   type?: 'info' | 'warning' | 'success' | 'danger';
   title?: string;
+  /** Optional leading icon or custom component. Set decorative icons' aria-hidden attribute on the icon itself. */
+  icon?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  bodySlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
   titleSlotProps?: Record<string, unknown>;
 }
@@ -5340,17 +5344,28 @@ export function Callout(props: CalloutProps): ReactNode {
   return createElement(
     Box,
     mergeSlotStyleProps(styles.root, props.slotProps),
-    props.title
+    props.icon != null && props.icon !== false
       ? createElement(
-          Text,
-          mergeSlotStyleProps(styles.title, props.titleSlotProps),
-          props.title,
+          Box,
+          mergeSlotStyleProps(styles.icon, props.iconSlotProps),
+          props.icon,
         )
       : null,
     createElement(
       Box,
-      mergeSlotStyleProps(styles.content, props.contentSlotProps),
-      props.children,
+      mergeSlotStyleProps(styles.body, props.bodySlotProps),
+      props.title
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(styles.title, props.titleSlotProps),
+            props.title,
+          )
+        : null,
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.content, props.contentSlotProps),
+        props.children,
+      ),
     ),
   );
 }

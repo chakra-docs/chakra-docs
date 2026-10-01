@@ -1369,6 +1369,63 @@ describe('Callout', () => {
     expect(markup).toContain('Only body');
     expect(markup).not.toContain('<p');
   });
+
+  it('renders a custom leading component before the title and content, with independent slot overrides', () => {
+    function CustomIndicator() {
+      return createElement(
+        'span',
+        { 'aria-label': 'Compatibility information' },
+        'i',
+      );
+    }
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          title: 'Compatibility',
+          icon: createElement(CustomIndicator),
+          iconSlotProps: {
+            'data-testid': 'callout-icon',
+            style: { marginTop: '2px' },
+          },
+          bodySlotProps: { 'data-testid': 'callout-body' },
+          titleSlotProps: { 'data-testid': 'callout-title' },
+          contentSlotProps: { 'data-testid': 'callout-content' },
+        },
+        'Use the app directory.',
+      ),
+    );
+    expect(markup).toContain('data-testid="callout-icon"');
+    expect(markup).toContain('margin-top:2px');
+    expect(markup).toContain('aria-label="Compatibility information"');
+    expect(markup).toContain('data-testid="callout-body"');
+    expect(markup).toContain('data-testid="callout-title"');
+    expect(markup).toContain('data-testid="callout-content"');
+    expect(markup.indexOf('Compatibility information')).toBeLessThan(
+      markup.indexOf('callout-title'),
+    );
+    expect(markup.indexOf('callout-title')).toBeLessThan(
+      markup.indexOf('Use the app directory.'),
+    );
+  });
+
+  it.each([undefined, null, false])(
+    'omits the leading icon slot for %s',
+    (icon) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            icon,
+            iconSlotProps: { 'data-testid': 'callout-icon' },
+          },
+          'Only body',
+        ),
+      );
+      expect(markup).not.toContain('callout-icon');
+      expect(markup).toContain('Only body');
+    },
+  );
 });
 
 describe('CodeBlock', () => {
@@ -2272,7 +2329,10 @@ describe('Chakra Docs slot recipes', () => {
       chakraDocsRecipeKeys.tableOfContents,
       ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],
     ],
-    [chakraDocsRecipeKeys.callout, ['root', 'title', 'content']],
+    [
+      chakraDocsRecipeKeys.callout,
+      ['root', 'icon', 'body', 'title', 'content'],
+    ],
     [
       chakraDocsRecipeKeys.pageActions,
       [
