@@ -179,6 +179,85 @@ async function typeQuery(input: HTMLInputElement, value: string) {
   });
 }
 
+describe('DocsPageActions menu analytics', () => {
+  it('reports automatic menu opens for pointer and keyboard, but not mounting or closing', async () => {
+    const onPageAction = vi.fn();
+    const page = {
+      id: 'docs:page',
+      slug: ['page'],
+      path: 'docs/page.md',
+      route: '/docs/page',
+      title: 'Page',
+      frontmatter: {},
+      body: 'Page body.',
+    };
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onPageAction } } },
+        createElement(DocsPageActions.Root, { page }),
+      ),
+    );
+    expect(onPageAction).not.toHaveBeenCalled();
+    const trigger = button('More page actions');
+    await act(async () => trigger.click());
+    expect(onPageAction).toHaveBeenCalledExactlyOnceWith({
+      page,
+      action: 'menu-open',
+    });
+    await press(
+      required(document.querySelector<HTMLElement>('[role="menu"]')),
+      'Escape',
+    );
+    expect(onPageAction).toHaveBeenCalledTimes(1);
+    await press(trigger, 'ArrowDown');
+    expect(onPageAction).toHaveBeenCalledTimes(2);
+    expect(onPageAction).toHaveBeenLastCalledWith({
+      page,
+      action: 'menu-open',
+    });
+  });
+
+  it('preserves disclosure callbacks when analytics throws and excludes submenu opens', async () => {
+    const onPageAction = vi.fn(() => {
+      throw new Error('Analytics offline');
+    });
+    const onOpenChange = vi.fn();
+    await render(
+      createElement(
+        DocsProvider,
+        { config: { analytics: { onPageAction } } },
+        createElement(
+          DocsPageActions.Root,
+          null,
+          createElement(
+            DocsPageActions.Menu,
+            { label: 'Actions', onOpenChange },
+            createElement(
+              DocsPageActions.Submenu,
+              { label: 'Nested' },
+              createElement(DocsPageActions.Item, { href: '/docs' }, 'Docs'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await act(async () => button('Actions').click());
+    expect(onOpenChange).toHaveBeenCalledExactlyOnceWith({ open: true });
+    expect(onPageAction).toHaveBeenCalledTimes(1);
+    const nested = required(
+      document.querySelector<HTMLElement>(
+        '[role="menuitem"][aria-haspopup="menu"]',
+      ),
+    );
+    const menu = required(document.querySelector<HTMLElement>('[role="menu"]'));
+    await press(menu, 'ArrowDown');
+    await press(menu, 'ArrowRight');
+    expect(nested.getAttribute('aria-expanded')).toBe('true');
+    expect(onPageAction).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('DocsPageActions portal variables', () => {
   it('carries root inline variables through both portal levels and allows local overrides', async () => {
     await render(

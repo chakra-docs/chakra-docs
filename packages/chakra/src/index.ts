@@ -288,6 +288,7 @@ export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
   }) => void;
   onPageAction?: (event: {
     page?: DocsPage;
+    /** Includes `menu-open` when the top-level page-actions menu opens. */
     action: string;
     href?: string;
   }) => void;
@@ -1501,8 +1502,15 @@ function usePageActionsDisclosure(
       defaultOpen: props.defaultOpen,
       id: disclosureId,
       loopFocus: true,
-      onOpenChange: (details: { open: boolean }) =>
-        props.onOpenChange?.({ open: details.open }),
+      onOpenChange: (details: { open: boolean }) => {
+        if (details.open && !props.nested) {
+          emitAnalytics(props.context.config.analytics?.onPageAction, {
+            page: props.context.page,
+            action: 'menu-open',
+          });
+        }
+        props.onOpenChange?.({ open: details.open });
+      },
       open: props.open,
       positioning,
       typeahead: true,

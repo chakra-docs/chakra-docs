@@ -241,6 +241,9 @@ context changes invisibly to these props. Only ship authorized suggestions.
   page actions/copies, heading-link copies, feedback, and preference changes. Callbacks are optional,
   provider-neutral observers; thrown errors and rejected promises are isolated
   from the UI. Report integration failures inside your callback if needed.
+  `onPageAction` also receives `{ action: 'menu-open', page }` when the
+  top-level page-actions menu opens, including keyboard activation. Closing
+  the menu or opening a submenu does not emit this event.
 - `codeBlock` — shared `CodeBlock` defaults. `adapter` configures syntax highlighting; `copy`, `lineNumbers`, `size`, `variant`, and `wrap` configure every nested code block unless an instance overrides them.
 - `icons` — shared navigation indicators. Set `sidebarIndicator` and `mobileTocIndicator` to components from the site's icon system; direct component props remain the final override.
 - `layout` — `ChakraDocsLayoutConfig` sticky offsets (`stickyTop`, `sidebarStickyTop`, `tocStickyTop`, `scrollMarginTop`), each accepting responsive Chakra values.
