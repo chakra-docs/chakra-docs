@@ -12,6 +12,7 @@ describe('Chakra Docs theme entry point', () => {
       bg: 'transparent',
       borderColor: 'currentColor',
       borderWidth: '1px',
+      color: 'fg',
       display: 'flex',
       alignItems: 'flex-start',
       gap: 3,
@@ -26,14 +27,8 @@ describe('Chakra Docs theme entry point', () => {
         minW: 0,
       });
     }
-    for (const [status, foreground] of Object.entries({
-      info: 'fg.info',
-      warning: 'fg.warning',
-      success: 'fg.success',
-      danger: 'fg.error',
-    })) {
-      const variant = recipe.variants?.status[status].root;
-      expect(variant).toEqual({ color: foreground });
+    for (const status of ['info', 'warning', 'success', 'danger']) {
+      expect(recipe.variants?.status[status]).toEqual({});
     }
   });
 

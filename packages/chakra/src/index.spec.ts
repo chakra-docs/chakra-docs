@@ -1346,7 +1346,7 @@ describe('Callout', () => {
     expect(markup).toContain('Callout body');
   });
 
-  it('defaults to the info foreground', () => {
+  it('defaults to the info status', () => {
     const info = render(
       createElement(Callout, { type: 'info', title: 'T' }, 'B'),
     );
@@ -1355,12 +1355,41 @@ describe('Callout', () => {
     expect(implicit).toBe(info);
   });
 
-  it('applies a distinct palette per type', () => {
+  it('uses the same neutral palette for every type by default', () => {
     const markups = types.map((type) =>
       render(createElement(Callout, { type, title: 'T' }, 'B')),
     );
 
-    expect(new Set(markups).size).toBe(types.length);
+    expect(new Set(markups).size).toBe(1);
+  });
+
+  it('still supports status-specific theme foreground overrides', () => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        slotRecipes: {
+          [chakraDocsRecipeKeys.callout]: {
+            slots: [
+              'root',
+              'left',
+              'icon',
+              'body',
+              'right',
+              'title',
+              'content',
+            ],
+            variants: {
+              status: { warning: { root: { color: 'purple.500' } } },
+            },
+          },
+        },
+      },
+    });
+    const markup = renderWithStyles(
+      createElement(Callout, { type: 'warning' }, 'Custom warning'),
+      system,
+    );
+    expect(markup).toContain('color:var(--chakra-colors-purple-500)');
+    expect(markup).toContain('border-color:currentColor');
   });
 
   it('allows host foreground and background overrides without losing the currentColor border', () => {

@@ -1428,6 +1428,7 @@ export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
       bg: 'transparent',
       borderColor: 'currentColor',
       borderWidth: '1px',
+      color: 'fg',
       display: 'flex',
       gap: 3,
       p: 4,
@@ -1459,26 +1460,10 @@ export const chakraDocsCalloutSlotRecipe = defineSlotRecipe({
   },
   variants: {
     status: {
-      info: {
-        root: {
-          color: 'fg.info',
-        },
-      },
-      warning: {
-        root: {
-          color: 'fg.warning',
-        },
-      },
-      success: {
-        root: {
-          color: 'fg.success',
-        },
-      },
-      danger: {
-        root: {
-          color: 'fg.error',
-        },
-      },
+      info: {},
+      warning: {},
+      success: {},
+      danger: {},
     },
   },
   defaultVariants: { status: 'info' },
