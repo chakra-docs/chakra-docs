@@ -1346,7 +1346,7 @@ describe('Callout', () => {
     expect(markup).toContain('Callout body');
   });
 
-  it('defaults to the info palette', () => {
+  it('defaults to the info foreground', () => {
     const info = render(
       createElement(Callout, { type: 'info', title: 'T' }, 'B'),
     );
@@ -1361,6 +1361,23 @@ describe('Callout', () => {
     );
 
     expect(new Set(markups).size).toBe(types.length);
+  });
+
+  it('allows host foreground and background overrides without losing the currentColor border', () => {
+    const markup = renderWithStyles(
+      createElement(
+        Callout,
+        {
+          slotProps: {
+            style: { color: '#123456', backgroundColor: '#fedcba' },
+          },
+        },
+        'Custom palette',
+      ),
+    );
+    expect(markup).toContain('border-color:currentColor');
+    expect(markup).toContain('background:var(--chakra-colors-transparent)');
+    expect(markup).toContain('color:#123456;background-color:#fedcba');
   });
 
   it('omits the title element when no title is provided', () => {

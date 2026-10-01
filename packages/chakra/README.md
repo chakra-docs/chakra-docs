@@ -466,6 +466,8 @@ const sidebarRecipe = {
 
 Import `LuInfo` from `react-icons/lu`, or supply a component from your own icon system. The `icon` and `body` recipe slots keep the leading component aligned beside both the title and content, with independent per-instance overrides.
 
+Callouts have a transparent background and a 1px `currentColor` border by default. Status variants only set the foreground (`fg.info`, `fg.warning`, `fg.success`, or `fg.error`), so text, icons, and border share that color in either color mode. Set `slotProps={{ color: 'fg' }}` for a neutral callout, or override the foreground/background through `chakraDocsCallout` in your system theme or per-instance slot props.
+
 - `CodeBlock` — Chakra `CodeBlock`-based code shell with an optional title/language header and configurable copy action, line numbers, wrapping, highlighted lines, size, maximum height, and `outline`, `subtle`, or `plain` recipe variant. Props include `code`, `language`, `title`, `copy`, `lineNumbers`, `wrap`, `highlightLines`, `size`, `variant`, `maxHeight`, `slotProps`, and `children`. Copying defaults on; line numbers and wrapping default off.
 
 ### Hooks and helpers

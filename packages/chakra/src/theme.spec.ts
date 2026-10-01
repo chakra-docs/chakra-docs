@@ -6,6 +6,28 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('keeps callouts transparent and derives their border from the foreground in every status', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.callout];
+    expect(recipe.base.root).toMatchObject({
+      bg: 'transparent',
+      borderColor: 'currentColor',
+      borderWidth: '1px',
+      display: 'flex',
+      alignItems: 'flex-start',
+    });
+    expect(recipe.base.body).toMatchObject({ minW: 0, flex: '1' });
+    expect(recipe.base.icon.flexShrink).toBe(0);
+    for (const [status, foreground] of Object.entries({
+      info: 'fg.info',
+      warning: 'fg.warning',
+      success: 'fg.success',
+      danger: 'fg.error',
+    })) {
+      const variant = recipe.variants?.status[status].root;
+      expect(variant).toEqual({ color: foreground });
+    }
+  });
+
   it('wraps long content without changing code whitespace or table scrolling', () => {
     const content = {
       cards: ['card', 'content'],
