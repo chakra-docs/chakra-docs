@@ -185,38 +185,42 @@ export {
   chakraDocsVersionSelectSlotRecipe,
 } from './theme/recipes.js';
 
-const Chakra = ChakraRuntime as unknown as Record<string, ElementType>;
-const Badge = Chakra.Badge;
-const Box = Chakra.Box;
-const Button = Chakra.Button;
-const ChakraClipboard = Chakra.Clipboard as unknown as Record<
-  string,
-  ElementType
->;
-const Code = Chakra.Code;
-const Container = Chakra.Container;
-const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
-const Tabs = Chakra.Tabs as unknown as Record<string, ElementType>;
-const Heading = Chakra.Heading;
-const HStack = Chakra.HStack;
-const Input = Chakra.Input;
-const InputGroup = Chakra.InputGroup;
-const IconButton = Chakra.IconButton;
-const Kbd = Chakra.Kbd;
-const Link = Chakra.Link;
-const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
-const NativeSelect = Chakra.NativeSelect as unknown as Record<
-  string,
-  ElementType
->;
-const Portal = Chakra.Portal;
-const Stack = Chakra.Stack;
-const Text = Chakra.Text;
-const Textarea = Chakra.Textarea;
-const ChakraCodeBlock = Chakra.CodeBlock as unknown as Record<
-  string,
-  ElementType
->;
+// NodeNext cannot follow Chakra's extensionless declaration re-exports. Keep
+// lightweight boundary casts, but access each export directly: aliasing the
+// complete namespace makes Turbopack retain unrelated Chakra components.
+const Badge = (ChakraRuntime as unknown as Record<string, ElementType>).Badge;
+const Box = (ChakraRuntime as unknown as Record<string, ElementType>).Box;
+const Button = (ChakraRuntime as unknown as Record<string, ElementType>).Button;
+const ChakraClipboard = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Clipboard as Record<string, ElementType>;
+const Code = (ChakraRuntime as unknown as Record<string, ElementType>).Code;
+const Container = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Container;
+const Dialog = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Dialog as Record<string, ElementType>;
+const Tabs = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Tabs as Record<string, ElementType>;
+const Heading = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Heading;
+const HStack = (ChakraRuntime as unknown as Record<string, ElementType>).HStack;
+const Input = (ChakraRuntime as unknown as Record<string, ElementType>).Input;
+const InputGroup = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .InputGroup;
+const IconButton = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .IconButton;
+const Kbd = (ChakraRuntime as unknown as Record<string, ElementType>).Kbd;
+const Link = (ChakraRuntime as unknown as Record<string, ElementType>).Link;
+const ChakraMenu = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Menu as Record<string, ElementType>;
+const NativeSelect = (ChakraRuntime as unknown as Record<string, unknown>)
+  .NativeSelect as Record<string, ElementType>;
+const Portal = (ChakraRuntime as unknown as Record<string, ElementType>).Portal;
+const Stack = (ChakraRuntime as unknown as Record<string, ElementType>).Stack;
+const Text = (ChakraRuntime as unknown as Record<string, ElementType>).Text;
+const Textarea = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Textarea;
+const ChakraCodeBlock = (ChakraRuntime as unknown as Record<string, unknown>)
+  .CodeBlock as Record<string, ElementType>;
 const emptySearchRecords: readonly DocsSearchRecord[] = [];
 const emptyRemoteSearchResults: DocsSearchResult[] = [];
 
