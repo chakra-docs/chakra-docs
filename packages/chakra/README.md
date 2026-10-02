@@ -33,6 +33,20 @@ Create the adapter once at module scope. It lazily loads Shiki and accepts `lang
 
 ## Usage
 
+For pages that need only a code example, use the focused entry points so the
+bundler can keep documentation navigation, search and page actions in their own
+route chunks:
+
+```tsx
+import { CodeBlock } from '@chakra-docs/chakra/code-block';
+import { DocsProvider } from '@chakra-docs/chakra/provider';
+```
+
+These are the same components and shared context exported from the package root.
+Existing imports stay supported, and root and focused imports can be mixed without
+adding providers or changing recipes, highlighting, copy behavior or analytics.
+Keep the host's existing Chakra provider and theme configuration.
+
 Wrap your docs pages in your app's `ChakraProvider`, add a `DocsProvider` for shared configuration, and compose a page from `DocsLayout`, `DocsArticle`, and friends. Pages, nav, and headings come from a Chakra Docs manifest (built with `@chakra-docs/source-filesystem` or the `@chakra-docs/cli` generated output):
 
 ```tsx

@@ -49,6 +49,11 @@ import type {
 } from './heading-scroll.js';
 import { activateSearchResult } from './search-activation.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
+import { CodeBlock as StandaloneCodeBlock } from './code-block.js';
+import {
+  DocsProvider as StandaloneProvider,
+  useDocsConfig as useStandaloneConfig,
+} from './provider.js';
 
 // The workspace resolves modules with `nodenext`, which cannot follow the
 // extensionless re-export chain in @chakra-ui/react's type declarations, so
@@ -1591,6 +1596,33 @@ describe('Callout', () => {
 });
 
 describe('CodeBlock', () => {
+  it('preserves component and context identity across focused entry points', () => {
+    expect(StandaloneCodeBlock).toBe(CodeBlock);
+    expect(StandaloneProvider).toBe(DocsProvider);
+    expect(useStandaloneConfig).toBe(useDocsConfig);
+  });
+
+  it('inherits configuration when mixing the root and focused entry points', () => {
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { labels: { copyCode: 'Copy inherited example' } } },
+        createElement(
+          StandaloneProvider,
+          { config: { codeBlock: { copyIcon: 'Copy icon' } } },
+          createElement(StandaloneCodeBlock, { code: 'focused entry point' }),
+          createElement(CodeBlock, { code: 'root entry point' }),
+        ),
+      ),
+    );
+    expect(markup.match(/aria-label="Copy inherited example"/g)).toHaveLength(
+      2,
+    );
+    expect(markup.match(/Copy icon/g)).toHaveLength(2);
+    expect(markup).toContain('focused entry point');
+    expect(markup).toContain('root entry point');
+  });
+
   it('supports provider copy icons and per-block overrides with accessible labels', () => {
     const markup = render(
       createElement(
