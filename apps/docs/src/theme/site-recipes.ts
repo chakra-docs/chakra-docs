@@ -1,0 +1,202 @@
+import { defineSlotRecipe } from '@chakra-ui/react';
+
+/** Site chrome matches react-fathom; library component recipes stay reusable. */
+export const siteSlotRecipes = {
+  siteShell: defineSlotRecipe({
+    slots: ['root', 'header', 'container', 'brand', 'githubTrigger', 'main'],
+    base: {
+      root: { bg: 'bg', color: 'fg', minH: '100vh' },
+      header: {
+        position: 'sticky',
+        top: 0,
+        zIndex: 'siteHeader',
+        h: 'siteHeader',
+        borderBottomWidth: '1px',
+        borderColor: 'border',
+        bg: 'bg',
+      },
+      container: { maxW: '7xl', h: 'full' },
+      brand: {
+        fontWeight: 'medium',
+        fontSize: 'lg',
+        flexShrink: 0,
+        _hover: { textDecoration: 'none' },
+      },
+      githubTrigger: {
+        color: 'fg.muted',
+        minH: 11,
+        minW: 11,
+        _hover: { bg: 'bg.muted', color: 'fg' },
+      },
+      main: { minW: 0, minH: 'calc(100vh - {sizes.siteHeader})' },
+    },
+  }),
+  siteFooter: defineSlotRecipe({
+    slots: [
+      'root',
+      'container',
+      'content',
+      'creditLink',
+      'licenseLink',
+      'links',
+      'ossLink',
+    ],
+    base: {
+      root: {
+        bg: 'bg',
+        color: 'fg.muted',
+        borderTopWidth: '1px',
+        borderColor: 'border',
+      },
+      container: { maxW: '7xl', py: { base: 6, md: 8 } },
+      content: {
+        flexDirection: { base: 'column', md: 'row' },
+        alignItems: { base: 'flex-start', md: 'center' },
+        justifyContent: 'space-between',
+        gap: 3,
+        fontSize: 'sm',
+      },
+      creditLink: { color: 'fg' },
+      licenseLink: { color: 'fg', minH: 11, flexShrink: 0 },
+      links: { alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+      ossLink: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        minH: 11,
+        minW: 11,
+        _focusVisible: {
+          outline: '2px solid',
+          outlineColor: 'fg',
+          outlineOffset: '4px',
+        },
+      },
+    },
+  }),
+  siteOssMark: defineSlotRecipe({
+    slots: ['mark'],
+    base: {
+      mark: {
+        w: 'auto',
+        maxW: 'full',
+        aspectRatio: '579 / 285',
+        flexShrink: 0,
+        filter: 'invert(1)',
+        _dark: { filter: 'none' },
+      },
+    },
+    variants: {
+      size: {
+        footer: { mark: { h: 6 } },
+        hero: { mark: { h: { base: 16, md: 24 } } },
+      },
+    },
+    defaultVariants: { size: 'footer' },
+  }),
+  siteWithOss: defineSlotRecipe({
+    slots: [
+      'root',
+      'hero',
+      'title',
+      'intro',
+      'projects',
+      'sectionTitle',
+      'list',
+      'row',
+      'name',
+      'description',
+      'urls',
+      'projectLink',
+    ],
+    base: {
+      root: { maxW: '7xl', py: { base: 12, md: 20 }, minW: 0 },
+      hero: {
+        alignItems: { base: 'flex-start', xl: 'center' },
+        flexDirection: { base: 'column', xl: 'row' },
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        columnGap: { base: 8, xl: 20 },
+        rowGap: 8,
+      },
+      title: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 3,
+        fontSize: { base: '6xl', md: '8xl' },
+        lineHeight: 1,
+        flexShrink: 0,
+      },
+      intro: {
+        fontSize: { base: 'lg', md: '2xl' },
+        maxW: 'xl',
+        minW: 0,
+        flex: { base: '1 1 auto', xl: '1 1 28rem' },
+      },
+      projects: { mt: { base: 12, md: 24 } },
+      sectionTitle: {
+        fontSize: 'xl',
+        pb: 3,
+        borderBottomWidth: '2px',
+        borderColor: 'fg',
+      },
+      list: { gap: 0, listStyle: 'none', p: 0, m: 0 },
+      row: {
+        gridTemplateColumns: {
+          base: 'minmax(0, 1fr)',
+          md: 'minmax(0, 12rem) minmax(0, 1fr)',
+          xl: 'minmax(0, 12rem) minmax(0, 1fr) minmax(0, 22rem)',
+        },
+        borderBottomWidth: '1px',
+        borderColor: 'border',
+        py: { base: 6, md: 4 },
+        gap: { base: 3, md: 4 },
+        minW: 0,
+      },
+      name: { fontWeight: 'medium', minW: 0, overflowWrap: 'anywhere' },
+      description: { minW: 0 },
+      urls: {
+        minW: 0,
+        gridColumn: { base: 'auto', md: '2', xl: 'auto' },
+        overflowWrap: 'anywhere',
+      },
+      projectLink: {
+        fontFamily: 'mono',
+        fontSize: 'sm',
+        color: 'site.link',
+        display: 'inline',
+        _hover: { textDecoration: 'underline' },
+      },
+    },
+  }),
+  communeFooter: defineSlotRecipe({
+    slots: ['root', 'content', 'label', 'link', 'wordmark'],
+    base: {
+      root: {
+        maxW: 'full',
+        bg: 'black',
+        color: 'white',
+        pt: { base: 2, md: 8 },
+        pb: { base: 4, md: 8 },
+        _print: { display: 'none' },
+      },
+      content: {
+        alignItems: 'flex-start',
+        textAlign: 'left',
+        gap: 1,
+        w: 'full',
+      },
+      label: { fontSize: { base: 'lg', md: '2xl' }, fontWeight: 'medium' },
+      link: {
+        display: 'block',
+        w: 'full',
+        color: 'white',
+        _hover: { textDecoration: 'none' },
+        _focusVisible: {
+          outline: '2px solid',
+          outlineColor: 'white',
+          outlineOffset: '4px',
+        },
+      },
+      wordmark: { w: 'full', h: 'auto' },
+    },
+  }),
+};

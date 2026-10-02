@@ -12,7 +12,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   `connect-src 'self' ${fathomOrigin} https://api.usefathom.com`,
-  "font-src 'self' data:",
+  "font-src 'self' data: https://kits.fontstack.com",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'none'",
@@ -20,7 +20,7 @@ const contentSecurityPolicy = [
   "manifest-src 'self'",
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${developmentScriptPolicy} ${fathomOrigin}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://kits.fontstack.com",
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',
 ].join('; ');
@@ -36,6 +36,9 @@ const nextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
+  // Keep Postkit's Chakra provider in the same bundle as optimized site imports.
+  transpilePackages: ['@postkit/react'],
+  experimental: { optimizePackageImports: ['@chakra-ui/react'] },
   async headers() {
     return [
       {

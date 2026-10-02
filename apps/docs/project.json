@@ -6,6 +6,12 @@
   "tags": ["layer:app", "scope:docs"],
   "// targets": "to see all targets run: nx show project docs --web",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "node --test scripts/docs-site.spec.mjs" },
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/scripts/docs-site.spec.mjs"]
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
@@ -30,7 +36,8 @@
         { "env": "NEXT_PUBLIC_SITE_URL" },
         { "env": "CHAKRA_DOCS_REQUIRE_SITE_URL" },
         { "env": "NEXT_PUBLIC_FATHOM_SITE_ID" },
-        { "env": "NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN" }
+        { "env": "NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN" },
+        { "env": "NEXT_PUBLIC_FONTSTACK_KIT_URL" }
       ],
       "outputs": [
         "{workspaceRoot}/apps/docs/.next/!(cache)/**/*",

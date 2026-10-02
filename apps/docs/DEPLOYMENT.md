@@ -20,12 +20,26 @@ execute `next start`.
 - Configure the platform's liveness check to `GET /api/health`. A healthy
   response is HTTP 200 with `{ "status": "ok" }` and `Cache-Control: no-store`.
 
+## Shared site design and typography
+
+The site uses the same neutral Chakra theme and docs-first layout as
+react-fathom: Suisse Intl and Suisse Intl Mono, system light/dark mode,
+native documentation components, a credit/license footer, and the COMMUNE
+sub-footer. All site styling lives in `src/theme`; there are no site CSS files.
+
+The shared OSS Fontstack kit is loaded from `_document.tsx`, so its stylesheet
+stays in the document head during client-side navigation. The default kit is
+`https://kits.fontstack.com/kit/o0v0t0oi.css`. Ensure the kit allows the production
+domain and `chakra-docs.test`. Set `NEXT_PUBLIC_FONTSTACK_KIT_URL` before building
+to use another Fontstack kit, or set it to an empty string to use system fonts.
+The CSP allows Fontstack styles and fonts, but not arbitrary stylesheet hosts.
+
 ## Release and rollback
 
 1. Require the repository CI workflow to pass for the exact commit being
    deployed.
 2. Record the commit SHA and immutable artifact identifier with the deployment.
-3. Send a smoke request to `/`, `/docs`, `/showcase`, `/api/health`, and
+3. Send a smoke request to `/`, `/docs`, `/showcase`, `/withoss`, `/api/health`, and
    `/api/docs/search?q=installation&limit=1` after promotion. Confirm that
    health is not cached and search returns a compact result without `text` or
    `headings`.

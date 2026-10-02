@@ -1,38 +1,60 @@
-import { createSystem, defaultConfig } from '@chakra-ui/react';
 import { DocsProvider } from '@chakra-docs/chakra';
-import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
 import { NextLink } from '@chakra-docs/next/link';
 import { PostkitProvider } from '@postkit/react';
 import { createChakraDocsShikiAdapter } from '@chakra-docs/shiki';
 import type { AppProps } from 'next/app';
 import { Analytics } from '../components/analytics';
+import { ThemeProvider } from 'next-themes';
+import { LuCheck, LuCopy } from 'react-icons/lu';
+import { CommuneFooter, SiteFooter } from '../components/site-footer';
+import { docsSystem } from '../theme/system';
+import { getPublicSiteUrl } from '../lib/public-env';
 
-const docsSystem = createSystem(defaultConfig, chakraDocsThemeConfig);
-const shikiAdapter = createChakraDocsShikiAdapter();
+const shikiAdapter = createChakraDocsShikiAdapter({
+  themes: { light: 'github-dark', dark: 'github-dark' },
+});
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (
-    <PostkitProvider system={docsSystem} codeBlockAdapter={shikiAdapter}>
-      <Analytics>
-        <DocsProvider
-          config={{
-            codeBlock: {
-              adapter: shikiAdapter,
-            },
-            layout: {
-              stickyTop: { lg: 24 },
-            },
-            linkComponent: NextLink,
-            title: 'Chakra Docs',
-            labels: {
-              onThisPage: 'On this page',
-            },
-          }}
-        >
-          <Component {...pageProps} />
-        </DocsProvider>
-      </Analytics>
-    </PostkitProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      enableColorScheme
+      disableTransitionOnChange
+      storageKey="chakra-docs-system-color-mode"
+    >
+      <PostkitProvider system={docsSystem} codeBlockAdapter={shikiAdapter}>
+        <Analytics>
+          <DocsProvider
+            config={{
+              codeBlock: {
+                adapter: shikiAdapter,
+                copyIcon: <LuCopy aria-hidden="true" />,
+                copiedIcon: <LuCheck aria-hidden="true" />,
+              },
+              layout: {
+                stickyTop: docsSystem.token.var('spacing.docsStickyTop'),
+                scrollMarginTop: docsSystem.token.var(
+                  'spacing.docsScrollMargin',
+                ),
+              },
+              linkComponent: NextLink,
+              title: 'Chakra Docs',
+              siteUrl: getPublicSiteUrl(),
+              pageActions: { size: 'sm' },
+              labels: {
+                onThisPage: 'On this page',
+              },
+            }}
+          >
+            <Component {...pageProps} />
+            <SiteFooter year={new Date().getFullYear()} />
+            <CommuneFooter />
+          </DocsProvider>
+        </Analytics>
+      </PostkitProvider>
+    </ThemeProvider>
   );
 }
 
