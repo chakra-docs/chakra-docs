@@ -23,7 +23,7 @@ export function SiteFooter({ year }: { year: number }) {
       <Container css={styles.container}>
         <Flex css={styles.content}>
           <Text>
-            © {year > 2025 ? `2025–${year}` : year}{' '}
+            © {year > 2026 ? `2026–${year}` : 2026}{' '}
             <SiteLink href="https://www.ryanhefner.com" css={styles.creditLink}>
               Ryan Hefner
             </SiteLink>

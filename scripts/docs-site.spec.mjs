@@ -59,6 +59,12 @@ test('shared OSS artwork matches the approved asset', () => {
   assert.match(read('public/assets/commune-software-wordmark.svg'), /<svg/);
 });
 
+test('Chakra Docs footer starts its copyright range in 2026', () => {
+  const footer = read('src/components/site-footer.tsx');
+  assert.ok(footer.includes('year > 2026 ? `2026–${year}` : 2026'));
+  assert.doesNotMatch(footer, /2025/);
+});
+
 test('site chrome is theme-only and exposes composed Next links', () => {
   const shell = read('src/components/site-shell.tsx');
   assert.match(shell, /useSlotRecipe/);
