@@ -104,9 +104,21 @@ describe('docs', () => {
     cy.title().should('contain', 'Chakra Docs');
     cy.get('main').should('have.length', 1);
     cy.get('h1').should('have.text', 'Chakra Docs');
-    cy.get('nav[aria-label="Main navigation"]')
-      .contains('a', 'Docs')
-      .should('have.attr', 'href', '/docs');
+    cy.get('header a[aria-label="View chakra-docs on GitHub"]').should(
+      'have.attr',
+      'href',
+      'https://github.com/chakra-docs/chakra-docs',
+    );
+    cy.get('main a[href="/docs/installation"]').should(
+      'have.length.greaterThan',
+      0,
+    );
+    cy.get('footer a[href="/withoss"]').should('exist');
+    cy.get('[aria-label="By Commune Software"] a').should(
+      'have.attr',
+      'href',
+      'https://commune.software',
+    );
 
     cy.request('/').then((response) => {
       expect(response.headers['x-content-type-options']).to.equal('nosniff');
@@ -348,7 +360,7 @@ describe('docs', () => {
       .and('be.focused')
       .type('installation');
     cy.wait('@installationSearch');
-    cy.contains('a', 'Installation').first().click();
+    cy.get('[role="dialog"]').contains('a', 'Installation').first().click();
 
     cy.location('pathname').should('equal', '/docs/installation');
     cy.get('h1').should('contain.text', 'Installation');
@@ -513,6 +525,41 @@ describe('docs', () => {
     cy.get('h1').should('have.text', 'Page not found');
     cy.get('meta[name="robots"]').should('have.attr', 'content', 'noindex');
     cy.contains('a', 'Return home').should('have.attr', 'href', '/');
+  });
+  it('keeps the shared font stylesheet and compact site header across Next navigation', () => {
+    cy.viewport(375, 812);
+    visit('/');
+    cy.get('header').should('have.css', 'height', '69px');
+    cy.get(
+      'link[rel="stylesheet"][href="https://kits.fontstack.com/kit/o0v0t0oi.css"]',
+    ).should('have.length', 1);
+    cy.window().then((window) => {
+      (
+        window as Window & { docsNavigationMarker?: string }
+      ).docsNavigationMarker = 'preserved';
+    });
+    cy.contains('a', 'Read the getting-started guide').click();
+    cy.location('pathname').should('equal', '/docs/installation');
+    cy.window().its('docsNavigationMarker').should('equal', 'preserved');
+    cy.get(
+      'link[rel="stylesheet"][href="https://kits.fontstack.com/kit/o0v0t0oi.css"]',
+    ).should('have.length', 1);
+    cy.get('header').should('have.css', 'height', '69px');
+  });
+  it('renders the OSS acknowledgements with the shared artwork and no page overflow', () => {
+    cy.viewport(375, 812);
+    visit('/withoss');
+    cy.get('main').should('have.length', 1);
+    cy.get('h1').should(
+      'have.attr',
+      'aria-label',
+      'Made with open-source software',
+    );
+    cy.get('main img[src="/assets/oss.svg"]').should('be.visible');
+    cy.get('main a[href="https://chakra-ui.com"]').should('exist');
+    cy.get('html').should((element) =>
+      expect(element[0].scrollWidth).to.be.at.most(element[0].clientWidth + 1),
+    );
   });
   // These open search to await hydration; run after the cold-cache prefetch test.
   registerResponsiveTableTests();

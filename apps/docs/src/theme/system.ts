@@ -13,6 +13,15 @@ import { createPostkitTheme } from '@postkit/react/theme';
 import { siteSlotRecipes } from './site-recipes';
 
 const postkitTheme = createPostkitTheme({
+  codeBlock: {
+    base: {
+      root: { bg: 'black', color: 'gray.100', _dark: { bg: 'gray.900' } },
+      copyTrigger: {
+        color: 'white',
+        _hover: { bg: 'whiteAlpha.200', color: 'white' },
+      },
+    },
+  },
   prose: {
     base: {
       a: {
@@ -88,6 +97,12 @@ export const siteThemeConfig = defineConfig({
     },
     slotRecipes: {
       ...siteSlotRecipes,
+      chakraDocsMarkdownContent: defineSlotRecipe({
+        slots: [...chakraDocsSlotRecipes.chakraDocsMarkdownContent.slots],
+        base: {
+          link: { color: 'site.link', _hover: { textDecoration: 'underline' } },
+        },
+      }),
       chakraDocsPageActions: defineSlotRecipe({
         slots: [...chakraDocsSlotRecipes.chakraDocsPageActions.slots],
         variants: {

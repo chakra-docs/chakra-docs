@@ -8,7 +8,14 @@
   "targets": {
     "test": {
       "executor": "nx:run-commands",
-      "options": { "command": "node --test scripts/docs-site.spec.mjs" },
+      "options": {
+        "commands": [
+          {
+            "command": "node --test scripts/docs-site.spec.mjs",
+            "forwardAllArgs": false
+          }
+        ]
+      },
       "cache": true,
       "inputs": ["default", "{workspaceRoot}/scripts/docs-site.spec.mjs"]
     },
