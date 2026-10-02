@@ -1,4 +1,9 @@
-import type { BundledLanguage, BundledTheme, Highlighter } from 'shiki';
+import type {
+  BundledLanguage,
+  BundledTheme,
+  Highlighter,
+  ThemeRegistration,
+} from 'shiki';
 
 export const chakraDocsShikiLanguages = [
   'astro',
@@ -14,9 +19,12 @@ export const chakraDocsShikiLanguages = [
   'yaml',
 ] as const satisfies readonly BundledLanguage[];
 
+/** Built-in theme names or host-owned Shiki theme registrations. */
+export type ChakraDocsShikiTheme = BundledTheme | ThemeRegistration;
+
 export interface ChakraDocsShikiThemes {
-  readonly light: BundledTheme;
-  readonly dark: BundledTheme;
+  readonly light: ChakraDocsShikiTheme;
+  readonly dark: ChakraDocsShikiTheme;
 }
 
 export const chakraDocsShikiThemes = {

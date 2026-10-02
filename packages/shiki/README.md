@@ -39,6 +39,33 @@ const adapter = createChakraDocsShikiAdapter({
 
 `chakraDocsShikiThemes` exports the default GitHub light/dark pair. Each highlight call reads `meta.colorScheme`: light selects the light theme; dark, omitted, or custom schemes use the dark theme. Only token markup is emitted—backgrounds, padding, borders, line numbers, wrapping, highlighted lines, and diff/focus treatments remain owned by the `chakraDocsCodeBlock` recipe and code-block props. No Shiki stylesheet is required.
 
+## Custom themes
+
+Each scheme also accepts a Shiki `ThemeRegistration` object. Keep application
+colors in the host; the adapter does not impose a brand palette. A theme object
+can be shared by both schemes, or paired with a built-in theme name.
+
+```ts
+import type { ChakraDocsShikiTheme } from '@chakra-docs/shiki';
+
+const brandTheme: ChakraDocsShikiTheme = {
+  name: 'my-app-dark',
+  type: 'dark',
+  colors: { 'editor.background': '#101010', 'editor.foreground': '#eeeeee' },
+  tokenColors: [
+    { scope: ['keyword', 'storage'], settings: { foreground: '#aabbff' } },
+    { scope: 'string', settings: { foreground: '#99ccaa' } },
+  ],
+};
+
+const adapter = createChakraDocsShikiAdapter({
+  themes: { light: 'github-light', dark: brandTheme },
+});
+```
+
+Use a distinct name for each distinct custom theme. As with built-in themes,
+Shiki emits token colors while the host owns the code-block surface and spacing.
+
 ## Preloading and lifecycle
 
 For synchronous server rendering, call `await adapter.loadContext()` before rendering. `loadContextSync()` then supplies the initialized highlighter. For hydrated applications, preload on both server and client before their initial renders, or use the default lazy mode on both sides to avoid hydration mismatches.
