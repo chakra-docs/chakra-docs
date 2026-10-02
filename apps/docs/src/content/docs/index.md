@@ -9,13 +9,15 @@ Chakra Docs is built for teams that already have a product site. It gives the do
 
 ## What this example includes
 
-- A standard Next Pages Router landing page at `/`.
-- A standard placeholder page at `/showcase`.
+- A docs-first welcome page at `/`, composed with the native docs layout.
+- Working component examples linked from `/showcase`.
 - A documentation section mounted at `/docs`.
 - Filesystem Markdown discovery configured in the app.
 - Static path and page lookup helpers from `@chakra-docs/next/pages`.
 - Chakra Docs layout primitives composed inside the host site shell.
 - Server-hosted manifest search with compact HTTP results.
+- A neutral Chakra theme, system color mode, and shared OSS typography.
+- Credit, license, and COMMUNE footers, with open-source acknowledgements at `/withoss`.
 
 ## How the pieces fit
 
