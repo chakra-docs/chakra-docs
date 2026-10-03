@@ -75,6 +75,10 @@ export const siteThemeConfig = defineConfig({
     },
     semanticTokens: {
       colors: {
+        'og.canvas': { value: '{colors.black}' },
+        'og.foreground': { value: '{colors.white}' },
+        'og.muted': { value: '{colors.gray.400}' },
+        'og.rule': { value: '{colors.gray.800}' },
         bg: {
           DEFAULT: {
             value: { _light: '{colors.white}', _dark: '{colors.black}' },

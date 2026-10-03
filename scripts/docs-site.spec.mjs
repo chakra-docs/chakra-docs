@@ -6,9 +6,53 @@ import {
   getFontstackKitUrl,
   SHARED_FONTSTACK_KIT_URL,
 } from '../apps/docs/src/lib/public-env.ts';
+import {
+  getOgImageContent,
+  OG_IMAGE_DEFAULTS,
+} from '../apps/docs/src/lib/og-image.ts';
 
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
+
+test('OG capture copy is bounded Unicode text with safe defaults', () => {
+  assert.deepEqual(getOgImageContent(new URLSearchParams()), OG_IMAGE_DEFAULTS);
+  const copy = getOgImageContent(
+    new URLSearchParams({ title: '  Docs\n for everyone  ', description: ' ' }),
+  );
+  assert.deepEqual(copy, {
+    title: 'Docs for everyone',
+    description: OG_IMAGE_DEFAULTS.description,
+  });
+  const long = getOgImageContent(
+    new URLSearchParams({
+      title: '😀'.repeat(101),
+      description: 'x'.repeat(201),
+    }),
+  );
+  assert.equal(Array.from(long.title).length, 100);
+  assert.equal(long.description.length, 200);
+  assert.equal(
+    getOgImageContent(new URLSearchParams({ title: '<script>bad()</script>' }))
+      .title,
+    '<script>bad()</script>',
+  );
+});
+
+test('OG capture shares the fixed recipe but bypasses analytics and site chrome', () => {
+  const recipe = read('src/theme/og-image.ts');
+  assert.match(recipe, /w: '1200px'/);
+  assert.match(recipe, /h: '630px'/);
+  assert.match(read('src/pages/og-image.tsx'), /noindex, nofollow/);
+  const app = read('src/pages/_app.tsx');
+  assert.ok(
+    app.indexOf('Component === OgImagePage') < app.indexOf('<Analytics>'),
+  );
+  const card = read('src/components/og-image-card.tsx');
+  assert.match(card, /data-og-ready/);
+  assert.match(card, /document.fonts\?\.ready/);
+  assert.match(card, /image.decode/);
+  assert.doesNotMatch(card, /dangerouslySetInnerHTML/);
+});
 
 test('site omits starter branding and the Next development indicator', () => {
   assert.match(read('next.config.js'), /devIndicators:\s*false/);

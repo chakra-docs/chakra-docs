@@ -9,12 +9,21 @@ import { LuCheck, LuCopy } from 'react-icons/lu';
 import { CommuneFooter, SiteFooter } from '../components/site-footer';
 import { docsSystem } from '../theme/system';
 import { getPublicSiteUrl } from '../lib/public-env';
+import { ChakraProvider } from '@chakra-ui/react';
+import OgImagePage from './og-image';
 
 const shikiAdapter = createChakraDocsShikiAdapter({
   themes: { light: 'github-dark', dark: 'github-dark' },
 });
 
 function CustomApp({ Component, pageProps }: AppProps) {
+  if (Component === OgImagePage) {
+    return (
+      <ChakraProvider value={docsSystem}>
+        <Component {...pageProps} />
+      </ChakraProvider>
+    );
+  }
   return (
     <ThemeProvider
       attribute="class"

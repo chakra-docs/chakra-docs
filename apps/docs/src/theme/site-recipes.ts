@@ -1,7 +1,9 @@
 import { defineSlotRecipe } from '@chakra-ui/react';
+import { siteOgImageRecipe } from './og-image';
 
 /** Site chrome matches react-fathom; library component recipes stay reusable. */
 export const siteSlotRecipes = {
+  siteOgImage: siteOgImageRecipe,
   siteShell: defineSlotRecipe({
     slots: ['root', 'header', 'container', 'brand', 'githubTrigger', 'main'],
     base: {

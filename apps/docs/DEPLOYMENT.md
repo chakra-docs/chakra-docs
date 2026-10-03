@@ -34,6 +34,32 @@ domain and `chakra-docs.test`. Set `NEXT_PUBLIC_FONTSTACK_KIT_URL` before buildi
 to use another Fontstack kit, or set it to an empty string to use system fonts.
 The CSP allows Fontstack styles and fonts, but not arbitrary stylesheet hosts.
 
+## Open Graph image capture
+
+`/og-image` matches the react-fathom capture page: a fixed 1200 × 630 canvas,
+Suisse typography, black/white colors, and COMMUNE credit. It bypasses site
+navigation, footers, analytics, and color-mode controls. Review locally at
+`https://chakra-docs.test/og-image`.
+
+Optional `title` and `description` query parameters customize the copy:
+
+```text
+/og-image?title=Composable%20documentation&description=Your%20content%2C%20your%20theme%2C%20your%20routing.
+```
+
+Blank values use defaults; whitespace is normalized and copy is limited to
+100/200 Unicode code points with visual line clamping. React renders values as
+text, never HTML. The default canvas is prerendered; query overrides require
+JavaScript. Wait for `[data-og-ready="true"]` before taking a screenshot so the
+current copy, fonts, and wordmark have settled.
+
+For OpenGraphs, use the publicly deployed `/og-image` URL and a 1200 × 630
+viewport. Local `.test` domains are not reachable by hosted capture services.
+The Fontstack kit must allow the capture hostname. The route is marked
+`noindex, nofollow` and is not included in documentation navigation or manifest
+sitemap records. Use the generated PNG/JPEG or hosted image URL for `og:image`
+and `twitter:image` metadata, **not** the HTML capture URL.
+
 ## Release and rollback
 
 1. Require the repository CI workflow to pass for the exact commit being
