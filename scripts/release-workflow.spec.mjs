@@ -29,6 +29,23 @@ for (const directory of packageDirectories) {
 const versions = new Set(publicPackages.map(({ version }) => version));
 const [committedVersion] = versions;
 
+test('development and release tooling remain pinned to Node 24 and pnpm', async () => {
+  const manifest = JSON.parse(await read('package.json'));
+  const nodeVersion = (await read('.nvmrc')).trim();
+  assert.match(nodeVersion, /^24\.\d+\.\d+$/);
+  assert.equal(manifest.packageManager, 'pnpm@11.25.0');
+  for (const file of ['ci.yml', 'release.yml']) {
+    const workflow = await read(`.github/workflows/${file}`);
+    assert.match(workflow, /node-version-file: '\.nvmrc'/);
+    assert.match(workflow, /corepack enable/);
+    assert.match(workflow, /pnpm install --frozen-lockfile/);
+    assert.doesNotMatch(workflow, /npm ci|cache: npm/);
+  }
+  const springbar = await read('springbar.toml');
+  assert.match(springbar, /package_manager = "pnpm"/);
+  assert.ok(springbar.includes(`version = "${nodeVersion}"`));
+});
+
 test('packed consumers include pinned DOM declarations without weakening compatibility checks', async () => {
   const manifest = JSON.parse(await read('package.json'));
   const lock = parseYaml(await read('pnpm-lock.yaml'));
