@@ -40,6 +40,16 @@ const nextConfig = {
   // Keep Postkit's Chakra provider in the same bundle as optimized site imports.
   transpilePackages: ['@postkit/react'],
   experimental: { optimizePackageImports: ['@chakra-ui/react'] },
+  async rewrites() {
+    return {
+      afterFiles: [
+        {
+          source: '/:path*/social-image',
+          destination: '/og-image/:path*',
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {
@@ -66,6 +76,14 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
         ],
+      },
+      {
+        source: '/:path*/social-image',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/og-image/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];
   },

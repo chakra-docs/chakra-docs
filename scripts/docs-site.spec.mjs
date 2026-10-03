@@ -42,16 +42,40 @@ test('OG capture shares the fixed recipe but bypasses analytics and site chrome'
   const recipe = read('src/theme/og-image.ts');
   assert.match(recipe, /w: '1200px'/);
   assert.match(recipe, /h: '630px'/);
-  assert.match(read('src/pages/og-image.tsx'), /noindex, nofollow/);
+  assert.match(read('src/pages/og-image/[[...slug]].tsx'), /noindex, nofollow/);
   const app = read('src/pages/_app.tsx');
   assert.ok(
-    app.indexOf('Component === OgImagePage') < app.indexOf('<Analytics>'),
+    app.indexOf("router.pathname === '/og-image/[[...slug]]'") <
+      app.indexOf('<Analytics>'),
   );
   const card = read('src/components/og-image-card.tsx');
   assert.match(card, /data-og-ready/);
   assert.match(card, /document.fonts\?\.ready/);
   assert.match(card, /image.decode/);
   assert.doesNotMatch(card, /dangerouslySetInnerHTML/);
+});
+
+test('social-image aliases preserve page paths and do not masquerade as PNG files', () => {
+  const config = read('next.config.js');
+  assert.match(config, /source: '\/:path\*\/social-image'/);
+  assert.match(config, /destination: '\/og-image\/:path\*'/);
+  assert.match(config, /X-Robots-Tag/);
+  assert.doesNotMatch(config, /source: [^\n]+social-image\\?\.png/);
+  const route = read('src/pages/og-image/[[...slug]].tsx');
+  assert.match(route, /manifest\.byRoute\[route\]/);
+  assert.match(route, /notFound: true/);
+  const defaults = {
+    title: 'Installation',
+    description: 'Install Chakra Docs.',
+  };
+  assert.deepEqual(
+    getOgImageContent(new URLSearchParams(), defaults),
+    defaults,
+  );
+  assert.deepEqual(
+    getOgImageContent(new URLSearchParams({ title: 'Custom' }), defaults),
+    { ...defaults, title: 'Custom' },
+  );
 });
 
 test('site omits starter branding and the Next development indicator', () => {

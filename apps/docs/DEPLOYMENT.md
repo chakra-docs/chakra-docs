@@ -41,6 +41,24 @@ Suisse typography, black/white colors, and COMMUNE credit. It bypasses site
 navigation, footers, analytics, and color-mode controls. Review locally at
 `https://chakra-docs.test/og-image`.
 
+Page-specific templates follow the same convention as ryanhefner.com:
+
+```text
+/social-image                         -> /og-image
+/docs/installation/social-image       -> /og-image/docs/installation
+/docs/components/social-image         -> /og-image/docs/components
+```
+
+These are internal Next rewrites; the visible URL is retained. Captures use
+the matching page's title and description by default. The welcome, showcase,
+and OSS pages are supported too; unknown pages return 404.
+
+For the OpenGraphs generation flow, use the corresponding
+`/<page>/social-image.png` **template URL** in the renderer integration. It
+captures the extensionless `/<page>/social-image` HTML page. The PNG must be
+served by the configured OpenGraphs renderer; Next deliberately does not
+rewrite `.png` requests to HTML or generate image bytes itself.
+
 Optional `title` and `description` query parameters customize the copy:
 
 ```text
@@ -53,10 +71,10 @@ text, never HTML. The default canvas is prerendered; query overrides require
 JavaScript. Wait for `[data-og-ready="true"]` before taking a screenshot so the
 current copy, fonts, and wordmark have settled.
 
-For OpenGraphs, use the publicly deployed `/og-image` URL and a 1200 × 630
+For OpenGraphs, use the publicly deployed capture URL and a 1200 × 630
 viewport. Local `.test` domains are not reachable by hosted capture services.
 The Fontstack kit must allow the capture hostname. The route is marked
-`noindex, nofollow` and is not included in documentation navigation or manifest
+`noindex, nofollow` (also via `X-Robots-Tag` headers) and is not included in documentation navigation or manifest
 sitemap records. Use the generated PNG/JPEG or hosted image URL for `og:image`
 and `twitter:image` metadata, **not** the HTML capture URL.
 
