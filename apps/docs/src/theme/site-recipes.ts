@@ -102,6 +102,7 @@ export const siteSlotRecipes = {
       'intro',
       'projects',
       'sectionTitle',
+      'sectionDescription',
       'list',
       'row',
       'name',
@@ -133,7 +134,8 @@ export const siteSlotRecipes = {
         minW: 0,
         flex: { base: '1 1 auto', xl: '1 1 28rem' },
       },
-      projects: { mt: { base: 12, md: 24 } },
+      projects: { mt: { base: 12, md: 24 }, gap: 12 },
+      sectionDescription: { color: 'fg.muted', mt: 3, mb: 6 },
       sectionTitle: {
         fontSize: 'xl',
         pb: 3,
