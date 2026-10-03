@@ -30,6 +30,7 @@ const contentSecurityPolicy = [
  **/
 const nextConfig = {
   allowedDevOrigins: ['chakra-docs.test'],
+  devIndicators: false,
   nx: {},
   outputFileTracingIncludes: {
     '/api/docs/search': ['src/content/docs/**/*'],

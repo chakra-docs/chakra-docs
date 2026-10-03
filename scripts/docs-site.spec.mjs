@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   getFontstackKitUrl,
@@ -9,6 +9,19 @@ import {
 
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
+
+test('site omits starter branding and the Next development indicator', () => {
+  assert.match(read('next.config.js'), /devIndicators:\s*false/);
+  assert.match(read('next.config.js'), /poweredByHeader:\s*false/);
+  assert.match(
+    read('src/pages/_document.tsx'),
+    /rel="icon"[\s\S]*data:image\/svg\+xml/,
+  );
+  assert.equal(
+    existsSync(new URL('../apps/docs/public/favicon.ico', import.meta.url)),
+    false,
+  );
+});
 
 test('shared OSS font kit is default, configurable, and restricted to Fontstack', () => {
   const saved = process.env.NEXT_PUBLIC_FONTSTACK_KIT_URL;

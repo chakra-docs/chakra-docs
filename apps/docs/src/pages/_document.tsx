@@ -6,6 +6,10 @@ export default function Document() {
   return (
     <Html lang="en" suppressHydrationWarning>
       <Head>
+        <link
+          rel="icon"
+          href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E"
+        />
         {kitUrl ? (
           <>
             <link
