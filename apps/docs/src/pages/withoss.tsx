@@ -4,7 +4,6 @@ import {
   Flex,
   Grid,
   Heading,
-  Stack,
   Text,
   useSlotRecipe,
 } from '@chakra-ui/react';
@@ -46,7 +45,7 @@ export default function WithOssPage() {
               site.
             </Text>
           </Flex>
-          <Stack css={styles.projects}>
+          <Box css={styles.projects}>
             {ossProjectGroups.map((group) => (
               <Box
                 as="section"
@@ -61,7 +60,7 @@ export default function WithOssPage() {
                   {group.title}
                 </Heading>
                 <Text css={styles.sectionDescription}>{group.description}</Text>
-                <Stack as="ul" css={styles.list}>
+                <Box as="ul" css={styles.list}>
                   {group.projects.map((project) => (
                     <Grid as="li" key={project.name} css={styles.row}>
                       <Text css={styles.name}>{project.name}</Text>
@@ -77,10 +76,10 @@ export default function WithOssPage() {
                       </Box>
                     </Grid>
                   ))}
-                </Stack>
+                </Box>
               </Box>
             ))}
-          </Stack>
+          </Box>
         </Container>
       </SiteShell>
     </>
