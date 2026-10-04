@@ -17,7 +17,12 @@
         ]
       },
       "cache": true,
-      "inputs": ["default", "{workspaceRoot}/scripts/docs-site.spec.mjs"]
+      "inputs": [
+        "default",
+        "{workspaceRoot}/scripts/docs-site.spec.mjs",
+        "{workspaceRoot}/scripts/oss-credits.test.mjs",
+        "{workspaceRoot}/scripts/site-analytics.test.mjs"
+      ]
     },
     "build": {
       "executor": "nx:run-commands",

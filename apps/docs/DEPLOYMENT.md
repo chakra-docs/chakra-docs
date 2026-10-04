@@ -78,6 +78,22 @@ The Fontstack kit must allow the capture hostname. The route is marked
 sitemap records. Use the generated PNG/JPEG or hosted image URL for `og:image`
 and `twitter:image` metadata, **not** the HTML capture URL.
 
+## React Fathom analytics
+
+The site uses `react-fathom` and its Pages Router adapter for initial and
+client-side pageviews, plus documentation interaction events. Set
+`NEXT_PUBLIC_FATHOM_SITE_ID` and optionally
+`NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN` before building. No ID means no analytics
+script or pageviews. Query strings, fragments, clipboard contents, search text,
+and feedback comments are not sent; social-image capture pages bypass analytics.
+
+The integration currently uses the fixed local yalc build. Before a clean
+production install, publish React Fathom, replace the site's
+`file:.yalc/react-fathom` dependency with that immutable npm version, regenerate
+the lockfile, and run the site checks. This is a site dependency only, not a
+published Chakra Docs package dependency. The normal workspace-wide CI install
+still needs this local pin replaced before running on a clean checkout.
+
 ## Release and rollback
 
 1. Require the repository CI workflow to pass for the exact commit being

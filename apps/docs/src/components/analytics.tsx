@@ -1,44 +1,41 @@
-import Script from 'next/script';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { FathomProvider, useFathom } from 'react-fathom';
+import { NextFathomTrackViewPages } from 'react-fathom/next';
+import {
+  createDocsAnalytics,
+  getAnalyticsUrl,
+  getFathomConfig,
+} from '../lib/analytics';
 
 export interface AnalyticsProps {
   children: ReactNode;
 }
 
-const fathomSiteId = process.env.NEXT_PUBLIC_FATHOM_SITE_ID;
-const fathomDomain =
-  process.env.NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN ?? 'cdn.usefathom.com';
-
 export function Analytics(props: AnalyticsProps) {
-  if (!fathomSiteId) {
-    return props.children;
-  }
-
+  const config = useMemo(
+    () =>
+      getFathomConfig(
+        process.env.NEXT_PUBLIC_FATHOM_SITE_ID,
+        process.env.NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN,
+      ),
+    [],
+  );
+  if (!config) return props.children;
   return (
-    <>
-      <Script
-        data-site={fathomSiteId}
-        data-spa="auto"
-        id="fathom-analytics"
-        src={createFathomScriptUrl(fathomDomain)}
-        strategy="afterInteractive"
-      />
+    <FathomProvider {...config}>
+      <NextFathomTrackViewPages transformUrl={getAnalyticsUrl} />
       {props.children}
-    </>
+    </FathomProvider>
   );
 }
 
-function createFathomScriptUrl(domain: string): string {
-  const hostname = domain
-    .trim()
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/+$/, '');
-
-  if (!/^[a-z0-9.-]+(?::\d+)?$/i.test(hostname)) {
-    throw new Error(
-      'NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN must be a hostname without a path.',
-    );
-  }
-
-  return `https://${hostname}/script.js`;
+export function useDocsAnalytics() {
+  const { client, trackEvent } = useFathom();
+  return useMemo(
+    () =>
+      createDocsAnalytics((event) => {
+        if (client) trackEvent(event);
+      }),
+    [client, trackEvent],
+  );
 }
