@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/chakra",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Chakra UI component layer for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -77,8 +77,8 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
-    "@chakra-docs/search": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/search": "0.3.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tslib": "^2.3.0"

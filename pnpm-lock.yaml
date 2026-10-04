@@ -285,7 +285,7 @@ importers:
         specifier: '>=4 <6'
         version: 5.0.7(@types/node@22.20.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(jiti@2.4.2)(less@4.9.1(supports-color@8.1.1))(lightningcss@1.32.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass-embedded@1.99.0)(sass@1.99.0)(supports-color@8.1.1)(terser@5.47.1)(yaml@2.9.0)
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       astro:
         specifier: '>=7.2.8 <8'
@@ -303,10 +303,10 @@ importers:
   packages/chakra:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       '@chakra-docs/search':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../search
       '@chakra-ui/react':
         specifier: '>=3.36 <4'
@@ -333,13 +333,13 @@ importers:
   packages/cli:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       '@chakra-docs/source-filesystem':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../source-filesystem
       '@chakra-docs/source-git':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../source-git
       tslib:
         specifier: ^2.3.0
@@ -363,7 +363,7 @@ importers:
   packages/feed:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       tslib:
         specifier: ^2.3.0
@@ -372,10 +372,10 @@ importers:
   packages/next:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       '@chakra-docs/search':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../search
       next:
         specifier: '>=15.5.24 <16 || >=16.3.6 <17'
@@ -393,7 +393,7 @@ importers:
   packages/react-router:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       react:
         specifier: '>=18 <20'
@@ -411,7 +411,7 @@ importers:
   packages/search:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       minisearch:
         specifier: ^7.2.0
@@ -423,7 +423,7 @@ importers:
   packages/search-pagefind:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       pagefind:
         specifier: '>=1 <2'
@@ -444,7 +444,7 @@ importers:
   packages/source-filesystem:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       js-yaml:
         specifier: ^4.3.2
@@ -459,7 +459,7 @@ importers:
   packages/source-git:
     dependencies:
       '@chakra-docs/core':
-        specifier: 0.2.0
+        specifier: 0.3.0
         version: link:../core
       tslib:
         specifier: ^2.3.0

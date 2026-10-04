@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/shiki",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Optional Shiki syntax highlighting adapter for Chakra Docs.",
   "keywords": [
     "chakra-ui",

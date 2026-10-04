@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-10-04)
 
 ### 🚀 Features
 
@@ -18,6 +18,58 @@
 - **chakra:** streamline the search dialog around a native search field with a
   built-in magnifier, accessible clear action, themeable input slots, and an
   opt-in visible title.
+- **chakra:** add custom sidebar disclosure indicators and code-copy icons;
+  report page-action menu opens through the analytics callbacks.
+- **chakra:** add callout `icon`, `left`, and `right` component slots alongside
+  the body, with recipe-owned spacing and transparent, foreground-colored
+  default styling.
+- **shiki:** accept host-defined syntax themes as well as bundled theme names.
+- **docs:** align the docs-first site with the shared OSS typography, system
+  color mode, credit/license and COMMUNE footers, separated OSS dependency
+  credits, and page-specific Open Graph capture routes.
+
+### 🩹 Fixes
+
+- **chakra:** restore focus on page-action dismissal and keep closed menus
+  hidden despite host CSS resets.
+- **chakra:** align linked and heading-only sidebar disclosure indicators,
+  center article content by default, and keep callout text and borders neutral
+  instead of inheriting intent colors.
+- **deps:** update Next.js and its lint plugin to 16.3.8; require Next.js
+  16.3.6+ on the adapter's 16.x peer range. Patch Undici, devalue,
+  http-cache-semantics, Axios, fast-uri, brace-expansion, Piscina, and
+  @xhmikosr/decompress in the workspace lockfile.
+- **security:** bound `braces@3.0.3` parsing and AST recursion with a verified
+  pnpm patch while no upstream fix is available. Keep production audits
+  unfiltered; allow only the tested development-only advisory through an
+  expiring, fail-closed audit gate documented in `SECURITY.md`.
+- **docs:** use public React Fathom 0.2.0 without yalc, with a temporary
+  shared-context Pages Router tracker that excludes capture pages and strips
+  query strings and fragments. Fix showcase formatting.
+- **release:** verify public registry propagation with fresh anonymous
+  requests, bounded retries, useful failure diagnostics, and latest-tag checks.
+
+### 🔥 Performance
+
+- **chakra:** add focused `/provider` and `/code-block` entry points and
+  preserve direct Chakra export access for optimized host imports.
+
+### 🛠️ Tooling
+
+- Pin development/release tooling to Node 24 and pnpm 11.25.0, migrate the
+  workspace lockfile and CI, and deduplicate the Chakra runtime under pnpm.
+- Add release configuration, public analytics integration, dependency-patch,
+  audit-policy, and shared site rendering regression checks.
+
+### Upgrade notes
+
+- Page actions now default to `preset="standard"`; choose `preset="minimal"`
+  to retain the previous text-only presentation. Icons and slot recipes remain
+  overridable at the provider, theme, and instance levels.
+- Callouts now use transparent backgrounds and foreground borders/text.
+  Restore colored intent surfaces through the callout recipe if desired.
+- All 12 public packages and their internal dependency pins are aligned to
+  0.3.0. There are no new package names in this release.
 
 ## 0.2.0 (2026-09-04)
 
