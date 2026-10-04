@@ -19,6 +19,7 @@
     "test": "nx run-many -t test",
     "test:coverage": "nx run-many -t test --coverage",
     "test:release": "nx run chakra-docs-workspace:release-validation",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
     "types:performance:check": "nx run @chakra-docs/chakra:build && node scripts/check-chakra-theme-types.mjs",
     "search:performance:check": "nx run @chakra-docs/search:build && node scripts/check-search-performance.mjs",
     "typecheck": "nx run-many -t typecheck",
@@ -101,7 +102,7 @@
       "release-validation": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "node --test scripts/release-workflow.spec.mjs scripts/verify-published-version.spec.mjs"
+          "command": "node --test scripts/release-workflow.spec.mjs scripts/verify-published-version.spec.mjs scripts/audit-dependencies.spec.mjs"
         }
       },
       "yalc-publish": {

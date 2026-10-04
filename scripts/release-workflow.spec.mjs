@@ -104,6 +104,22 @@ test('the Next adapter excludes the vulnerable 16.3 framework releases', () => {
   assert.equal(next.peerDependencies.next, '>=15.5.24 <16 || >=16.3.6 <17');
 });
 
+test('production audits remain unfiltered and the development mitigation gate runs in CI', async () => {
+  const ci = await read('.github/workflows/ci.yml');
+  assert.match(ci, /run: pnpm audit --prod --audit-level=moderate\n/);
+  assert.match(ci, /run: pnpm run audit:dependencies\n/);
+  assert.doesNotMatch(ci, /--ignore(?:-unfixable|-registry-errors)?\b/);
+  const manifest = JSON.parse(await read('package.json'));
+  assert.equal(
+    manifest.scripts['audit:dependencies'],
+    'node scripts/audit-dependencies.mjs',
+  );
+  assert.match(
+    manifest.nx.targets['release-validation'].options.command,
+    /audit-dependencies\.spec\.mjs/,
+  );
+});
+
 test('all public packages form one fixed, committed release group', () => {
   assert.equal(publicPackages.length, 12);
   assert.deepEqual(

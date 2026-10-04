@@ -39,3 +39,6 @@ overrides:
 
 minimumReleaseAgeExclude:
   - http-cache-semantics@4.3.0
+
+patchedDependencies:
+  braces@3.0.3: patches/braces@3.0.3.patch
