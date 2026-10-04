@@ -13,6 +13,10 @@
           {
             "command": "node --test scripts/docs-site.spec.mjs",
             "forwardAllArgs": false
+          },
+          {
+            "command": "vitest run --config apps/docs/vitest.config.ts",
+            "forwardAllArgs": false
           }
         ]
       },

@@ -1,6 +1,6 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useRouter } from 'next/router';
 import { FathomProvider, useFathom } from 'react-fathom';
-import { NextFathomTrackViewPages } from 'react-fathom/next';
 import {
   createDocsAnalytics,
   getAnalyticsUrl,
@@ -9,6 +9,27 @@ import {
 
 export interface AnalyticsProps {
   children: ReactNode;
+}
+
+/** Temporary compatibility tracker for the public react-fathom@0.2.0 context. */
+export function DocsPageviewTracker() {
+  const { client, trackPageview } = useFathom();
+  const { asPath, isReady } = useRouter();
+  const lastUrl = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!client || !isReady) return;
+    const url = getAnalyticsUrl(new URL(asPath, window.location.origin).href);
+    if (url === null) {
+      lastUrl.current = null;
+      return;
+    }
+    if (lastUrl.current === url) return;
+    trackPageview({ url });
+    lastUrl.current = url;
+  }, [asPath, client, isReady, trackPageview]);
+
+  return null;
 }
 
 export function Analytics(props: AnalyticsProps) {
@@ -23,7 +44,7 @@ export function Analytics(props: AnalyticsProps) {
   if (!config) return props.children;
   return (
     <FathomProvider {...config}>
-      <NextFathomTrackViewPages transformUrl={getAnalyticsUrl} />
+      <DocsPageviewTracker />
       {props.children}
     </FathomProvider>
   );
