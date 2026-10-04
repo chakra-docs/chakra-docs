@@ -42,7 +42,7 @@
     "@chakra-ui/react": "3.36.0",
     "@emotion/react": "^11.14.0",
     "@eslint/js": "^9.8.0",
-    "@next/eslint-plugin-next": "^16.3.4",
+    "@next/eslint-plugin-next": "^16.3.8",
     "@nx/cypress": "22.7.8",
     "@nx/eslint": "22.7.8",
     "@nx/eslint-plugin": "22.7.8",
@@ -124,7 +124,7 @@
     }
   },
   "dependencies": {
-    "next": "~16.3.4",
+    "next": "~16.3.8",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

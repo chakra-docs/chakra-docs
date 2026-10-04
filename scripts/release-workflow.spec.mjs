@@ -99,6 +99,11 @@ test('docs and workspace UI packages share one Chakra runtime', async () => {
   );
 });
 
+test('the Next adapter excludes the vulnerable 16.3 framework releases', () => {
+  const next = publicPackages.find(({ name }) => name === '@chakra-docs/next');
+  assert.equal(next.peerDependencies.next, '>=15.5.24 <16 || >=16.3.6 <17');
+});
+
 test('all public packages form one fixed, committed release group', () => {
   assert.equal(publicPackages.length, 12);
   assert.deepEqual(
