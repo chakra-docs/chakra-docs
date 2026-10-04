@@ -556,7 +556,12 @@ describe('docs', () => {
       'Made with open-source software',
     );
     cy.get('main img[src="/assets/oss.svg"]').should('be.visible');
-    cy.get('main a[href="https://chakra-ui.com"]').should('exist');
+    cy.get('section[aria-labelledby="oss-library"]')
+      .find('a[href="https://chakra-ui.com/"]')
+      .should('be.visible');
+    cy.get('section[aria-labelledby="oss-site"]')
+      .find('a[href="https://chakra-ui.com/"]')
+      .should('exist');
     cy.get('html').should((element) =>
       expect(element[0].scrollWidth).to.be.at.most(element[0].clientWidth + 1),
     );
