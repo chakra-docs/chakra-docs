@@ -65,7 +65,7 @@ export default function ShowcasePage(props: ShowcasePageProps) {
               </Text>
               <MarkdownContent
                 source={
-                '> Everything starts with your Chakra theme. Override recipes globally, or use slot props for a single instance.\n\n```tsx\n<DocsLayout nav={nav} page={page} sidebarCollapsible>\n  <DocsArticle page={page}>\n    <MarkdownContent source={page.body} />\n  </DocsArticle>\n</DocsLayout>\n```'
+                  '> Everything starts with your Chakra theme. Override recipes globally, or use slot props for a single instance.\n\n```tsx\n<DocsLayout nav={nav} page={page} sidebarCollapsible>\n  <DocsArticle page={page}>\n    <MarkdownContent source={page.body} />\n  </DocsArticle>\n</DocsLayout>\n```'
                 }
               />
               <DocsCards.Root>
