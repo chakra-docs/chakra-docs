@@ -9,7 +9,7 @@ import { LuCheck, LuCopy } from 'react-icons/lu';
 import { CommuneFooter, SiteFooter } from '../components/site-footer';
 import { docsSystem } from '../theme/system';
 import { getPublicSiteUrl } from '../lib/public-env';
-import { ChakraProvider } from '@chakra-ui/react';
+import { Box, ChakraProvider } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 
 const shikiAdapter = createChakraDocsShikiAdapter({
@@ -63,8 +63,17 @@ function CustomApp({ Component, pageProps, router }: AppProps) {
       <PostkitProvider system={docsSystem} codeBlockAdapter={shikiAdapter}>
         <Analytics>
           <DocumentationProvider>
-            <Component {...pageProps} />
-            <SiteFooter year={new Date().getFullYear()} />
+            <Box
+              className="site-wrapper"
+              display="flex"
+              flexDirection="column"
+              minH="100dvh"
+            >
+              <Box className="site-content" flexGrow="1">
+                <Component {...pageProps} />
+              </Box>
+              <SiteFooter year={new Date().getFullYear()} />
+            </Box>
             <CommuneFooter />
           </DocumentationProvider>
         </Analytics>

@@ -7,7 +7,7 @@ export const siteSlotRecipes = {
   siteShell: defineSlotRecipe({
     slots: ['root', 'header', 'container', 'brand', 'githubTrigger', 'main'],
     base: {
-      root: { bg: 'bg', color: 'fg', minH: '100vh' },
+      root: { bg: 'bg', color: 'fg' },
       header: {
         position: 'sticky',
         top: 0,
@@ -30,7 +30,7 @@ export const siteSlotRecipes = {
         minW: 11,
         _hover: { bg: 'bg.muted', color: 'fg' },
       },
-      main: { minW: 0, minH: 'calc(100vh - {sizes.siteHeader})' },
+      main: { minW: 0 },
     },
   }),
   siteFooter: defineSlotRecipe({

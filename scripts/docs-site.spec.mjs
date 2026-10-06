@@ -132,6 +132,21 @@ test('fonts are document-owned and the theme provider precedes Emotion styles', 
   assert.match(app, /<CommuneFooter/);
 });
 
+test('site footer fills the viewport before the Commune section', () => {
+  const app = read('src/pages/_app.tsx');
+  assert.match(
+    app,
+    /className="site-wrapper"[\s\S]*display="flex"[\s\S]*flexDirection="column"[\s\S]*minH="100dvh"/,
+  );
+  assert.match(
+    app,
+    /className="site-content"[\s\S]*flexGrow="1"[\s\S]*<Component[^>]+\/>[\s\S]*<SiteFooter[^>]+\/>[\s\S]*<\/Box>\s*<CommuneFooter/,
+  );
+  const recipes = read('src/theme/site-recipes.ts');
+  assert.doesNotMatch(recipes, /minH: '100vh'/);
+  assert.doesNotMatch(recipes, /calc\(100vh - \{sizes\.siteHeader\}\)/);
+});
+
 test('shared OSS artwork matches the approved asset', () => {
   const asset = read('public/assets/oss.svg').trim();
   assert.equal(
