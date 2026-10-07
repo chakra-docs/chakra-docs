@@ -12,6 +12,76 @@ describe('docs', () => {
     cy.get('@consoleError').should('not.have.been.called');
   });
 
+  it('serves canonical social metadata, crawl endpoints, and a real PNG card', () => {
+    for (const path of ['/', '/docs/installation', '/showcase', '/withoss']) {
+      visit(`${path}?utm_source=test#ignored`);
+      cy.get('link[rel="canonical"]').should(
+        'have.attr',
+        'href',
+        `https://chakra-docs.dev${path}`,
+      );
+      cy.get('meta[property="og:url"]').should(
+        'have.attr',
+        'content',
+        `https://chakra-docs.dev${path}`,
+      );
+      cy.get('meta[property="og:title"]')
+        .invoke('attr', 'content')
+        .should('not.be.empty');
+      cy.get('meta[name="twitter:card"]').should(
+        'have.attr',
+        'content',
+        'summary_large_image',
+      );
+      cy.get('meta[property="og:image"]').should(
+        'have.attr',
+        'content',
+        'https://chakra-docs.dev/api/social-image',
+      );
+      cy.get('@consoleError').should('not.have.been.called');
+    }
+    cy.request('/sitemap.xml').then(({ headers, body }) => {
+      expect(headers['content-type']).to.contain('application/xml');
+      const xml = new DOMParser().parseFromString(body, 'application/xml');
+      expect(xml.querySelector('parsererror')).to.equal(null);
+      const urls = [...xml.querySelectorAll('loc')].map(
+        (node) => node.textContent,
+      );
+      expect(urls).to.include.members([
+        'https://chakra-docs.dev/',
+        'https://chakra-docs.dev/docs',
+        'https://chakra-docs.dev/docs/installation',
+        'https://chakra-docs.dev/showcase',
+        'https://chakra-docs.dev/withoss',
+      ]);
+      expect(urls).to.have.length(12);
+      expect(
+        urls.some((url) => /og-image|\/api\/|\/404/.test(url ?? '')),
+      ).to.equal(false);
+    });
+    cy.request('/robots.txt').then(({ headers, body }) => {
+      expect(headers['content-type']).to.contain('text/plain');
+      expect(body).to.contain('Sitemap: https://chakra-docs.dev/sitemap.xml');
+      expect(body).to.contain('Allow: /api/social-image');
+    });
+    cy.request({ url: '/api/social-image', encoding: 'binary' }).then(
+      ({ headers, body }) => {
+        expect(headers['content-type']).to.contain('image/png');
+        expect(headers['cache-control']).to.contain('s-maxage=86400');
+        expect(
+          [...body.slice(0, 8)].map((character) => character.charCodeAt(0)),
+        ).to.deep.equal([137, 80, 78, 71, 13, 10, 26, 10]);
+        const bytes = Uint8Array.from(body, (character: string) =>
+          character.charCodeAt(0),
+        );
+        const view = new DataView(bytes.buffer);
+        expect(view.getUint32(16)).to.equal(1200);
+        expect(view.getUint32(20)).to.equal(630);
+        cy.writeFile('test-output/social-card.png', body, 'binary');
+      },
+    );
+  });
+
   it('lazily highlights Chakra Docs and Postkit code with the first-party adapter', () => {
     for (const route of ['/docs/components', '/docs/postkit']) {
       visit(route);

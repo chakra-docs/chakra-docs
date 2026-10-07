@@ -34,6 +34,7 @@ const nextConfig = {
   nx: {},
   outputFileTracingIncludes: {
     '/api/docs/search': ['src/content/docs/**/*'],
+    '/sitemap.xml': ['src/content/docs/**/*'],
   },
   poweredByHeader: false,
   reactStrictMode: true,

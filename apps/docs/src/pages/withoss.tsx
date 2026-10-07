@@ -7,7 +7,7 @@ import {
   Text,
   useSlotRecipe,
 } from '@chakra-ui/react';
-import Head from 'next/head';
+import { SiteMetadata } from '../components/site-metadata';
 import type { GetStaticProps } from 'next';
 import { serializeNextProps } from '@chakra-docs/next/pages';
 import {
@@ -28,13 +28,11 @@ export default function WithOssPage(props: WithOssPageProps) {
   const styles = useSlotRecipe({ key: 'siteWithOss' })();
   return (
     <>
-      <Head>
-        <title>Made with OSS - Chakra Docs</title>
-        <meta
-          name="description"
-          content="The open-source projects behind Chakra Docs and its documentation site."
-        />
-      </Head>
+      <SiteMetadata
+        title="Made with OSS - Chakra Docs"
+        description="The open-source projects behind Chakra Docs and its documentation site."
+        path="/withoss"
+      />
       <StructuredData path="/withoss" title="Made with OSS" />
       <SiteShell recommendedSearchResults={props.recommendedSearchResults}>
         <Container css={styles.root}>

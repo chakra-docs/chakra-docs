@@ -1,5 +1,6 @@
 import './oss-credits.test.mjs';
 import './search-recommendations.test.mjs';
+import './site-seo.test.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';

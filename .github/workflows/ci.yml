@@ -17,6 +17,9 @@ jobs:
   main:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SITE_URL: https://chakra-docs.dev
+      CHAKRA_DOCS_REQUIRE_SITE_URL: 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

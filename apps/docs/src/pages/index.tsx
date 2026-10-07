@@ -13,7 +13,7 @@ import {
 import { serializeNextProps } from '@chakra-docs/next/pages';
 import { Box, Heading, Stack, Text } from '@chakra-ui/react';
 import type { GetStaticProps } from 'next';
-import Head from 'next/head';
+import { SiteMetadata } from '../components/site-metadata';
 import { LuArrowRight } from 'react-icons/lu';
 import { SiteLink } from '../components/site-link';
 import { SiteSearch, SiteShell } from '../components/site-shell';
@@ -52,10 +52,11 @@ const page: DocsPage = {
 export default function Index(props: IndexPageProps) {
   return (
     <>
-      <Head>
-        <title>Chakra Docs - Composable documentation for Chakra UI</title>
-        <meta name="description" content={description} />
-      </Head>
+      <SiteMetadata
+        title="Chakra Docs - Composable documentation for Chakra UI"
+        description={description}
+        path="/"
+      />
       <StructuredData description={description} path="/" title="Chakra Docs" />
       <SiteShell
         collectionOptions={props.collectionOptions}

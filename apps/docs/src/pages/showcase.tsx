@@ -13,7 +13,7 @@ import {
 import { serializeNextProps } from '@chakra-docs/next/pages';
 import { Stack, Text } from '@chakra-ui/react';
 import type { GetStaticProps } from 'next';
-import Head from 'next/head';
+import { SiteMetadata } from '../components/site-metadata';
 import { SiteSearch, SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 import { guides } from '../docs/guides';
@@ -41,10 +41,11 @@ const page: DocsPage = {
 export default function ShowcasePage(props: ShowcasePageProps) {
   return (
     <>
-      <Head>
-        <title>Component showcase - Chakra Docs</title>
-        <meta name="description" content={page.description} />
-      </Head>
+      <SiteMetadata
+        title="Component showcase - Chakra Docs"
+        description={page.description}
+        path={page.route}
+      />
       <StructuredData
         path={page.route}
         title={page.title}

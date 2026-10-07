@@ -25,7 +25,9 @@
         "default",
         "{workspaceRoot}/scripts/docs-site.spec.mjs",
         "{workspaceRoot}/scripts/oss-credits.test.mjs",
-        "{workspaceRoot}/scripts/site-analytics.test.mjs"
+        "{workspaceRoot}/scripts/site-analytics.test.mjs",
+        "{workspaceRoot}/scripts/search-recommendations.test.mjs",
+        "{workspaceRoot}/scripts/site-seo.test.mjs"
       ]
     },
     "build": {

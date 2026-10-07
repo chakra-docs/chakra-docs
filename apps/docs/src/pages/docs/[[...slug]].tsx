@@ -10,7 +10,7 @@ import {
   type DocsVersionOption,
 } from '@chakra-docs/chakra';
 import type { GetStaticPaths, GetStaticProps } from 'next';
-import Head from 'next/head';
+import { SiteMetadata } from '../../components/site-metadata';
 import { Box, Flex } from '@chakra-ui/react';
 import { LuChevronDown } from 'react-icons/lu';
 import { PostkitMarkdown } from '../../components/postkit-markdown';
@@ -31,12 +31,12 @@ interface DocsRoutePageProps {
 export default function DocsRoutePage(props: DocsRoutePageProps) {
   return (
     <>
-      <Head>
-        <title>{`${props.page.title} - Chakra Docs`}</title>
-        {props.page.description ? (
-          <meta name="description" content={props.page.description} />
-        ) : null}
-      </Head>
+      <SiteMetadata
+        title={`${props.page.title} - Chakra Docs`}
+        description={props.page.description}
+        path={props.page.route}
+        article
+      />
       <StructuredData
         breadcrumbs={createDocsBreadcrumbs(props.page)}
         description={props.page.description}

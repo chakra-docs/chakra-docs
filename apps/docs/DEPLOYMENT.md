@@ -53,11 +53,25 @@ These are internal Next rewrites; the visible URL is retained. Captures use
 the matching page's title and description by default. The welcome, showcase,
 and OSS pages are supported too; unknown pages return 404.
 
-For the OpenGraphs generation flow, use the corresponding
-`/<page>/social-image.png` **template URL** in the renderer integration. It
-captures the extensionless `/<page>/social-image` HTML page. The PNG must be
-served by the configured OpenGraphs renderer; Next deliberately does not
-rewrite `.png` requests to HTML or generate image bytes itself.
+Public pages include canonical, Open Graph, and Twitter metadata using
+`NEXT_PUBLIC_SITE_URL`. Their default social artwork is the real 1200 × 630 PNG
+served at `/api/social-image`. This fixed, cacheable card uses Next's bundled
+font and needs neither a Fontstack request nor an external renderer. The page
+titles and descriptions remain specific to each page.
+
+`/sitemap.xml` lists the public site pages and published documentation; draft,
+hidden, error, and capture pages are excluded. `/robots.txt` advertises the
+sitemap and keeps the PNG endpoint accessible to social crawlers. CI builds
+and browser tests use the production origin. Run the same checks locally with:
+
+```sh
+NEXT_PUBLIC_SITE_URL=https://chakra-docs.dev CHAKRA_DOCS_REQUIRE_SITE_URL=true pnpm nx run docs:e2e
+```
+
+The HTML capture pages above remain available for custom Suisse artwork. An
+external OpenGraphs integration can capture the extensionless
+`/<page>/social-image` page and host its PNG separately. No renderer is assumed
+to exist, and Next deliberately does not rewrite `.png` requests to HTML.
 
 Optional `title` and `description` query parameters customize the copy:
 
