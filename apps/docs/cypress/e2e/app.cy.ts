@@ -306,46 +306,50 @@ describe('docs', () => {
     );
   });
 
-  it('warms default results on keyboard focus and reuses them when opening search', () => {
-    cy.intercept(
-      { method: 'GET', pathname: '/api/docs/search', query: { q: '' } },
-      {
-        headers: { 'cache-control': 'no-store' },
-        body: {
-          query: '',
-          results: [
-            {
-              id: 'prefetched-install',
-              title: 'Prefetched installation',
-              route: '/docs/installation',
-            },
-            {
-              id: 'prefetched-config',
-              title: 'Prefetched configuration',
-              route: '/docs/configuration',
-            },
-          ],
-        },
-      },
-    ).as('defaultSearch');
+  it('opens, clears, and reopens curated recommendations without empty API searches', () => {
+    cy.intercept({ method: 'GET', pathname: '/api/docs/search' }).as(
+      'searchRequests',
+    );
     visit('/docs');
     cy.contains('button', 'Search').focus();
-    cy.wait('@defaultSearch');
     cy.get('[role="dialog"]').should('not.exist');
     cy.contains('button', 'Search').type('{ctrl}k');
     cy.get('[role="combobox"]').should('be.focused');
+    const recommendations = [
+      'Installation',
+      'Configuration',
+      'Components',
+      'Pages Router',
+      'Search',
+      'Machine-readable docs',
+    ];
     cy.get('[role="option"]')
-      .first()
-      .should('have.text', 'Prefetched installation');
+      .should('have.length', 6)
+      .each(($option, index) => {
+        expect($option.text()).to.contain(recommendations[index]);
+      });
     cy.get('[role="combobox"]').type('{downarrow}');
     cy.get('[role="option"][aria-selected="true"]').should(
-      'have.text',
-      'Prefetched configuration',
+      'contain.text',
+      'Configuration',
     );
+    cy.intercept('GET', '**/api/docs/search?q=installation*').as('typedSearch');
+    cy.get('[role="combobox"]').type('installation');
+    cy.wait('@typedSearch');
+    cy.get('button[aria-label="Clear search"]').click();
+    cy.get('[role="combobox"]').should('have.value', '');
+    cy.get('[role="option"]').should('have.length', 6);
     cy.get('[role="combobox"]').type('{esc}');
     cy.contains('button', 'Search').should('be.focused').type('{ctrl}k');
-    cy.get('[role="option"]').should('have.length', 2);
-    cy.get('@defaultSearch.all').should('have.length', 1);
+    cy.get('[role="option"]').should('have.length', 6);
+    cy.get('@searchRequests.all').should((requests) => {
+      const emptyRequests = (
+        requests as unknown as Array<{ request: { url: string } }>
+      ).filter(
+        ({ request }) => !new URL(request.url).searchParams.get('q')?.trim(),
+      );
+      expect(emptyRequests, 'empty-query API searches').to.have.length(0);
+    });
   });
 
   it('supports pointer search navigation through the Next router', () => {
@@ -566,6 +570,6 @@ describe('docs', () => {
       expect(element[0].scrollWidth).to.be.at.most(element[0].clientWidth + 1),
     );
   });
-  // These open search to await hydration; run after the cold-cache prefetch test.
+  // These open search to await hydration.
   registerResponsiveTableTests();
 });
