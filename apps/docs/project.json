@@ -27,7 +27,8 @@
         "{workspaceRoot}/scripts/oss-credits.test.mjs",
         "{workspaceRoot}/scripts/site-analytics.test.mjs",
         "{workspaceRoot}/scripts/search-recommendations.test.mjs",
-        "{workspaceRoot}/scripts/site-seo.test.mjs"
+        "{workspaceRoot}/scripts/site-seo.test.mjs",
+        "{workspaceRoot}/.github/workflows/ci.yml"
       ]
     },
     "build": {
@@ -105,6 +106,7 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "cache": true,
+      "dependsOn": ["^build"],
       "options": {
         "cwd": "apps/docs",
         "commands": [
@@ -113,7 +115,7 @@
         ],
         "parallel": false
       },
-      "inputs": ["production", "^production"]
+      "inputs": ["default", "^production"]
     }
   }
 }

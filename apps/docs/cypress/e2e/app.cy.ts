@@ -42,8 +42,8 @@ describe('docs', () => {
     }
     cy.request('/sitemap.xml').then(({ headers, body }) => {
       expect(headers['content-type']).to.contain('application/xml');
-      const xml = new DOMParser().parseFromString(body, 'application/xml');
-      expect(xml.querySelector('parsererror')).to.equal(null);
+      const xml = Cypress.$.parseXML(body);
+      if (!xml) throw new Error('Expected a valid XML sitemap');
       const urls = [...xml.querySelectorAll('loc')].map(
         (node) => node.textContent,
       );
