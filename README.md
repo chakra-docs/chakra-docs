@@ -127,12 +127,13 @@ supported versions and the workspace's current versions. Chakra consumers must
 install `@emotion/react` alongside `@chakra-ui/react`.
 
 ```bash
-npm install
-npm run build
-npm run test
-npm run lint
-npm run release:smoke
-npm run yalc:publish
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm run test
+pnpm run lint
+pnpm run release:smoke
+pnpm run yalc:publish
 ```
 
 The project spec lives at [docs/specs/chakra-docs-package-spec.md](docs/specs/chakra-docs-package-spec.md).

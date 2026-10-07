@@ -1,152 +1,94 @@
 import {
+  DocsArticle,
+  DocsCards,
+  DocsLayout,
+  MarkdownContent,
+} from '@chakra-docs/chakra';
+import {
   createCollectionOptions,
   type DocsCollectionOption,
+  type DocsNavItem,
+  type DocsPage,
 } from '@chakra-docs/core';
 import { serializeNextProps } from '@chakra-docs/next/pages';
-import {
-  Badge,
-  Box,
-  Flex,
-  Grid,
-  Heading,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
+import { Stack, Text } from '@chakra-ui/react';
 import type { GetStaticProps } from 'next';
-import Head from 'next/head';
-import { SiteShell } from '../components/site-shell';
+import { SiteMetadata } from '../components/site-metadata';
+import { SiteSearch, SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
+import { guides } from '../docs/guides';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../docs/search-recommendations';
 
 interface ShowcasePageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
   collectionOptions: DocsCollectionOption[];
+  nav: DocsNavItem[];
 }
-
-const showcaseItems = [
-  {
-    title: 'Product docs',
-    description:
-      'A marketing site can mount a complete docs section under /docs while keeping product pages custom.',
-    status: 'Ready',
-  },
-  {
-    title: 'Design system docs',
-    description:
-      'Teams can compose Chakra-based article layouts with their own navigation, auth, and release notes.',
-    status: 'Placeholder',
-  },
-  {
-    title: 'Package workspace docs',
-    description:
-      'This repo can document every package while still keeping examples, showcases, and smoke pages nearby.',
-    status: 'Placeholder',
-  },
-];
-
-const summaryItems = [
-  { label: 'Landing page', value: 'Custom' },
-  { label: 'Docs route', value: 'Chakra Docs' },
-  { label: 'Showcase', value: 'Next page' },
-];
-
-const pageTitle = 'Showcase - Chakra Docs';
-const pageDescription =
-  'Placeholder showcase page for sites using Chakra Docs inside a larger Next app.';
+const page: DocsPage = {
+  id: 'showcase',
+  route: '/showcase',
+  path: '',
+  slug: ['showcase'],
+  title: 'Component showcase',
+  description:
+    'Explore working examples of the primitives powering this documentation site.',
+  frontmatter: {},
+};
 
 export default function ShowcasePage(props: ShowcasePageProps) {
   return (
     <>
-      <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-      </Head>
-      <StructuredData
-        breadcrumbs={[
-          { name: 'Home', path: '/' },
-          { name: 'Showcase', path: '/showcase' },
-        ]}
-        description={pageDescription}
-        path="/showcase"
-        title="Showcase"
+      <SiteMetadata
+        title="Component showcase - Chakra Docs"
+        description={page.description}
+        path={page.route}
       />
-      <SiteShell collectionOptions={props.collectionOptions}>
-        <Grid
-          alignItems="end"
-          gap={{ base: 8, lg: 10 }}
-          pb={{ base: 12, md: 16 }}
-          templateColumns={{ base: '1fr', lg: '0.75fr 0.45fr' }}
+      <StructuredData
+        path={page.route}
+        title={page.title}
+        description={page.description}
+      />
+      <SiteShell
+        collectionOptions={props.collectionOptions}
+        recommendedSearchResults={props.recommendedSearchResults}
+      >
+        <DocsLayout
+          nav={props.nav}
+          page={page}
+          sidebarCollapsible
+          sidebarDefaultExpanded="active"
+          mobileNavigationProps={{
+            title: 'Browse documentation',
+            search: (
+              <SiteSearch
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
+            ),
+          }}
         >
-          <Stack gap={5}>
-            <Badge alignSelf="flex-start" colorPalette="teal" variant="subtle">
-              Showcase
-            </Badge>
-            <Heading as="h1" size="4xl">
-              Examples can live beside the docs.
-            </Heading>
-            <Text color="gray.600" fontSize="lg" maxW="3xl">
-              This placeholder route is intentionally just another Pages Router
-              page. It demonstrates that the documentation section does not own
-              the whole application surface.
-            </Text>
-          </Stack>
-
-          <Stack
-            aria-label="Showcase status summary"
-            bg="white"
-            borderColor="gray.200"
-            borderRadius="md"
-            borderWidth="1px"
-            gap={0}
-            p={5}
-          >
-            {summaryItems.map((item) => (
-              <Flex
-                align="center"
-                borderBottomColor="gray.200"
-                borderBottomWidth={item === summaryItems.at(-1) ? '0' : '1px'}
-                justify="space-between"
-                key={item.label}
-                py={3}
-              >
-                <Text fontWeight="semibold">{item.label}</Text>
-                <Badge colorPalette="teal" variant="subtle">
-                  {item.value}
-                </Badge>
-              </Flex>
-            ))}
-          </Stack>
-        </Grid>
-
-        <Box
-          borderTopColor="gray.200"
-          borderTopWidth="1px"
-          py={{ base: 12, md: 16 }}
-        >
-          <SimpleGrid columns={{ base: 1, lg: 3 }} gap={4}>
-            {showcaseItems.map((item) => (
-              <Box
-                as="article"
-                bg="white"
-                borderColor="gray.200"
-                borderRadius="md"
-                borderWidth="1px"
-                key={item.title}
-                minH="210px"
-                p={6}
-              >
-                <Badge colorPalette="teal" variant="subtle">
-                  {item.status}
-                </Badge>
-                <Heading as="h3" mt={4} size="md">
-                  {item.title}
-                </Heading>
-                <Text color="gray.600" mt={4}>
-                  {item.description}
-                </Text>
-              </Box>
-            ))}
-          </SimpleGrid>
-        </Box>
+          <DocsArticle page={page}>
+            <Stack gap={8}>
+              <Text color="fg.muted">
+                This site uses the same native layout, search, code blocks, and
+                page actions available to your application. Follow the examples
+                below to see each feature in context.
+              </Text>
+              <MarkdownContent
+                source={
+                  '> Everything starts with your Chakra theme. Override recipes globally, or use slot props for a single instance.\n\n```tsx\n<DocsLayout nav={nav} page={page} sidebarCollapsible>\n  <DocsArticle page={page}>\n    <MarkdownContent source={page.body} />\n  </DocsArticle>\n</DocsLayout>\n```'
+                }
+              />
+              <DocsCards.Root>
+                {guides.map((guide) => (
+                  <DocsCards.Card key={guide.href} {...guide} />
+                ))}
+              </DocsCards.Root>
+            </Stack>
+          </DocsArticle>
+        </DocsLayout>
       </SiteShell>
     </>
   );
@@ -155,10 +97,11 @@ export default function ShowcasePage(props: ShowcasePageProps) {
 export const getStaticProps: GetStaticProps<ShowcasePageProps> = async () => {
   const { getDocsManifest } = await import('../docs/manifest');
   const manifest = await getDocsManifest();
-
   return {
     props: serializeNextProps({
       collectionOptions: createCollectionOptions(manifest.collections),
+      nav: manifest.nav,
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
     }),
   };
 };

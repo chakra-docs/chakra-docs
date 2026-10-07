@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/search",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Server-side search engine, Fetch handler, and HTTP client for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -44,7 +44,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/search:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/search:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -82,7 +82,7 @@
     ]
   },
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
     "minisearch": "^7.2.0",
     "tslib": "^2.3.0"
   },
@@ -100,5 +100,5 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/search#readme"
+  "homepage": "https://chakra-docs.dev/docs/search"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic Markdown and MDX document models and manifest utilities for documentation sites.",
   "keywords": [
     "chakra-ui",
@@ -46,7 +46,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/core:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/core:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -81,7 +81,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/core#readme",
+  "homepage": "https://chakra-docs.dev/docs#package-roles",
   "nx": {
     "tags": [
       "layer:core",

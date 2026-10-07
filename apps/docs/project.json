@@ -6,6 +6,31 @@
   "tags": ["layer:app", "scope:docs"],
   "// targets": "to see all targets run: nx show project docs --web",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "node --test scripts/docs-site.spec.mjs",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "vitest run --config apps/docs/vitest.config.ts",
+            "forwardAllArgs": false
+          }
+        ]
+      },
+      "cache": true,
+      "inputs": [
+        "default",
+        "{workspaceRoot}/scripts/docs-site.spec.mjs",
+        "{workspaceRoot}/scripts/oss-credits.test.mjs",
+        "{workspaceRoot}/scripts/site-analytics.test.mjs",
+        "{workspaceRoot}/scripts/search-recommendations.test.mjs",
+        "{workspaceRoot}/scripts/site-seo.test.mjs",
+        "{workspaceRoot}/.github/workflows/ci.yml"
+      ]
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
@@ -30,7 +55,8 @@
         { "env": "NEXT_PUBLIC_SITE_URL" },
         { "env": "CHAKRA_DOCS_REQUIRE_SITE_URL" },
         { "env": "NEXT_PUBLIC_FATHOM_SITE_ID" },
-        { "env": "NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN" }
+        { "env": "NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN" },
+        { "env": "NEXT_PUBLIC_FONTSTACK_KIT_URL" }
       ],
       "outputs": [
         "{workspaceRoot}/apps/docs/.next/!(cache)/**/*",
@@ -80,6 +106,7 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "cache": true,
+      "dependsOn": ["^build"],
       "options": {
         "cwd": "apps/docs",
         "commands": [
@@ -88,7 +115,7 @@
         ],
         "parallel": false
       },
-      "inputs": ["production", "^production"]
+      "inputs": ["default", "^production"]
     }
   }
 }

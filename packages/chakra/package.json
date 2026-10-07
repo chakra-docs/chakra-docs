@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/chakra",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Chakra UI component layer for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -46,7 +46,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/chakra:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/chakra:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -59,6 +59,16 @@
       "types": "./dist/theme.d.ts",
       "import": "./dist/theme.js",
       "default": "./dist/theme.js"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "import": "./dist/provider.js",
+      "default": "./dist/provider.js"
+    },
+    "./code-block": {
+      "types": "./dist/code-block.d.ts",
+      "import": "./dist/code-block.js",
+      "default": "./dist/code-block.js"
     }
   },
   "files": [
@@ -67,8 +77,8 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
-    "@chakra-docs/search": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/search": "0.3.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tslib": "^2.3.0"
@@ -93,7 +103,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/chakra#readme",
+  "homepage": "https://chakra-docs.dev/docs/components",
   "nx": {
     "tags": [
       "layer:ui",

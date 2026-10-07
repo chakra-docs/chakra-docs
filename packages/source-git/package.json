@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/source-git",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Remote Git content source for Chakra Docs.",
   "keywords": [
     "chakra-ui",
@@ -43,7 +43,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/source-git:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/source-git:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -59,7 +59,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
     "tslib": "^2.3.0"
   },
   "engines": {
@@ -76,7 +76,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/source-git#readme",
+  "homepage": "https://chakra-docs.dev",
   "nx": {
     "tags": [
       "layer:source",

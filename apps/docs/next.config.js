@@ -12,7 +12,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   `connect-src 'self' ${fathomOrigin} https://api.usefathom.com`,
-  "font-src 'self' data:",
+  "font-src 'self' data: https://kits.fontstack.com",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'none'",
@@ -20,7 +20,7 @@ const contentSecurityPolicy = [
   "manifest-src 'self'",
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${developmentScriptPolicy} ${fathomOrigin}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://kits.fontstack.com",
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',
 ].join('; ');
@@ -30,12 +30,27 @@ const contentSecurityPolicy = [
  **/
 const nextConfig = {
   allowedDevOrigins: ['chakra-docs.test'],
+  devIndicators: false,
   nx: {},
   outputFileTracingIncludes: {
     '/api/docs/search': ['src/content/docs/**/*'],
+    '/sitemap.xml': ['src/content/docs/**/*'],
   },
   poweredByHeader: false,
   reactStrictMode: true,
+  // Keep Postkit's Chakra provider in the same bundle as optimized site imports.
+  transpilePackages: ['@postkit/react'],
+  experimental: { optimizePackageImports: ['@chakra-ui/react'] },
+  async rewrites() {
+    return {
+      afterFiles: [
+        {
+          source: '/:path*/social-image',
+          destination: '/og-image/:path*',
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {
@@ -62,6 +77,14 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
         ],
+      },
+      {
+        source: '/:path*/social-image',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/og-image/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];
   },

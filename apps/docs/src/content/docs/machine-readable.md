@@ -12,9 +12,13 @@ import {
   createDocsLlmsFullText,
   createDocsLlmsText,
   createDocsMarkdown,
+  resolveDocsUrl,
 } from '@chakra-docs/core';
 
 const markdown = createDocsMarkdown(page);
+const canonicalUrl = resolveDocsUrl(page.route, {
+  siteUrl: 'https://example.com',
+});
 const index = createDocsLlmsText(manifest, {
   title: 'Example Docs',
   description: 'Documentation for Example.',
@@ -26,7 +30,7 @@ const complete = createDocsLlmsFullText(manifest, {
 });
 ```
 
-Use the `body` option when an MDX pipeline can provide a cleaner Markdown representation than the source stored on the page.
+The serializer includes the page title and description in deterministic frontmatter. Use the `body` option when an MDX pipeline can provide a cleaner Markdown representation than the source stored on the page. `resolveDocsUrl` resolves safe canonical or document-relative links during SSR without reading `window`.
 
 ## Page metadata
 

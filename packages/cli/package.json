@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "CLI for generating, validating, and watching Markdown and MDX documentation manifests.",
   "keywords": [
     "chakra-ui",
@@ -42,7 +42,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/cli:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/cli:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -61,9 +61,9 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
-    "@chakra-docs/source-filesystem": "0.2.0",
-    "@chakra-docs/source-git": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/source-filesystem": "0.3.0",
+    "@chakra-docs/source-git": "0.3.0",
     "tslib": "^2.3.0"
   },
   "engines": {
@@ -80,7 +80,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/cli#readme",
+  "homepage": "https://chakra-docs.dev",
   "nx": {
     "tags": [
       "layer:cli",

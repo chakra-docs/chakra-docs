@@ -55,5 +55,6 @@ vitest.config.*.timestamp*
 # Next.js
 .next
 out
+apps/docs/next-env.d.ts
 
 test-output

@@ -121,41 +121,48 @@ Use the `breadcrumbs` slot to place navigation context above the page title:
 
 ## DocsPageActions
 
-`DocsPageActions` provides composable copy and link actions. `CopyPage` copies the Markdown source, while `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their URLs are available.
+`DocsPageActions` provides composable copy and link actions. Its default `standard` preset supplies lightweight icons and automatically renders a split Copy page button plus a compact menu containing the available Copy page, Copy link, View Markdown, and Edit actions. `CopyPage` copies deterministic Markdown containing the page title, description, and body; `CopyLink` copies the canonical page URL. `ViewMarkdown` and `Edit` appear only when their host-owned URLs are available.
 
-Page actions default to transparent triggers using small, medium-weight `fg` text/icons, a 1px semantic `border`, and a 44px minimum height. The default copy button has 16px horizontal padding; the dropdown has a 44px minimum width, 12px horizontal padding, and a 16px chevron. The split preset has no gap, rounded exterior corners, square adjoining corners, and one divider. Hover and keyboard-highlight states use `bg.panel`; keyboard focus uses a muted 1px inset outline. Menus and submenus use page-matching `bg`, `fg` text, `xl` rounding/shadow, an 18rem minimum width, and 8px padding. Rounded menu items have 12px padding, with labels stacked above descriptions. Use `size="sm" | "md" | "lg"` and the `chakraDocsPageActions` slot recipe to customize the controls; all presets retain at least a 44px minimum height, and generic Chakra Button/Clipboard/Link recipes do not supply their visual defaults.
+Page actions use transparent triggers with small, medium-weight `fg` text/icons, a 1px semantic `border`, and a 44px minimum height. The copy button has 16px horizontal padding; the dropdown has a 44px minimum width, 12px horizontal padding, and a 16px chevron. The standard split layout has no gap, rounded exterior corners, square adjoining corners, and one divider. Hover and keyboard-highlight states use `bg.panel`; keyboard focus uses a muted 1px inset outline. Menus and submenus use page-matching `bg`, `fg` text, `xl` rounding/shadow, an 18rem minimum width, and 8px padding. Rounded menu items have 12px padding, with labels stacked above descriptions. Use `preset="minimal"` for the previous text-only, separated layout. Use `size="sm" | "md" | "lg"` and the `chakraDocsPageActions` slot recipe to customize the controls; all presets retain at least a 44px minimum height, and generic Chakra Button/Clipboard/Link recipes do not supply their visual defaults.
 
 Copy actions display “Copied!” after a successful copy, then restore their original label. Customize this per button with `<DocsPageActions.CopyPage copiedLabel="Page copied!" />` or `<DocsPageActions.CopyLink copiedLabel="Link copied!" />`. For the automatic composition, set `DocsProvider.config.labels.copiedPage` and `copiedLink`; per-button values take precedence.
 
 The common split-button composition needs no explicit children. It renders Copy page as the primary action and a compact, accessible menu containing the available Copy page, Copy link, View Markdown, and Edit actions:
 
 ```tsx
-<DocsPageActions.Root
-  editUrl={editUrl}
-  markdownUrl={markdownUrl}
-  page={page}
-  variant="split"
-/>
+<DocsPageActions.Root editUrl={editUrl} markdownUrl={markdownUrl} page={page} />
+```
+
+Configure site-wide defaults through the provider. Every root or action prop still takes precedence; pass `icon={null}` to remove an icon explicitly:
+
+```tsx
+<DocsProvider
+  config={{
+    siteUrl: 'https://docs.example.com',
+    pageActions: {
+      icons: { copyLink: <BrandLinkIcon /> },
+      serializeMarkdown: (page) => createDocsMarkdown(page),
+      size: 'sm',
+    },
+  }}
+>
+  {children}
+</DocsProvider>
 ```
 
 ```tsx
 <DocsArticle
   page={page}
   actions={
-    <DocsPageActions.Root
-      page={page}
-      markdown={page.body}
-      markdownUrl={`${page.route}.md`}
-      variant="split"
-    >
-      <DocsPageActions.CopyPage icon={<LuCopy />} />
+    <DocsPageActions.Root page={page} markdownUrl={markdownUrl} variant="split">
+      <DocsPageActions.CopyPage />
       <DocsPageActions.Menu
         ariaLabel="More page actions"
         icon={<LuChevronDown />}
       >
         <DocsPageActions.Group label="Page tools">
-          <DocsPageActions.CopyLink icon={<LuLink />} />
-          <DocsPageActions.ViewMarkdown icon={<MarkdownIcon />} />
+          <DocsPageActions.CopyLink />
+          <DocsPageActions.ViewMarkdown />
         </DocsPageActions.Group>
         <DocsPageActions.Separator />
         <DocsPageActions.Item
@@ -178,9 +185,9 @@ The common split-button composition needs no explicit children. It renders Copy 
 </DocsArticle>
 ```
 
-When no children are supplied, the root renders `CopyPage` as the primary action and places Copy page plus the available link, Markdown, and edit actions in its disclosure menu. Unavailable actions are omitted; a menu without a primary action retains a visible label instead of rendering a lone chevron. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page.
+When no children are supplied, the root renders the standard composition. Unavailable actions are omitted; a menu without a primary action retains a visible label instead of rendering a lone chevron. `siteUrl` and `editUrl` from `DocsProvider` are used to derive the canonical and edit URLs. Use explicit `pageUrl`, `markdownUrl`, or `editUrl` props to override them for one page. Chakra Docs never assumes `${page.route}.md` exists—the host must pass the real Markdown endpoint URL.
 
-Use `variant="split"` to join the primary action and menu trigger without overlapping their borders. Choose `size="sm"`, `size="md"`, or `size="lg"` to resize the triggers while the split variant continues to own their adjoining corners and divider. `Menu` accepts separate `ariaLabel`, `label`, `icon`, and `indicator` content; supplying an icon without a label creates an icon-only trigger with the accessible name intact. Menus and submenus support `open`, `defaultOpen`, `onOpenChange`, and `closeOnSelect`, plus portaled collision-aware positioning, Escape and outside-click dismissal, focus restoration, looping arrow-key navigation, and typeahead. Selection closes the current menu and its ancestors by default; set `closeOnSelect={false}` when an application needs the menu to remain open. Use `positioning` to override placement behavior and `positionerSlotProps` to style the overlay positioner without changing menu content styling.
+Automatic standard composition uses `variant="split"`; custom-child compositions must request it explicitly so Chakra Docs does not impose joined geometry on arbitrary controls. Choose `size="sm"`, `size="md"`, or `size="lg"` to resize the triggers while the split variant continues to own their adjoining corners and divider. `Menu` accepts separate `ariaLabel`, `label`, `icon`, and `indicator` content; supplying an icon without a label creates an icon-only trigger with the accessible name intact. Menus and submenus support `open`, `defaultOpen`, `onOpenChange`, and `closeOnSelect`, plus portaled collision-aware positioning, Escape and outside-click dismissal, focus restoration, looping arrow-key navigation, typeahead, and enforced hidden-state visibility. Selection closes the current menu and its ancestors by default; set `closeOnSelect={false}` when an application needs the menu to remain open. Use `positioning` to override placement behavior and `positionerSlotProps` to style the overlay positioner without changing menu content styling.
 
 Standard actions provide descriptions automatically inside menus. Pass `description={null}` to suppress one, or customize the matching `copyPageDescription`, `copyLinkDescription`, `viewMarkdownDescription`, and `editPageDescription` labels through `DocsProvider`.
 
@@ -295,7 +302,7 @@ should also use `min-width: 0` so it can shrink.
 </DocsSteps.Root>
 ```
 
-`DocsTabs` can synchronize separate groups on the same page. This is useful for package-manager or framework choices repeated across a guide.
+`DocsTabs` can synchronize separate groups on the same page. This is useful for temporary package-manager or framework choices repeated across a guide.
 
 ```tsx
 <DocsTabs.Root defaultValue="npm" syncKey="package-manager">
@@ -313,6 +320,53 @@ should also use `min-width: 0` so it can shrink.
 ```
 
 Use `value` and `onValueChange` to control a tab group. The trigger and panel IDs, `aria-controls`, `aria-labelledby`, and selected state are handled by the component.
+
+For preferences that should follow a reader across pages, declare dimensions once and bind selectors, conditional content, and tabs to them.
+
+```tsx
+const preferences = [
+  {
+    id: 'package-manager',
+    label: 'Package manager',
+    options: ['npm', 'pnpm', 'yarn', 'bun'],
+    defaultValue: 'npm',
+  },
+  {
+    id: 'api-style',
+    label: 'API style',
+    options: ['rest', 'graphql'],
+    defaultValue: 'rest',
+  },
+] as const;
+
+<DocsPreferences.Root definitions={preferences} storage="local">
+  <DocsPreferences.Select preference="package-manager" />
+
+  <DocsTabs.Root preference="package-manager">
+    <DocsTabs.List>
+      <DocsTabs.Trigger value="npm">npm</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="pnpm">pnpm</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="yarn">Yarn</DocsTabs.Trigger>
+      <DocsTabs.Trigger value="bun">Bun</DocsTabs.Trigger>
+    </DocsTabs.List>
+    <DocsTabs.Content value="npm">npm install package-name</DocsTabs.Content>
+    <DocsTabs.Content value="pnpm">pnpm add package-name</DocsTabs.Content>
+    <DocsTabs.Content value="yarn">yarn add package-name</DocsTabs.Content>
+    <DocsTabs.Content value="bun">bun add package-name</DocsTabs.Content>
+  </DocsTabs.Root>
+
+  <DocsPreferences.When preference="api-style" value="rest">
+    <RestExample />
+  </DocsPreferences.When>
+  <DocsPreferences.When preference="api-style" value="graphql">
+    <GraphqlExample />
+  </DocsPreferences.When>
+</DocsPreferences.Root>;
+```
+
+Local persistence reads after hydration, so the declared default remains deterministic during SSR. Stored and programmatic values are validated against enabled options. Use a custom `DocsPreferenceStorage` for cookie or account-backed preferences, controlled `values` and `onValuesChange` for application state, or the `useDocsPreferences` and `useDocsPreference` hooks for custom controls. Preference changes can be observed through `onPreferenceChange` or `DocsProvider` analytics. Inactive `When` branches remain server-rendered and hidden unless `unmountOnExit` is enabled.
+
+A preference-bound tab group can contain only a subset of the global options. If it cannot display the selected value, it uses its `defaultValue`, the preference default, or its first tab locally—without changing the reader's saved preference. `preference` cannot be combined with controlled `value` or the older in-memory `syncKey`.
 
 ```tsx
 <DocsApiTable

@@ -19,7 +19,7 @@ Build the docs section as a feature of the host application. Preserve the host's
 1. Keep filesystem or Git content discovery server-only. Build or cache one manifest and derive routing, navigation, headings, search, sitemap, feeds, and machine-readable routes from it.
 2. Register `chakraDocsThemeConfig` in the host Chakra system, then layer application recipe overrides after it.
 3. Wrap the docs subtree with `DocsProvider`; provide the router-native link component, labels, analytics, code highlighting adapter, and sticky offsets that the host needs.
-4. Start with `DocsLayout`, `DocsArticle`, and the host's Markdown/MDX renderer. Add breadcrumbs, page actions, feedback, pagination, search, and richer content primitives only when useful.
+4. Start with `DocsLayout`, `DocsArticle`, the host's Markdown/MDX renderer, and automatic `DocsPageActions.Root` composition. Add custom page-action children only when the host needs product-specific actions or different structure; add feedback, pagination, search, and richer content primitives only when useful.
 5. Enable collapsible navigation explicitly. Keep the backward-compatible non-collapsible behavior unless the application asks for disclosure navigation.
 6. Expose composition points instead of embedding application-specific behavior in package components. Let the host own persistence, navigation callbacks, and product-specific actions.
 
@@ -28,6 +28,7 @@ Read [composition patterns](references/composition-patterns.md) when building or
 ## Verify the result
 
 - Exercise the actual docs route, including a nested page, client-side navigation, active sidebar/TOC state, sticky offsets, mobile TOC, keyboard use, and unsafe-link handling.
+- For page actions, verify exact clipboard contents, every supplied Markdown/edit URL, narrow-screen overflow, arrow/typeahead navigation, Escape dismissal, focus restoration, and that closed menus are not visible or interactive.
 - Confirm the host theme supplies any custom semantic tokens used by overrides. Package defaults should remain portable `bg`, `fg`, and `border` values.
 - Keep server-only source packages out of client bundles.
 - Run the host application's typecheck, tests, lint, and production build in proportion to the change.

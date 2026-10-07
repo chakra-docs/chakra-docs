@@ -1,9 +1,11 @@
 'use client';
 
 import {
+  Children,
   Fragment,
   createContext,
   createElement,
+  isValidElement,
   useContext,
   useEffect,
   useId,
@@ -18,18 +20,29 @@ import type { Components as MarkdownComponents } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   createCollectionOptions,
+  createDocsMarkdown,
   getDocsMarkdownHeadings,
   isSafeDocsRoute,
   isSafeLinkHref,
+  normalizeDocsPreferenceDefinitions,
+  resolveDocsUrl,
+  resolveDocsPreferenceValues,
 } from '@chakra-docs/core';
 import type {
   DocsCollection,
   DocsCollectionOption,
   DocsConfig,
   DocsHeading,
+  DocsMarkdownSerializer,
   DocsNavItem,
   DocsPage,
+  DocsPreferenceChangeEvent,
+  DocsPreferenceChangeSource,
+  DocsPreferenceDefinition,
+  DocsPreferenceStorage,
+  DocsPreferenceValues,
   DocsSearchRecord,
+  NormalizedDocsPreferenceDefinition,
 } from '@chakra-docs/core';
 import { createDocsSearchEngine } from '@chakra-docs/search';
 import type {
@@ -39,8 +52,24 @@ import type {
 } from '@chakra-docs/search';
 import { activateSearchResult } from './search-activation.js';
 import { emitAnalytics } from './analytics.js';
+import { defaultLabels, useDocsConfig } from './docs-context.js';
+import { CodeBlock } from './code-block.js';
+import type { CodeBlockProps } from './code-block.js';
+export { DocsProvider, useDocsConfig } from './provider.js';
+export { CodeBlock } from './code-block.js';
+export type { CodeBlockProps } from './code-block.js';
 import { useSearchAnalytics } from './search-analytics.js';
 import type { DocsSearchAnalyticsCallbacks } from './search-analytics.js';
+export type {
+  DocsPreferenceChangeEvent,
+  DocsPreferenceChangeSource,
+  DocsPreferenceDefinition,
+  DocsPreferenceOption,
+  DocsPreferenceOptionInput,
+  DocsPreferenceStorage,
+  DocsPreferenceValues,
+  NormalizedDocsPreferenceDefinition,
+} from '@chakra-docs/core';
 export type {
   DocsSearchAnalyticsCallbacks,
   DocsSearchAnalyticsContext,
@@ -53,6 +82,15 @@ import { createSearchPrefetch } from './search-prefetch.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
 import { createDocsBreadcrumbItems } from './breadcrumbs.js';
 import type { DocsBreadcrumbItem } from './breadcrumbs.js';
+import { SearchClearIcon, SearchMagnifierIcon } from './search-icons.js';
+import {
+  PageActionsChevronIcon,
+  PageActionsCopyIcon,
+  PageActionsDocumentIcon,
+  PageActionsEditIcon,
+  PageActionsLinkIcon,
+  PageActionsSubmenuIcon,
+} from './page-action-icons.js';
 import {
   getActiveHeadingId,
   getHeadingScrollOffset,
@@ -90,7 +128,6 @@ import {
   chakraDocsBreadcrumbsSlotRecipe,
   chakraDocsCalloutSlotRecipe,
   chakraDocsCardsSlotRecipe,
-  chakraDocsCodeBlockSlotRecipe,
   chakraDocsFeedbackSlotRecipe,
   chakraDocsLayoutSlotRecipe,
   chakraDocsHeadingPermalinkSlotRecipe,
@@ -99,6 +136,7 @@ import {
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
+  chakraDocsPreferencesSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
@@ -140,6 +178,7 @@ export {
   chakraDocsMobileTableOfContentsSlotRecipe,
   chakraDocsPageActionsSlotRecipe,
   chakraDocsPaginationSlotRecipe,
+  chakraDocsPreferencesSlotRecipe,
   chakraDocsRecipeKeys,
   chakraDocsSearchSlotRecipe,
   chakraDocsSidebarSlotRecipe,
@@ -151,32 +190,40 @@ export {
   chakraDocsVersionSelectSlotRecipe,
 } from './theme/recipes.js';
 
-const Chakra = ChakraRuntime as unknown as Record<string, ElementType>;
-const Badge = Chakra.Badge;
-const Box = Chakra.Box;
-const Button = Chakra.Button;
-const ChakraClipboard = Chakra.Clipboard as unknown as Record<
-  string,
-  ElementType
->;
-const Code = Chakra.Code;
-const Container = Chakra.Container;
-const Dialog = Chakra.Dialog as unknown as Record<string, ElementType>;
-const Tabs = Chakra.Tabs as unknown as Record<string, ElementType>;
-const Heading = Chakra.Heading;
-const HStack = Chakra.HStack;
-const Input = Chakra.Input;
-const Kbd = Chakra.Kbd;
-const Link = Chakra.Link;
-const ChakraMenu = Chakra.Menu as unknown as Record<string, ElementType>;
-const Portal = Chakra.Portal;
-const Stack = Chakra.Stack;
-const Text = Chakra.Text;
-const Textarea = Chakra.Textarea;
-const ChakraCodeBlock = Chakra.CodeBlock as unknown as Record<
-  string,
-  ElementType
->;
+// NodeNext cannot follow Chakra's extensionless declaration re-exports. Keep
+// lightweight boundary casts, but access each export directly: aliasing the
+// complete namespace makes Turbopack retain unrelated Chakra components.
+const Badge = (ChakraRuntime as unknown as Record<string, ElementType>).Badge;
+const Box = (ChakraRuntime as unknown as Record<string, ElementType>).Box;
+const Button = (ChakraRuntime as unknown as Record<string, ElementType>).Button;
+const ChakraClipboard = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Clipboard as Record<string, ElementType>;
+const Code = (ChakraRuntime as unknown as Record<string, ElementType>).Code;
+const Container = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Container;
+const Dialog = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Dialog as Record<string, ElementType>;
+const Tabs = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Tabs as Record<string, ElementType>;
+const Heading = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Heading;
+const HStack = (ChakraRuntime as unknown as Record<string, ElementType>).HStack;
+const Input = (ChakraRuntime as unknown as Record<string, ElementType>).Input;
+const InputGroup = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .InputGroup;
+const IconButton = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .IconButton;
+const Kbd = (ChakraRuntime as unknown as Record<string, ElementType>).Kbd;
+const Link = (ChakraRuntime as unknown as Record<string, ElementType>).Link;
+const ChakraMenu = (ChakraRuntime as unknown as Record<string, unknown>)
+  .Menu as Record<string, ElementType>;
+const NativeSelect = (ChakraRuntime as unknown as Record<string, unknown>)
+  .NativeSelect as Record<string, ElementType>;
+const Portal = (ChakraRuntime as unknown as Record<string, ElementType>).Portal;
+const Stack = (ChakraRuntime as unknown as Record<string, ElementType>).Stack;
+const Text = (ChakraRuntime as unknown as Record<string, ElementType>).Text;
+const Textarea = (ChakraRuntime as unknown as Record<string, ElementType>)
+  .Textarea;
 const emptySearchRecords: readonly DocsSearchRecord[] = [];
 const emptyRemoteSearchResults: DocsSearchResult[] = [];
 
@@ -191,6 +238,7 @@ export type DocsLinkComponent = ComponentType<DocsLinkProps>;
 
 export interface DocsLabels {
   search: string;
+  clearSearch: string;
   searchPlaceholder: string;
   searchNoResults: string;
   searchLoading: string;
@@ -247,6 +295,7 @@ export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
   }) => void;
   onPageAction?: (event: {
     page?: DocsPage;
+    /** Includes `menu-open` when the top-level page-actions menu opens. */
     action: string;
     href?: string;
   }) => void;
@@ -260,6 +309,7 @@ export interface DocsAnalyticsCallbacks extends DocsSearchAnalyticsCallbacks {
     value: DocsPageFeedbackValue;
     comment: string;
   }) => void;
+  onPreferenceChange?: (event: DocsPreferenceChangeEvent) => void;
 }
 
 export interface ChakraDocsCodeBlockHighlightResult {
@@ -302,6 +352,8 @@ export type ChakraDocsCodeBlockVariant = 'outline' | 'subtle' | 'plain';
 export interface ChakraDocsCodeBlockConfig {
   adapter?: ChakraDocsCodeBlockAdapter;
   copy?: boolean;
+  copyIcon?: ReactNode;
+  copiedIcon?: ReactNode;
   lineNumbers?: boolean;
   size?: ChakraDocsCodeBlockSize;
   variant?: ChakraDocsCodeBlockVariant;
@@ -315,12 +367,19 @@ export interface ChakraDocsLayoutConfig {
   scrollMarginTop?: ChakraDocsStickyTop;
 }
 
+export interface ChakraDocsIcons {
+  mobileTocIndicator?: ReactNode;
+  sidebarIndicator?: ReactNode;
+}
+
 export interface ChakraDocsConfig extends DocsConfig {
   linkComponent?: DocsLinkComponent;
   labels?: Partial<DocsLabels>;
   analytics?: DocsAnalyticsCallbacks;
   codeBlock?: ChakraDocsCodeBlockConfig;
+  icons?: ChakraDocsIcons;
   layout?: ChakraDocsLayoutConfig;
+  pageActions?: ChakraDocsPageActionsConfig;
 }
 
 export interface DocsComponentProps {
@@ -343,6 +402,7 @@ export interface DocsLayoutProps extends DocsComponentProps {
   mobileTocActiveIndicatorSlotProps?: Record<string, unknown>;
   mobileTocContentSlotProps?: Record<string, unknown>;
   mobileTocCurrentSlotProps?: Record<string, unknown>;
+  mobileTocIndicator?: ReactNode;
   mobileTocIndicatorSlotProps?: Record<string, unknown>;
   mobileTocItemSlotProps?: Record<string, unknown>;
   mobileTocLinkSlotProps?: Record<string, unknown>;
@@ -356,6 +416,7 @@ export interface DocsLayoutProps extends DocsComponentProps {
   sidebarContent?: ReactNode;
   sidebarDefaultExpanded?: DocsSidebarDefaultExpanded;
   sidebarExpandedIds?: readonly string[];
+  sidebarIndicator?: ReactNode;
   sidebarIndicatorSlotProps?: Record<string, unknown>;
   onSidebarExpandedChange?: (expandedIds: readonly string[]) => void;
   sidebarSlotProps?: Record<string, unknown>;
@@ -381,12 +442,32 @@ export interface DocsPageActionsRootProps {
   markdownUrl?: string;
   page?: DocsPage;
   pageUrl?: string;
+  preset?: DocsPageActionsPreset;
   size?: DocsPageActionsSize;
   slotProps?: Record<string, unknown>;
-  variant?: 'default' | 'split';
+  variant?: DocsPageActionsVariant;
 }
 
+export type DocsPageActionsPreset = 'minimal' | 'standard';
 export type DocsPageActionsSize = 'sm' | 'md' | 'lg';
+export type DocsPageActionsVariant = 'default' | 'split';
+
+export interface DocsPageActionsIcons {
+  copyPage?: ReactNode;
+  copyLink?: ReactNode;
+  edit?: ReactNode;
+  menuIndicator?: ReactNode;
+  submenuIndicator?: ReactNode;
+  viewMarkdown?: ReactNode;
+}
+
+export interface ChakraDocsPageActionsConfig {
+  icons?: DocsPageActionsIcons;
+  preset?: DocsPageActionsPreset;
+  serializeMarkdown?: DocsMarkdownSerializer;
+  size?: DocsPageActionsSize;
+  variant?: DocsPageActionsVariant;
+}
 
 export interface DocsPageActionProps {
   children?: ReactNode;
@@ -492,6 +573,7 @@ export interface DocsSidebarProps extends DocsStickyComponentProps {
   contentSlotProps?: Record<string, unknown>;
   defaultExpanded?: DocsSidebarDefaultExpanded;
   expandedIds?: readonly string[];
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   onExpandedChange?: (expandedIds: readonly string[]) => void;
   triggerSlotProps?: Record<string, unknown>;
@@ -560,6 +642,7 @@ export interface DocsTableOfContentsProps extends DocsStickyComponentProps {
 export interface DocsMobileTableOfContentsProps extends DocsTableOfContentsProps {
   contentSlotProps?: Record<string, unknown>;
   currentSlotProps?: Record<string, unknown>;
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   triggerLabelSlotProps?: Record<string, unknown>;
   triggerSlotProps?: Record<string, unknown>;
@@ -664,6 +747,8 @@ export interface DocsTabsRootProps {
   children?: ReactNode;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
+  /** Bind this tab group to a site-wide DocsPreferences dimension. */
+  preference?: string;
   slotProps?: Record<string, unknown>;
   syncKey?: string;
   value?: string;
@@ -676,6 +761,63 @@ export interface DocsTabsPartProps {
 
 export interface DocsTabsValuePartProps extends DocsTabsPartProps {
   value: string;
+}
+
+export interface DocsPreferencesRootProps {
+  children?: ReactNode;
+  definitions: readonly DocsPreferenceDefinition[];
+  values?: DocsPreferenceValues;
+  defaultValues?: DocsPreferenceValues;
+  onValuesChange?: (values: DocsPreferenceValues) => void;
+  onPreferenceChange?: (event: DocsPreferenceChangeEvent) => void;
+  storage?: DocsPreferenceStorage | 'local' | false;
+  storageKeyPrefix?: string;
+  onStorageError?: (details: {
+    error: unknown;
+    id: string;
+    operation: 'get' | 'set' | 'remove';
+  }) => void;
+}
+
+export interface DocsPreferenceSelectProps {
+  preference: string;
+  label?: ReactNode;
+  labelHidden?: boolean;
+  slotProps?: Record<string, unknown>;
+  labelSlotProps?: Record<string, unknown>;
+  controlSlotProps?: Record<string, unknown>;
+  selectSlotProps?: Record<string, unknown>;
+  indicatorSlotProps?: Record<string, unknown>;
+}
+
+export interface DocsPreferenceWhenProps {
+  preference: string;
+  value: string | readonly string[];
+  children?: ReactNode;
+  fallback?: ReactNode;
+  fallbackSlotProps?: Record<string, unknown>;
+  unmountOnExit?: boolean;
+  slotProps?: Record<string, unknown>;
+}
+
+export interface DocsPreferencesContextValue {
+  definitions: readonly NormalizedDocsPreferenceDefinition[];
+  values: DocsPreferenceValues;
+  hydrated: boolean;
+  setValue: (
+    id: string,
+    value: string,
+    source?: DocsPreferenceChangeSource,
+  ) => void;
+  reset: (id?: string) => void;
+}
+
+export interface DocsPreferenceValue {
+  definition: NormalizedDocsPreferenceDefinition;
+  value: string;
+  hydrated: boolean;
+  setValue: (value: string, source?: DocsPreferenceChangeSource) => void;
+  reset: () => void;
 }
 
 export interface DocsApiTableItem {
@@ -718,6 +860,8 @@ export interface DocsBadgeProps {
 export interface DocsSearchProps {
   records?: readonly DocsSearchRecord[];
   searchProvider?: DocsSearchProvider;
+  /** Optional visible dialog heading. The accessible title remains available when omitted. */
+  title?: ReactNode;
   /** Curated, ordered results shown only for an empty query. An empty array opts out of provider defaults. */
   defaultResults?: readonly DocsSearchResult[];
   /** Heading for curated results. Defaults to "Recommended". */
@@ -738,8 +882,10 @@ export interface DocsSearchProps {
   onResultSelect?: (result: DocsSearchResult) => void;
   backdropSlotProps?: Record<string, unknown>;
   bodySlotProps?: Record<string, unknown>;
+  clearTriggerSlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
   headerSlotProps?: Record<string, unknown>;
+  inputGroupSlotProps?: Record<string, unknown>;
   slotProps?: Record<string, unknown>;
   positionerSlotProps?: Record<string, unknown>;
   resultBadgeSlotProps?: Record<string, unknown>;
@@ -751,6 +897,7 @@ export interface DocsSearchProps {
   triggerLabelSlotProps?: Record<string, unknown>;
   shortcutSlotProps?: Record<string, unknown>;
   inputSlotProps?: Record<string, unknown>;
+  searchIconSlotProps?: Record<string, unknown>;
   resultSlotProps?: Record<string, unknown>;
   resultRowSlotProps?: Record<string, unknown>;
   resultTitleSlotProps?: Record<string, unknown>;
@@ -833,78 +980,6 @@ type DocsKeyboardEvent = {
   preventDefault: () => void;
 };
 
-const defaultLabels: DocsLabels = {
-  search: 'Search',
-  searchPlaceholder: 'Search docs',
-  searchNoResults: 'No results found',
-  searchLoading: 'Searching…',
-  searchError: 'Search is temporarily unavailable',
-  searchPopular: 'Popular docs',
-  searchResults: 'Results',
-  allVersions: 'All versions',
-  version: 'Version',
-  allCollections: 'All docs',
-  collection: 'Collection',
-  previousPage: 'Previous',
-  nextPage: 'Next',
-  editPage: 'Edit this page',
-  onThisPage: 'On this page',
-  navigationTitle: 'Browse',
-  navigationMenu: 'Menu',
-  openNavigation: 'Open navigation',
-  closeNavigation: 'Close navigation',
-  copyCode: 'Copy code',
-  copiedCode: 'Copied',
-  copyPage: 'Copy page',
-  copyPageDescription: 'Copy page as Markdown for LLMs',
-  copiedPage: 'Copied!',
-  copyLink: 'Copy link',
-  copyLinkDescription: 'Copy a link to this page',
-  copiedLink: 'Copied!',
-  viewMarkdown: 'View as Markdown',
-  viewMarkdownDescription: 'Open this page as plain text',
-  moreActions: 'More page actions',
-  editPageDescription: 'Suggest changes to this page',
-  copyHeadingLink: 'Copy section link',
-  copiedHeadingLink: 'Copied section link',
-  feedbackPrompt: 'Was this page helpful?',
-  feedbackHelpful: 'Yes',
-  feedbackNotHelpful: 'No',
-  feedbackCommentPlaceholder: 'How could this page be improved?',
-  feedbackSubmit: 'Send feedback',
-  feedbackSubmitting: 'Sending…',
-  feedbackSubmitted: 'Thanks for your feedback.',
-  feedbackError: 'Feedback could not be sent. Please try again.',
-};
-
-const DocsContext = createContext<ChakraDocsConfig>({
-  labels: defaultLabels,
-});
-
-export function DocsProvider(props: DocsComponentProps): ReactNode {
-  const value = mergeConfig(useContext(DocsContext), props.config);
-  const children = value.codeBlock?.adapter
-    ? createElement(
-        ChakraCodeBlock.AdapterProvider,
-        { value: value.codeBlock.adapter },
-        props.children,
-      )
-    : props.children;
-
-  return createElement(DocsContext.Provider, { value }, children);
-}
-
-export function useDocsConfig(): ChakraDocsConfig {
-  const config = useContext(DocsContext);
-  return {
-    ...config,
-    labels: {
-      ...defaultLabels,
-      ...config.labels,
-    },
-  };
-}
-
 interface DocsPageActionsContextValue {
   config: ChakraDocsConfig;
   editUrl?: string;
@@ -913,7 +988,9 @@ interface DocsPageActionsContextValue {
   markdownUrl?: string;
   page?: DocsPage;
   pageUrl?: string;
+  preset: DocsPageActionsPreset;
   styles: Record<string, unknown>;
+  variant: DocsPageActionsVariant;
   portalCss: unknown;
   portalStyle: Record<string, unknown>;
 }
@@ -938,8 +1015,18 @@ export function DocsPageActionsRoot(
   props: DocsPageActionsRootProps,
 ): ReactNode {
   const config = useDocsConfig();
+  const configured = config.pageActions;
+  const preset = props.preset ?? configured?.preset ?? 'standard';
   const page = props.page;
-  const markdown = props.markdown ?? page?.body;
+  const markdown =
+    props.markdown ??
+    (page
+      ? configured?.serializeMarkdown
+        ? configured.serializeMarkdown(page)
+        : preset === 'standard'
+          ? createDocsMarkdown(page)
+          : page.body
+      : undefined);
   const pageUrl = props.pageUrl ?? resolvePageActionUrl(page, config.siteUrl);
   const markdownUrl = props.markdownUrl;
   const editUrl =
@@ -948,8 +1035,12 @@ export function DocsPageActionsRoot(
   const automaticComposition = props.children === undefined;
   const hasPrimaryAction = markdown !== undefined;
   const hasMenu = Boolean(pageUrl || markdownUrl || editUrl);
+  const requestedVariant =
+    props.variant ??
+    configured?.variant ??
+    (preset === 'standard' && automaticComposition ? 'split' : 'default');
   const effectiveVariant =
-    props.variant === 'split' &&
+    requestedVariant === 'split' &&
     (!automaticComposition || (hasPrimaryAction && hasMenu))
       ? 'split'
       : 'default';
@@ -958,7 +1049,7 @@ export function DocsPageActionsRoot(
     chakraDocsPageActionsSlotRecipe,
   );
   const styles = recipe({
-    size: props.size ?? 'md',
+    size: props.size ?? configured?.size ?? 'md',
     variant: effectiveVariant,
   });
   const context: DocsPageActionsContextValue = {
@@ -969,7 +1060,9 @@ export function DocsPageActionsRoot(
     markdownUrl,
     page,
     pageUrl,
+    preset,
     styles,
+    variant: effectiveVariant,
     portalCss: extractSlotCssVariables([styles.root, props.slotProps?.css]),
     portalStyle: extractSlotCssVariables(props.slotProps?.style) as Record<
       string,
@@ -989,7 +1082,6 @@ export function DocsPageActionsRoot(
               ? {
                   ariaLabel:
                     config.labels?.moreActions ?? defaultLabels.moreActions,
-                  indicator: createElement(PageActionsChevronIcon),
                   label: null,
                 }
               : null,
@@ -1032,7 +1124,13 @@ export function DocsPageActionsCopyPage(props: DocsPageActionProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'markdown',
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.copyPage,
+      context.preset === 'standard'
+        ? createElement(PageActionsCopyIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     indicatorSlotProps: props.indicatorSlotProps,
     label: props.label ?? labels.copyPage ?? defaultLabels.copyPage,
@@ -1062,7 +1160,13 @@ export function DocsPageActionsCopyLink(props: DocsPageActionProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     format: 'link',
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.copyLink,
+      context.preset === 'standard'
+        ? createElement(PageActionsLinkIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     indicatorSlotProps: props.indicatorSlotProps,
     label: props.label ?? labels.copyLink ?? defaultLabels.copyLink,
@@ -1094,7 +1198,13 @@ export function DocsPageActionsViewMarkdown(
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.viewMarkdown,
+      context.preset === 'standard'
+        ? createElement(PageActionsDocumentIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     label: props.label ?? labels.viewMarkdown ?? defaultLabels.viewMarkdown,
     labelSlotProps: props.labelSlotProps,
@@ -1122,7 +1232,13 @@ export function DocsPageActionsEdit(props: DocsPageActionLinkProps): ReactNode {
     ),
     descriptionSlotProps: props.descriptionSlotProps,
     href,
-    icon: props.icon,
+    icon: resolvePageActionIcon(
+      props.icon,
+      context.config.pageActions?.icons?.edit,
+      context.preset === 'standard'
+        ? createElement(PageActionsEditIcon)
+        : undefined,
+    ),
     iconSlotProps: props.iconSlotProps,
     label: props.label ?? labels.editPage ?? defaultLabels.editPage,
     labelSlotProps: props.labelSlotProps,
@@ -1136,6 +1252,13 @@ export function DocsPageActionsMenu(
   const context = useDocsPageActionsContext();
   const labels = context.config.labels ?? defaultLabels;
   const defaultLabel = labels.moreActions ?? defaultLabels.moreActions;
+  const indicator = resolvePageActionIcon(
+    props.indicator,
+    context.config.pageActions?.icons?.menuIndicator,
+    context.preset === 'standard' && context.variant === 'split'
+      ? createElement(PageActionsChevronIcon)
+      : undefined,
+  );
 
   return usePageActionsDisclosure({
     ...props,
@@ -1146,9 +1269,10 @@ export function DocsPageActionsMenu(
     label:
       props.label !== undefined
         ? props.label
-        : props.icon || props.indicator
+        : props.icon || indicator
           ? undefined
           : defaultLabel,
+    indicator,
     slots: {
       content: context.styles.menuContent,
       indicator: context.styles.menuIndicator,
@@ -1157,26 +1281,6 @@ export function DocsPageActionsMenu(
       trigger: [context.styles.trigger, context.styles.menuTrigger],
     },
   });
-}
-
-function PageActionsChevronIcon(): ReactNode {
-  return createElement(
-    'svg',
-    {
-      'aria-hidden': 'true',
-      fill: 'none',
-      height: '1em',
-      viewBox: '0 0 16 16',
-      width: '1em',
-    },
-    createElement('path', {
-      d: 'm4 6 4 4 4-4',
-      stroke: 'currentColor',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      strokeWidth: '1.5',
-    }),
-  );
 }
 
 export function DocsPageActionsSubmenu(
@@ -1190,7 +1294,13 @@ export function DocsPageActionsSubmenu(
       props.ariaLabel ??
       (typeof props.label === 'string' ? props.label : undefined),
     context,
-    indicator: props.indicator ?? '›',
+    indicator: resolvePageActionIcon(
+      props.indicator,
+      context.config.pageActions?.icons?.submenuIndicator,
+      context.preset === 'standard'
+        ? createElement(PageActionsSubmenuIcon)
+        : '›',
+    ),
     nested: true,
     slots: {
       content: context.styles.submenuContent,
@@ -1326,8 +1436,15 @@ function usePageActionsDisclosure(
       defaultOpen: props.defaultOpen,
       id: disclosureId,
       loopFocus: true,
-      onOpenChange: (details: { open: boolean }) =>
-        props.onOpenChange?.({ open: details.open }),
+      onOpenChange: (details: { open: boolean }) => {
+        if (details.open && !props.nested) {
+          emitAnalytics(props.context.config.analytics?.onPageAction, {
+            page: props.context.page,
+            action: 'menu-open',
+          });
+        }
+        props.onOpenChange?.({ open: details.open });
+      },
       open: props.open,
       positioning,
       typeahead: true,
@@ -1691,6 +1808,20 @@ function resolvePageActionDescription(
   return context.inMenu ? defaultDescription : undefined;
 }
 
+function resolvePageActionIcon(
+  instance: ReactNode | undefined,
+  configured: ReactNode | undefined,
+  fallback: ReactNode | undefined,
+): ReactNode | undefined {
+  if (instance !== undefined) {
+    return instance;
+  }
+  if (configured !== undefined) {
+    return configured;
+  }
+  return fallback;
+}
+
 function getPageActionSlotProps(
   context: DocsPageActionsContextValue,
   slotProps: Record<string, unknown> | undefined,
@@ -1776,16 +1907,7 @@ function resolvePageActionUrl(
   if (!page) {
     return undefined;
   }
-
-  if (!siteUrl) {
-    return page.route;
-  }
-
-  try {
-    return new URL(page.route, siteUrl).toString();
-  } catch {
-    return page.route;
-  }
+  return resolveDocsUrl(page.route, { siteUrl }) ?? page.route;
 }
 
 export function DocsLayout(props: DocsLayoutProps): ReactNode {
@@ -1815,6 +1937,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
             contentSlotProps: props.sidebarContentSlotProps,
             defaultExpanded: props.sidebarDefaultExpanded,
             expandedIds: props.sidebarExpandedIds,
+            indicator: props.sidebarIndicator,
             indicatorSlotProps: props.sidebarIndicatorSlotProps,
             onExpandedChange: props.onSidebarExpandedChange,
             triggerSlotProps: props.sidebarTriggerSlotProps,
@@ -1840,6 +1963,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               contentSlotProps: props.sidebarContentSlotProps,
               defaultExpanded: props.sidebarDefaultExpanded,
               expandedIds: props.sidebarExpandedIds,
+              indicator: props.sidebarIndicator,
               indicatorSlotProps: props.sidebarIndicatorSlotProps,
               onExpandedChange: props.onSidebarExpandedChange,
               triggerSlotProps: props.sidebarTriggerSlotProps,
@@ -1864,6 +1988,7 @@ export function DocsLayout(props: DocsLayoutProps): ReactNode {
               contentSlotProps: props.mobileTocContentSlotProps,
               currentSlotProps: props.mobileTocCurrentSlotProps,
               headings: props.headings,
+              indicator: props.mobileTocIndicator,
               indicatorSlotProps: props.mobileTocIndicatorSlotProps,
               itemSlotProps: props.mobileTocItemSlotProps,
               linkSlotProps: props.mobileTocLinkSlotProps,
@@ -2520,10 +2645,396 @@ export const DocsSteps = {
   Item: DocsStep,
 } as const;
 
+export interface DocsLocalPreferenceStorageOptions {
+  prefix?: string;
+  storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+}
+
+export function createDocsLocalPreferenceStorage(
+  options: DocsLocalPreferenceStorageOptions = {},
+): DocsPreferenceStorage {
+  const key = (id: string) =>
+    `${options.prefix ?? 'chakra-docs.preference'}.${id}`;
+  const storage = () => options.storage ?? globalThis.localStorage;
+
+  return {
+    get: (id) => storage().getItem(key(id)),
+    set: (id, value) => storage().setItem(key(id), value),
+    remove: (id) => storage().removeItem(key(id)),
+  };
+}
+
+const DocsPreferencesContext = createContext<
+  DocsPreferencesContextValue | undefined
+>(undefined);
+
+export function useDocsPreferences(): DocsPreferencesContextValue {
+  const context = useContext(DocsPreferencesContext);
+
+  if (!context) {
+    throw new Error(
+      'DocsPreferences components and hooks must be rendered inside DocsPreferences.Root.',
+    );
+  }
+
+  return context;
+}
+
+export function useDocsPreference(id: string): DocsPreferenceValue {
+  const context = useDocsPreferences();
+  const definition = context.definitions.find((item) => item.id === id);
+
+  if (!definition) {
+    throw new Error(`Unknown documentation preference "${id}".`);
+  }
+
+  return {
+    definition,
+    value: context.values[id] ?? definition.defaultValue,
+    hydrated: context.hydrated,
+    setValue: (value, source = 'api') => context.setValue(id, value, source),
+    reset: () => context.reset(id),
+  };
+}
+
+export function DocsPreferencesRoot(
+  props: DocsPreferencesRootProps,
+): ReactNode {
+  const docsConfig = useDocsConfig();
+  const definitions = useMemo(
+    () => normalizeDocsPreferenceDefinitions(props.definitions),
+    [props.definitions],
+  );
+  const initialValues = useMemo(
+    () => resolveDocsPreferenceValues(definitions, props.defaultValues),
+    [definitions, props.defaultValues],
+  );
+  const controlled = props.values !== undefined;
+  const controlledValues = controlled
+    ? resolveDocsPreferenceValues(definitions, props.values)
+    : undefined;
+  const [uncontrolledValues, setUncontrolledValues] =
+    useState<DocsPreferenceValues>(initialValues);
+  const values = controlledValues ?? uncontrolledValues;
+  const valuesRef = useRef(values);
+  const touchedRef = useRef(new Set<string>());
+  const onValuesChangeRef = useRef(props.onValuesChange);
+  const onPreferenceChangeRef = useRef(props.onPreferenceChange);
+  const analyticsRef = useRef(docsConfig.analytics?.onPreferenceChange);
+  const onStorageErrorRef = useRef(props.onStorageError);
+  valuesRef.current = values;
+  onValuesChangeRef.current = props.onValuesChange;
+  onPreferenceChangeRef.current = props.onPreferenceChange;
+  analyticsRef.current = docsConfig.analytics?.onPreferenceChange;
+  onStorageErrorRef.current = props.onStorageError;
+  const storage = useMemo(() => {
+    if (props.storage === 'local') {
+      return createDocsLocalPreferenceStorage({
+        prefix: props.storageKeyPrefix,
+      });
+    }
+
+    return props.storage || undefined;
+  }, [props.storage, props.storageKeyPrefix]);
+  const storageRef = useRef(storage);
+  storageRef.current = storage;
+  const [hydrated, setHydrated] = useState(!storage);
+
+  const reportStorageError = (
+    error: unknown,
+    id: string,
+    operation: 'get' | 'set' | 'remove',
+  ) => onStorageErrorRef.current?.({ error, id, operation });
+
+  const runStorageOperation = (
+    id: string,
+    operation: 'get' | 'set' | 'remove',
+    callback: () => unknown,
+  ) => {
+    try {
+      Promise.resolve(callback()).catch((error) =>
+        reportStorageError(error, id, operation),
+      );
+    } catch (error) {
+      reportStorageError(error, id, operation);
+    }
+  };
+
+  const emitPreferenceChange = (event: DocsPreferenceChangeEvent) => {
+    onPreferenceChangeRef.current?.(event);
+    if (analyticsRef.current !== onPreferenceChangeRef.current) {
+      emitAnalytics(analyticsRef.current, event);
+    }
+  };
+
+  const applyValues = (
+    nextValues: DocsPreferenceValues,
+    events: readonly DocsPreferenceChangeEvent[],
+  ) => {
+    valuesRef.current = nextValues;
+    if (!controlled) {
+      setUncontrolledValues(nextValues);
+    }
+    onValuesChangeRef.current?.(nextValues);
+    events.forEach(emitPreferenceChange);
+  };
+
+  const setValue = (
+    id: string,
+    nextValue: string,
+    source: DocsPreferenceChangeSource = 'api',
+  ) => {
+    const definition = definitions.find((item) => item.id === id);
+
+    if (!definition) {
+      throw new Error(`Unknown documentation preference "${id}".`);
+    }
+
+    const option = definition.options.find(
+      (item) => item.value === nextValue && !item.disabled,
+    );
+
+    if (!option) {
+      throw new Error(
+        `Invalid value "${nextValue}" for documentation preference "${id}".`,
+      );
+    }
+
+    const previousValue = valuesRef.current[id] ?? definition.defaultValue;
+    if (previousValue === nextValue) {
+      return;
+    }
+
+    if (source !== 'storage') {
+      touchedRef.current.add(id);
+    }
+    const nextValues = { ...valuesRef.current, [id]: nextValue };
+    applyValues(nextValues, [{ id, value: nextValue, previousValue, source }]);
+    if (source !== 'storage' && storageRef.current) {
+      const currentStorage = storageRef.current;
+      runStorageOperation(id, 'set', () => currentStorage.set(id, nextValue));
+    }
+  };
+
+  const reset = (id?: string) => {
+    const resetDefinitions = id
+      ? definitions.filter((definition) => definition.id === id)
+      : definitions;
+    if (id && resetDefinitions.length === 0) {
+      throw new Error(`Unknown documentation preference "${id}".`);
+    }
+
+    const nextValues = { ...valuesRef.current };
+    const events: DocsPreferenceChangeEvent[] = [];
+    resetDefinitions.forEach((definition) => {
+      touchedRef.current.add(definition.id);
+      const previousValue =
+        nextValues[definition.id] ?? definition.defaultValue;
+      nextValues[definition.id] = definition.defaultValue;
+      if (previousValue !== definition.defaultValue) {
+        events.push({
+          id: definition.id,
+          value: definition.defaultValue,
+          previousValue,
+          source: 'reset',
+        });
+      }
+      const currentStorage = storageRef.current;
+      if (currentStorage) {
+        const operation = currentStorage.remove ? 'remove' : 'set';
+        runStorageOperation(definition.id, operation, () =>
+          currentStorage.remove
+            ? currentStorage.remove(definition.id)
+            : currentStorage.set(definition.id, definition.defaultValue),
+        );
+      }
+    });
+    if (events.length > 0) {
+      applyValues(nextValues, events);
+    }
+  };
+
+  useEffect(() => {
+    if (!storage) {
+      setHydrated(true);
+      return;
+    }
+
+    let active = true;
+    setHydrated(false);
+    void Promise.all(
+      definitions.map(async (definition) => {
+        try {
+          return [definition, await storage.get(definition.id)] as const;
+        } catch (error) {
+          reportStorageError(error, definition.id, 'get');
+          return [definition, undefined] as const;
+        }
+      }),
+    ).then((stored) => {
+      if (!active) return;
+      const nextValues = { ...valuesRef.current };
+      const events: DocsPreferenceChangeEvent[] = [];
+      stored.forEach(([definition, candidate]) => {
+        if (touchedRef.current.has(definition.id)) return;
+        const option = definition.options.find(
+          (item) => item.value === candidate && !item.disabled,
+        );
+        if (!option) return;
+        const previousValue =
+          nextValues[definition.id] ?? definition.defaultValue;
+        if (previousValue === option.value) return;
+        nextValues[definition.id] = option.value;
+        events.push({
+          id: definition.id,
+          value: option.value,
+          previousValue,
+          source: 'storage',
+        });
+      });
+      if (events.length > 0) {
+        applyValues(nextValues, events);
+      }
+      setHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [definitions, storage]);
+
+  return createElement(
+    DocsPreferencesContext.Provider,
+    { value: { definitions, values, hydrated, setValue, reset } },
+    props.children,
+  );
+}
+
+export function DocsPreferenceSelect(
+  props: DocsPreferenceSelectProps,
+): ReactNode {
+  const preference = useDocsPreference(props.preference);
+  const id = useId();
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.preferences,
+    chakraDocsPreferencesSlotRecipe,
+  );
+  const styles = recipe({ labelHidden: props.labelHidden ?? false });
+
+  return createElement(
+    Box,
+    mergeSlotStyleProps(styles.root, props.slotProps),
+    createElement(
+      Text,
+      {
+        ...mergeSlotStyleProps(styles.label, props.labelSlotProps),
+        as: 'label',
+        htmlFor: id,
+      },
+      props.label ?? preference.definition.label ?? preference.definition.id,
+    ),
+    createElement(
+      NativeSelect.Root,
+      {
+        ...mergeSlotStyleProps(styles.control, props.controlSlotProps),
+        unstyled: true,
+      },
+      createElement(
+        NativeSelect.Field,
+        {
+          ...mergeSlotStyleProps(styles.select, props.selectSlotProps),
+          id,
+          value: preference.value,
+          onChange: (event: DocsInputChangeEvent) =>
+            preference.setValue(event.currentTarget.value, 'selector'),
+        },
+        ...preference.definition.options.map((option) =>
+          createElement(
+            'option',
+            {
+              key: option.value,
+              value: option.value,
+              disabled: option.disabled,
+            },
+            option.label ?? option.value,
+          ),
+        ),
+      ),
+      createElement(NativeSelect.Indicator, {
+        ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
+        'aria-hidden': true,
+      }),
+    ),
+  );
+}
+
+export function DocsPreferenceWhen(props: DocsPreferenceWhenProps): ReactNode {
+  const preference = useDocsPreference(props.preference);
+  const values = Array.isArray(props.value) ? props.value : [props.value];
+  const selected = values.includes(preference.value);
+  const recipe = useChakraDocsSlotRecipe(
+    chakraDocsRecipeKeys.preferences,
+    chakraDocsPreferencesSlotRecipe,
+  );
+  const styles = recipe();
+
+  if (props.unmountOnExit && !selected) {
+    return props.fallback ?? null;
+  }
+
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      Box,
+      {
+        ...mergeSlotStyleProps(styles.content, props.slotProps),
+        hidden: !selected,
+      },
+      props.children,
+    ),
+    !selected && props.fallback
+      ? createElement(
+          Box,
+          mergeSlotStyleProps(styles.content, props.fallbackSlotProps),
+          props.fallback,
+        )
+      : null,
+  );
+}
+
+export const DocsPreferences = {
+  Root: DocsPreferencesRoot,
+  Select: DocsPreferenceSelect,
+  When: DocsPreferenceWhen,
+} as const;
+
 interface DocsTabsContextValue {
   recipe: (props?: Record<string, unknown>) => Record<string, unknown>;
   styles: Record<string, unknown>;
   value: string;
+}
+
+function getDocsTabsValues(children: ReactNode): readonly string[] {
+  const values = new Set<string>();
+  const visit = (nodes: ReactNode) => {
+    Children.forEach(nodes, (child) => {
+      if (!isValidElement(child)) return;
+      const childProps = child.props as {
+        value?: unknown;
+        children?: ReactNode;
+      };
+      if (
+        (child.type === DocsTabsTrigger || child.type === DocsTabsContent) &&
+        typeof childProps.value === 'string'
+      ) {
+        values.add(childProps.value);
+      }
+      visit(childProps.children);
+    });
+  };
+  visit(children);
+  return [...values];
 }
 
 const DocsTabsContext = createContext<DocsTabsContextValue | undefined>(
@@ -2548,11 +3059,57 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
     chakraDocsTabsSlotRecipe,
   );
   const styles = recipe();
-  const controlled = props.value !== undefined;
+  const preferences = useContext(DocsPreferencesContext);
+  if (props.preference && props.value !== undefined) {
+    throw new Error(
+      'DocsTabs.Root cannot use both preference and controlled value props.',
+    );
+  }
+  if (props.preference && props.syncKey) {
+    throw new Error(
+      'DocsTabs.Root cannot use both preference and syncKey; the preference already synchronizes groups.',
+    );
+  }
+  const preferenceDefinition = props.preference
+    ? preferences?.definitions.find(
+        (definition) => definition.id === props.preference,
+      )
+    : undefined;
+  if (props.preference && !preferences) {
+    throw new Error(
+      'DocsTabs.Root preference requires an ancestor DocsPreferences.Root.',
+    );
+  }
+  if (props.preference && !preferenceDefinition) {
+    throw new Error(`Unknown documentation preference "${props.preference}".`);
+  }
+  const tabValues = useMemo(
+    () => getDocsTabsValues(props.children),
+    [props.children],
+  );
+  const preferredValue = props.preference
+    ? preferences?.values[props.preference]
+    : undefined;
+  const localFallback =
+    (props.defaultValue && tabValues.includes(props.defaultValue)
+      ? props.defaultValue
+      : undefined) ??
+    (preferenceDefinition &&
+    tabValues.includes(preferenceDefinition.defaultValue)
+      ? preferenceDefinition.defaultValue
+      : tabValues[0]) ??
+    '';
+  const preferenceValue = props.preference
+    ? preferredValue && tabValues.includes(preferredValue)
+      ? preferredValue
+      : localFallback
+    : undefined;
+  const controlled =
+    props.value !== undefined || props.preference !== undefined;
   const [uncontrolledValue, setUncontrolledValue] = useState<string>(
     props.defaultValue ?? '',
   );
-  const value = props.value ?? uncontrolledValue;
+  const value = props.value ?? preferenceValue ?? uncontrolledValue;
   const valueRef = useRef(value);
   const onValueChangeRef = useRef(props.onValueChange);
   valueRef.current = value;
@@ -2596,7 +3153,9 @@ export function DocsTabsRoot(props: DocsTabsRootProps): ReactNode {
     valueRef.current = nextValue;
     props.onValueChange?.(nextValue);
 
-    if (props.syncKey) {
+    if (props.preference) {
+      preferences?.setValue(props.preference, nextValue, 'tabs');
+    } else if (props.syncKey) {
       publishDocsTabsSyncValue(props.syncKey, nextValue);
     }
   };
@@ -2921,6 +3480,7 @@ export function DocsSidebar(props: DocsSidebarProps): ReactNode {
       contentSlotProps: props.contentSlotProps,
       childrenSlotProps: props.childrenSlotProps,
       expandedIds: new Set(expandedIds),
+      indicator: props.indicator ?? config.icons?.sidebarIndicator,
       indicatorSlotProps: props.indicatorSlotProps,
       itemSlotProps: props.itemSlotProps,
       linkSlotProps: props.linkSlotProps,
@@ -3458,7 +4018,9 @@ export function DocsMobileTableOfContents(
           'aria-hidden': 'true',
           ...mergeSlotStyleProps(styles.indicator, props.indicatorSlotProps),
         },
-        '⌄',
+        props.indicator ??
+          config.icons?.mobileTocIndicator ??
+          createElement(PageActionsChevronIcon),
       ),
     ),
     createElement(
@@ -3828,7 +4390,8 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     chakraDocsRecipeKeys.search,
     chakraDocsSearchSlotRecipe,
   );
-  const styles = recipe();
+  const visibleHeader = props.title != null;
+  const styles = recipe({ visibleHeader });
 
   if (!remoteRequesterRef.current) {
     remoteRequesterRef.current = createRemoteSearchRequester((state) => {
@@ -4098,29 +4661,73 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
             createElement(
               Dialog.Title,
               mergeSlotStyleProps(styles.title, props.titleSlotProps),
-              labels.search,
+              props.title ?? labels.search,
             ),
           ),
           createElement(
             Dialog.Body,
             mergeSlotStyleProps(styles.body, props.bodySlotProps),
-            createElement(Input, {
-              ref: inputRef,
-              'aria-label': labels.search,
-              role: 'combobox',
-              'aria-autocomplete': 'list',
-              'aria-haspopup': 'listbox',
-              'aria-expanded': open,
-              'aria-controls': resultsId,
-              'aria-activedescendant': activeResultId,
-              autoComplete: 'off',
-              onChange: (event: DocsInputChangeEvent) =>
-                setQuery(event.currentTarget.value),
-              onKeyDown: onInputKeyDown,
-              placeholder: props.placeholder ?? labels.searchPlaceholder,
-              value: query,
-              ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
-            }),
+            createElement(
+              InputGroup,
+              {
+                ...mergeSlotStyleProps(
+                  styles.inputGroup,
+                  props.inputGroupSlotProps,
+                ),
+                startElement: createElement(
+                  Box,
+                  mergeSlotStyleProps(
+                    styles.searchIcon,
+                    props.searchIconSlotProps,
+                  ),
+                  createElement(SearchMagnifierIcon),
+                ),
+                endElement: query
+                  ? createElement(
+                      IconButton,
+                      {
+                        'aria-label':
+                          labels.clearSearch ?? defaultLabels.clearSearch,
+                        size: 'sm',
+                        variant: 'ghost',
+                        ...mergeSlotStyleProps(
+                          styles.clearTrigger,
+                          props.clearTriggerSlotProps,
+                        ),
+                        onClick: (event: unknown) => {
+                          (
+                            props.clearTriggerSlotProps?.onClick as
+                              ((event: unknown) => void) | undefined
+                          )?.(event);
+                          setQuery('');
+                          setActiveIndex(0);
+                          inputRef.current?.focus();
+                        },
+                      },
+                      createElement(SearchClearIcon),
+                    )
+                  : undefined,
+                endElementProps: { pointerEvents: 'auto' },
+              },
+              createElement(Input, {
+                ref: inputRef,
+                'aria-label': labels.search,
+                role: 'combobox',
+                type: 'search',
+                'aria-autocomplete': 'list',
+                'aria-haspopup': 'listbox',
+                'aria-expanded': open,
+                'aria-controls': resultsId,
+                'aria-activedescendant': activeResultId,
+                autoComplete: 'off',
+                onChange: (event: DocsInputChangeEvent) =>
+                  setQuery(event.currentTarget.value),
+                onKeyDown: onInputKeyDown,
+                placeholder: props.placeholder ?? labels.searchPlaceholder,
+                value: query,
+                ...mergeSlotStyleProps(styles.input, props.inputSlotProps),
+              }),
+            ),
             createElement(
               Box,
               {
@@ -4653,6 +5260,16 @@ export function DocsPagination(props: DocsPaginationProps): ReactNode {
 export interface CalloutProps extends DocsComponentProps {
   type?: 'info' | 'warning' | 'success' | 'danger';
   title?: string;
+  /** Optional leading icon or custom component. Set decorative icons' aria-hidden attribute on the icon itself. */
+  icon?: ReactNode;
+  /** Leading component. Overrides icon when provided; null explicitly hides the leading slot. */
+  left?: ReactNode;
+  /** Trailing component, such as an action button or status badge. */
+  right?: ReactNode;
+  iconSlotProps?: Record<string, unknown>;
+  leftSlotProps?: Record<string, unknown>;
+  rightSlotProps?: Record<string, unknown>;
+  bodySlotProps?: Record<string, unknown>;
   contentSlotProps?: Record<string, unknown>;
   titleSlotProps?: Record<string, unknown>;
 }
@@ -4663,165 +5280,47 @@ export function Callout(props: CalloutProps): ReactNode {
     chakraDocsCalloutSlotRecipe,
   );
   const styles = recipe({ status: props.type ?? 'info' });
+  const left = props.left !== undefined ? props.left : props.icon;
 
   return createElement(
     Box,
     mergeSlotStyleProps(styles.root, props.slotProps),
-    props.title
+    left != null && left !== false
       ? createElement(
-          Text,
-          mergeSlotStyleProps(styles.title, props.titleSlotProps),
-          props.title,
+          Box,
+          mergeSlotStyleProps(styles.left, props.leftSlotProps),
+          props.left !== undefined
+            ? left
+            : createElement(
+                Box,
+                mergeSlotStyleProps(styles.icon, props.iconSlotProps),
+                props.icon,
+              ),
         )
       : null,
     createElement(
       Box,
-      mergeSlotStyleProps(styles.content, props.contentSlotProps),
-      props.children,
+      mergeSlotStyleProps(styles.body, props.bodySlotProps),
+      props.title
+        ? createElement(
+            Text,
+            mergeSlotStyleProps(styles.title, props.titleSlotProps),
+            props.title,
+          )
+        : null,
+      createElement(
+        Box,
+        mergeSlotStyleProps(styles.content, props.contentSlotProps),
+        props.children,
+      ),
     ),
-  );
-}
-
-export interface CodeBlockProps extends DocsComponentProps {
-  code?: string;
-  /** Marks this block as a package command for successful-copy analytics. */
-  packageManager?: string;
-  copy?: boolean;
-  highlightLines?: number[] | string;
-  language?: string;
-  lineNumbers?: boolean;
-  maxHeight?: number | string;
-  size?: ChakraDocsCodeBlockSize;
-  title?: string;
-  variant?: ChakraDocsCodeBlockVariant;
-  wrap?: boolean;
-  codeSlotProps?: Record<string, unknown>;
-  codeTextSlotProps?: Record<string, unknown>;
-  contentSlotProps?: Record<string, unknown>;
-  controlSlotProps?: Record<string, unknown>;
-  copyIndicatorSlotProps?: Record<string, unknown>;
-  copyTriggerSlotProps?: Record<string, unknown>;
-  headerSlotProps?: Record<string, unknown>;
-  languageSlotProps?: Record<string, unknown>;
-  titleSlotProps?: Record<string, unknown>;
-}
-
-export function CodeBlock(props: CodeBlockProps): ReactNode {
-  const config = useDocsConfig();
-  const code = props.code ?? getCodeText(props.children);
-  const codeBlockConfig = config.codeBlock ?? {};
-  const copy = props.copy ?? codeBlockConfig.copy ?? true;
-  const lineNumbers = props.lineNumbers ?? codeBlockConfig.lineNumbers ?? false;
-  const size = props.size ?? codeBlockConfig.size;
-  const variant = props.variant ?? codeBlockConfig.variant;
-  const wrap = props.wrap ?? codeBlockConfig.wrap ?? false;
-  const copyLabel = config.labels?.copyCode ?? defaultLabels.copyCode;
-  const copiedLabel = config.labels?.copiedCode ?? defaultLabels.copiedCode;
-  const hasHeader = Boolean(props.title || props.language || (code && copy));
-  const recipe = useChakraDocsSlotRecipe(
-    chakraDocsRecipeKeys.codeBlock,
-    chakraDocsCodeBlockSlotRecipe,
-  );
-  const styles = recipe({ variant });
-
-  return createElement(
-    ChakraCodeBlock.Root,
-    {
-      code,
-      language: props.language,
-      meta: {
-        highlightLines: parseHighlightedLines(props.highlightLines),
-        showLineNumbers: lineNumbers,
-        wordWrap: wrap,
-      },
-      size,
-      ...mergeSlotStyleProps(styles.root, props.slotProps),
-      onCopy:
-        code && copy
-          ? () => {
-              emitAnalytics(config.analytics?.onCodeCopy, {
-                code,
-                language: props.language,
-                title: props.title,
-              });
-              if (props.packageManager) {
-                emitAnalytics(config.analytics?.onPackageCommandCopy, {
-                  command: code,
-                  manager: props.packageManager,
-                });
-              }
-              (props.slotProps?.onCopy as (() => void) | undefined)?.();
-            }
-          : undefined,
-    },
-    hasHeader
+    props.right != null && props.right !== false
       ? createElement(
-          ChakraCodeBlock.Header,
-          mergeSlotStyleProps(styles.header, props.headerSlotProps),
-          props.title || props.language
-            ? createElement(
-                ChakraCodeBlock.Title,
-                mergeSlotStyleProps(styles.title, props.titleSlotProps),
-                props.title ?? props.language,
-              )
-            : null,
-          createElement(
-            ChakraCodeBlock.Control,
-            mergeSlotStyleProps(styles.control, props.controlSlotProps),
-            props.title && props.language
-              ? createElement(
-                  Badge,
-                  mergeSlotStyleProps(styles.language, props.languageSlotProps),
-                  props.language,
-                )
-              : null,
-            code && copy
-              ? createElement(
-                  ChakraCodeBlock.CopyTrigger,
-                  {
-                    type: 'button',
-                    'aria-label': copyLabel,
-                    ...mergeSlotStyleProps(
-                      styles.copyTrigger,
-                      props.copyTriggerSlotProps,
-                    ),
-                  },
-                  createElement(
-                    ChakraCodeBlock.CopyIndicator,
-                    {
-                      copied: copiedLabel,
-                      ...mergeSlotStyleProps(
-                        styles.copyIndicator,
-                        props.copyIndicatorSlotProps,
-                      ),
-                    },
-                    copyLabel,
-                  ),
-                )
-              : null,
-          ),
+          Box,
+          mergeSlotStyleProps(styles.right, props.rightSlotProps),
+          props.right,
         )
       : null,
-    createElement(
-      ChakraCodeBlock.Content,
-      mergeSlotStyleProps(
-        [
-          styles.content,
-          props.maxHeight === undefined
-            ? undefined
-            : { maxHeight: props.maxHeight, overflowY: 'auto' },
-        ],
-        props.contentSlotProps,
-      ),
-      createElement(
-        ChakraCodeBlock.Code,
-        mergeSlotStyleProps(styles.code, props.codeSlotProps),
-        createElement(
-          ChakraCodeBlock.CodeText,
-          mergeSlotStyleProps(styles.codeText, props.codeTextSlotProps),
-        ),
-      ),
-    ),
   );
 }
 
@@ -4979,50 +5478,6 @@ function normalizeCodeLanguage(
   return language;
 }
 
-function parseHighlightedLines(value: number[] | string | undefined): number[] {
-  if (Array.isArray(value)) {
-    return [
-      ...new Set(value.filter((line) => Number.isInteger(line) && line > 0)),
-    ];
-  }
-
-  const lines = new Set<number>();
-
-  for (const part of value?.split(',') ?? []) {
-    const [startValue, endValue] = part.trim().split('-');
-    const start = Number(startValue);
-    const end = Number(endValue ?? startValue);
-
-    if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
-
-    for (
-      let line = Math.max(1, start);
-      line <= Math.min(end, start + 500);
-      line += 1
-    ) {
-      lines.add(line);
-    }
-  }
-
-  return [...lines];
-}
-
-function getCodeText(children: ReactNode): string {
-  if (typeof children === 'string') {
-    return children;
-  }
-
-  if (typeof children === 'number') {
-    return String(children);
-  }
-
-  if (Array.isArray(children)) {
-    return children.map((child) => getCodeText(child)).join('');
-  }
-
-  return '';
-}
-
 function DocsLink(props: DocsLinkProps): ReactNode {
   const config = useDocsConfig();
   const LinkComponent = config.linkComponent;
@@ -5057,6 +5512,7 @@ function NavList(props: {
   contentSlotProps?: Record<string, unknown>;
   childrenSlotProps?: Record<string, unknown>;
   expandedIds: ReadonlySet<string>;
+  indicator?: ReactNode;
   indicatorSlotProps?: Record<string, unknown>;
   itemSlotProps?: Record<string, unknown>;
   linkSlotProps?: Record<string, unknown>;
@@ -5105,7 +5561,7 @@ function NavList(props: {
                   'aria-hidden': 'true',
                   'data-state': expanded ? 'open' : 'closed',
                 },
-                '›',
+                props.indicator ?? createElement(PageActionsSubmenuIcon),
               )
             : null;
         const disclosureTrigger =
@@ -5196,6 +5652,7 @@ function NavList(props: {
                   contentSlotProps: props.contentSlotProps,
                   childrenSlotProps: props.childrenSlotProps,
                   expandedIds: props.expandedIds,
+                  indicator: props.indicator,
                   indicatorSlotProps: props.indicatorSlotProps,
                   itemSlotProps: props.itemSlotProps,
                   items: children,
@@ -5248,27 +5705,4 @@ function mergeComponentSlotProps(
 
 function flattenNav(items: DocsNavItem[]): DocsNavItem[] {
   return items.flatMap((item) => [item, ...flattenNav(item.children ?? [])]);
-}
-
-function mergeConfig(
-  inherited: ChakraDocsConfig,
-  next: ChakraDocsConfig | undefined,
-): ChakraDocsConfig {
-  return {
-    ...inherited,
-    ...next,
-    codeBlock: {
-      ...inherited.codeBlock,
-      ...next?.codeBlock,
-    },
-    layout: {
-      ...inherited.layout,
-      ...next?.layout,
-    },
-    labels: {
-      ...defaultLabels,
-      ...inherited.labels,
-      ...next?.labels,
-    },
-  };
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Highlighter } from 'shiki';
+import type { Highlighter, ThemeRegistration } from 'shiki';
 import {
   createChakraDocsShikiAdapter,
   chakraDocsShikiLanguages,
@@ -99,6 +99,68 @@ describe('createChakraDocsShikiAdapter', () => {
         'text/html',
       );
       expect(document.body.textContent).toBe(code);
+    }
+  });
+
+  it('accepts custom light and dark themes and preserves the authored source', async () => {
+    const theme = (name: string, color: string): ThemeRegistration => ({
+      name,
+      type: 'dark',
+      colors: {
+        'editor.background': '#000000',
+        'editor.foreground': '#eeeeee',
+      },
+      tokenColors: [
+        { scope: ['keyword', 'storage'], settings: { foreground: color } },
+      ],
+    });
+    const adapter = create({
+      languages: ['typescript'],
+      themes: {
+        light: theme('custom-light', '#aabbcc'),
+        dark: theme('custom-dark', '#ccbbaa'),
+      },
+    });
+    const highlight = adapter.getHighlighter(await adapter.loadContext());
+    const code = 'const value = "<script>";\n';
+    for (const [colorScheme, color] of [
+      ['light', '#AABBCC'],
+      ['dark', '#CCBBAA'],
+    ]) {
+      const result = highlight({
+        code,
+        language: 'typescript',
+        meta: { colorScheme },
+      });
+      expect(result.highlighted).toBe(true);
+      expect(result.code.toUpperCase()).toContain(color);
+      expect(
+        new DOMParser().parseFromString(result.code, 'text/html').body
+          .textContent,
+      ).toBe(code);
+    }
+  });
+
+  it('shares one custom theme between schemes and supports mixed built-in themes', async () => {
+    const custom: ThemeRegistration = {
+      name: 'shared-custom',
+      colors: {
+        'editor.foreground': '#abcdef',
+        'editor.background': '#000000',
+      },
+      tokenColors: [],
+    };
+    for (const light of [custom, 'github-light'] as const) {
+      const adapter = create({
+        languages: [],
+        themes: { light, dark: custom },
+      });
+      const highlight = adapter.getHighlighter(await adapter.loadContext());
+      for (const colorScheme of ['light', 'dark']) {
+        expect(
+          highlight({ code: '<text>', meta: { colorScheme } }).highlighted,
+        ).toBe(true);
+      }
     }
   });
 

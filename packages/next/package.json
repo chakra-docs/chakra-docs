@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/next",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Next.js App and Pages Router integration for Chakra Docs documentation sites.",
   "keywords": [
     "chakra-ui",
@@ -46,7 +46,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepack": "npm exec nx -- run @chakra-docs/next:build --skipNxCache --outputStyle=static"
+    "prepack": "nx run @chakra-docs/next:build --skipNxCache --outputStyle=static"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -87,12 +87,12 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.2.0",
-    "@chakra-docs/search": "0.2.0",
+    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/search": "0.3.0",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "next": ">=15.5.24 <16 || >=16.3.3 <17",
+    "next": ">=15.5.24 <16 || >=16.3.6 <17",
     "react": ">=18 <20",
     "react-dom": ">=18 <20"
   },
@@ -110,7 +110,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/next#readme",
+  "homepage": "https://chakra-docs.dev/docs/pages-router",
   "nx": {
     "tags": [
       "layer:adapter",

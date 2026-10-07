@@ -49,6 +49,11 @@ import type {
 } from './heading-scroll.js';
 import { activateSearchResult } from './search-activation.js';
 import type { DocsAnchorClickEvent } from './search-activation.js';
+import { CodeBlock as StandaloneCodeBlock } from './code-block.js';
+import {
+  DocsProvider as StandaloneProvider,
+  useDocsConfig as useStandaloneConfig,
+} from './provider.js';
 
 // The workspace resolves modules with `nodenext`, which cannot follow the
 // extensionless re-export chain in @chakra-ui/react's type declarations, so
@@ -650,6 +655,7 @@ describe('DocsLayout', () => {
         sidebarCollapsible: true,
         sidebarDefaultExpanded: 'active',
         sidebarContentSlotProps: { 'data-sidebar-content': 'custom' },
+        sidebarIndicator: createElement('span', null, 'Expand section'),
         sidebarIndicatorSlotProps: { 'data-sidebar-indicator': 'custom' },
         sidebarTriggerSlotProps: { 'data-sidebar-trigger': 'custom' },
       }),
@@ -660,6 +666,7 @@ describe('DocsLayout', () => {
     expect(markup.match(/data-sidebar-trigger="custom"/g)).toHaveLength(2);
     expect(markup.match(/data-sidebar-indicator="custom"/g)).toHaveLength(2);
     expect(markup.match(/data-sidebar-content="custom"/g)).toHaveLength(2);
+    expect(markup.match(/Expand section/g)).toHaveLength(2);
   });
 
   it('supports explicit and controlled expansion state', () => {
@@ -707,6 +714,8 @@ describe('DocsLayout', () => {
 
     expect(markup).toContain('href="/docs/guides"');
     expect(markup).toContain('aria-label="Expand Guides"');
+    expect(markup).toContain('<svg aria-hidden="true"');
+    expect(markup).not.toContain('>›<');
   });
 
   it('uses mobile navigation by default and supports opting out', () => {
@@ -830,7 +839,7 @@ describe('DocsPageActions', () => {
     expect(markup).toContain('Suggest changes to this page');
   });
 
-  it('renders a complete compact split composition without children', () => {
+  it('renders the standard compact split composition without children', () => {
     const page = {
       ...createPage('/docs/split', 'Split'),
       body: '# Split actions',
@@ -842,14 +851,62 @@ describe('DocsPageActions', () => {
         createElement(DocsPageActions.Root, {
           markdownUrl: '/docs/split.md',
           page,
-          variant: 'split',
         }),
       ),
     );
 
     expect(markup).toContain('aria-label="More page actions"');
     expect(markup).toContain('viewBox="0 0 16 16"');
+    expect(markup).toContain('M11 5V3.5');
+    expect(markup).toContain('m4 6 4 4 4-4');
     expect(markup).not.toContain('>More page actions<');
+  });
+
+  it('keeps the previous text-only composition available as the minimal preset', () => {
+    const page = {
+      ...createPage('/docs/minimal', 'Minimal'),
+      body: '# Minimal actions',
+    };
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { siteUrl: 'https://docs.example.com' } },
+        createElement(DocsPageActions.Root, { page, preset: 'minimal' }),
+      ),
+    );
+
+    expect(markup).toContain('>More page actions<');
+    expect(markup).not.toContain('<svg');
+  });
+
+  it('supports provider icon overrides and per-action icon opt-out', () => {
+    const providerIcon = createElement('span', { 'data-provider-icon': true });
+    const configured = render(
+      createElement(
+        DocsProvider,
+        { config: { pageActions: { icons: { copyPage: providerIcon } } } },
+        createElement(
+          DocsPageActions.Root,
+          { markdown: '# Configured' },
+          createElement(DocsPageActions.CopyPage),
+        ),
+      ),
+    );
+    expect(configured).toContain('data-provider-icon="true"');
+
+    const optedOut = render(
+      createElement(
+        DocsProvider,
+        { config: { pageActions: { icons: { copyPage: providerIcon } } } },
+        createElement(
+          DocsPageActions.Root,
+          { markdown: '# No icon' },
+          createElement(DocsPageActions.CopyPage, { icon: null }),
+        ),
+      ),
+    );
+    expect(optedOut).not.toContain('data-provider-icon');
+    expect(optedOut).not.toContain('<svg');
   });
 
   it('keeps a visible menu label when a split composition has no primary', () => {
@@ -1186,6 +1243,7 @@ describe('DocsMobileTableOfContents', () => {
     const markup = render(
       createElement(DocsMobileTableOfContents, {
         headings,
+        indicator: createElement('span', null, 'Toggle contents'),
         triggerSlotProps: { 'data-mobile-toc-trigger': 'custom' },
       }),
     );
@@ -1193,6 +1251,7 @@ describe('DocsMobileTableOfContents', () => {
     expect(markup).toContain('<details');
     expect(markup).toContain('<summary');
     expect(markup).toContain('data-mobile-toc-trigger="custom"');
+    expect(markup).toContain('Toggle contents');
     expect(markup).toContain('href="#overview"');
     expect(markup).toContain('href="#install"');
   });
@@ -1210,6 +1269,8 @@ describe('DocsMobileTableOfContents', () => {
     );
 
     expect(enabled).toContain('<details');
+    expect(enabled).toContain('<svg aria-hidden="true"');
+    expect(enabled).not.toContain('>⌄<');
     expect(disabled).not.toContain('<details');
     expect(disabled).toContain('Body');
   });
@@ -1290,7 +1351,7 @@ describe('Callout', () => {
     expect(markup).toContain('Callout body');
   });
 
-  it('defaults to the info palette', () => {
+  it('defaults to the info status', () => {
     const info = render(
       createElement(Callout, { type: 'info', title: 'T' }, 'B'),
     );
@@ -1299,12 +1360,58 @@ describe('Callout', () => {
     expect(implicit).toBe(info);
   });
 
-  it('applies a distinct palette per type', () => {
+  it('uses the same neutral palette for every type by default', () => {
     const markups = types.map((type) =>
       render(createElement(Callout, { type, title: 'T' }, 'B')),
     );
 
-    expect(new Set(markups).size).toBe(types.length);
+    expect(new Set(markups).size).toBe(1);
+  });
+
+  it('still supports status-specific theme foreground overrides', () => {
+    const system = createSystem(defaultConfig, chakraDocsThemeConfig, {
+      theme: {
+        slotRecipes: {
+          [chakraDocsRecipeKeys.callout]: {
+            slots: [
+              'root',
+              'left',
+              'icon',
+              'body',
+              'right',
+              'title',
+              'content',
+            ],
+            variants: {
+              status: { warning: { root: { color: 'purple.500' } } },
+            },
+          },
+        },
+      },
+    });
+    const markup = renderWithStyles(
+      createElement(Callout, { type: 'warning' }, 'Custom warning'),
+      system,
+    );
+    expect(markup).toContain('color:var(--chakra-colors-purple-500)');
+    expect(markup).toContain('border-color:currentColor');
+  });
+
+  it('allows host foreground and background overrides without losing the currentColor border', () => {
+    const markup = renderWithStyles(
+      createElement(
+        Callout,
+        {
+          slotProps: {
+            style: { color: '#123456', backgroundColor: '#fedcba' },
+          },
+        },
+        'Custom palette',
+      ),
+    );
+    expect(markup).toContain('border-color:currentColor');
+    expect(markup).toContain('background:var(--chakra-colors-transparent)');
+    expect(markup).toContain('color:#123456;background-color:#fedcba');
   });
 
   it('omits the title element when no title is provided', () => {
@@ -1313,9 +1420,234 @@ describe('Callout', () => {
     expect(markup).toContain('Only body');
     expect(markup).not.toContain('<p');
   });
+
+  it('renders a custom leading component before the title and content, with independent slot overrides', () => {
+    function CustomIndicator() {
+      return createElement(
+        'span',
+        { 'aria-label': 'Compatibility information' },
+        'i',
+      );
+    }
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          title: 'Compatibility',
+          icon: createElement(CustomIndicator),
+          iconSlotProps: {
+            'data-testid': 'callout-icon',
+            style: { marginTop: '2px' },
+          },
+          bodySlotProps: { 'data-testid': 'callout-body' },
+          titleSlotProps: { 'data-testid': 'callout-title' },
+          contentSlotProps: { 'data-testid': 'callout-content' },
+        },
+        'Use the app directory.',
+      ),
+    );
+    expect(markup).toContain('data-testid="callout-icon"');
+    expect(markup).toContain('margin-top:2px');
+    expect(markup).toContain('aria-label="Compatibility information"');
+    expect(markup).toContain('data-testid="callout-body"');
+    expect(markup).toContain('data-testid="callout-title"');
+    expect(markup).toContain('data-testid="callout-content"');
+    expect(markup.indexOf('Compatibility information')).toBeLessThan(
+      markup.indexOf('callout-title'),
+    );
+    expect(markup.indexOf('callout-title')).toBeLessThan(
+      markup.indexOf('Use the app directory.'),
+    );
+  });
+
+  it('renders left, body and right components in order with independent styling and accessible actions', () => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          title: 'Compatibility',
+          left: createElement('svg', {
+            'aria-hidden': 'true',
+            'data-testid': 'leading-svg',
+          }),
+          right: createElement(
+            'button',
+            { type: 'button', 'aria-label': 'View guide' },
+            'Guide',
+          ),
+          leftSlotProps: {
+            'data-testid': 'callout-left',
+            style: { marginTop: '3px' },
+          },
+          bodySlotProps: { 'data-testid': 'callout-body' },
+          rightSlotProps: {
+            'data-testid': 'callout-right',
+            style: { alignSelf: 'center' },
+          },
+        },
+        createElement('a', { href: '/guide' }, 'Read the documentation'),
+      ),
+    );
+    expect(markup).toContain('data-testid="callout-left"');
+    expect(markup).toContain('margin-top:3px');
+    expect(markup).toContain('align-self:center');
+    expect(markup).toContain('aria-label="View guide"');
+    expect(markup.indexOf('callout-left')).toBeLessThan(
+      markup.indexOf('callout-body'),
+    );
+    expect(markup.indexOf('callout-body')).toBeLessThan(
+      markup.indexOf('callout-right'),
+    );
+    expect(markup).toContain('href="/guide"');
+    expect(markup).not.toContain('callout-icon');
+  });
+
+  it('uses left instead of icon when both are supplied', () => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          icon: 'Fallback icon',
+          left: 'Leading component',
+        },
+        'Body',
+      ),
+    );
+    expect(markup).toContain('Leading component');
+    expect(markup).not.toContain('Fallback icon');
+  });
+
+  it.each([null, false])('lets left=%s suppress the icon fallback', (left) => {
+    const markup = render(
+      createElement(
+        Callout,
+        {
+          left,
+          icon: 'Fallback icon',
+          leftSlotProps: { 'data-testid': 'callout-left' },
+        },
+        'Body',
+      ),
+    );
+    expect(markup).not.toContain('callout-left');
+    expect(markup).not.toContain('Fallback icon');
+  });
+
+  it.each([undefined, null, false])(
+    'does not render empty side slots for %s',
+    (side) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            left: side,
+            right: side,
+            leftSlotProps: { 'data-testid': 'callout-left' },
+            rightSlotProps: { 'data-testid': 'callout-right' },
+            bodySlotProps: { 'data-testid': 'callout-body' },
+          },
+          'Body',
+        ),
+      );
+      expect(markup).not.toContain('callout-left');
+      expect(markup).not.toContain('callout-right');
+      expect(markup).toContain('callout-body');
+    },
+  );
+
+  it.each(['left', 'right'] as const)(
+    'supports the %s slot by itself',
+    (side) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            [side]: 'Side component',
+            leftSlotProps: { 'data-testid': 'callout-left' },
+            rightSlotProps: { 'data-testid': 'callout-right' },
+          },
+          'Body',
+        ),
+      );
+      expect(markup).toContain(`callout-${side}`);
+      expect(markup).not.toContain(
+        `callout-${side === 'left' ? 'right' : 'left'}`,
+      );
+    },
+  );
+
+  it.each([undefined, null, false])(
+    'omits the leading icon slot for %s',
+    (icon) => {
+      const markup = render(
+        createElement(
+          Callout,
+          {
+            icon,
+            iconSlotProps: { 'data-testid': 'callout-icon' },
+          },
+          'Only body',
+        ),
+      );
+      expect(markup).not.toContain('callout-icon');
+      expect(markup).toContain('Only body');
+    },
+  );
 });
 
 describe('CodeBlock', () => {
+  it('preserves component and context identity across focused entry points', () => {
+    expect(StandaloneCodeBlock).toBe(CodeBlock);
+    expect(StandaloneProvider).toBe(DocsProvider);
+    expect(useStandaloneConfig).toBe(useDocsConfig);
+  });
+
+  it('inherits configuration when mixing the root and focused entry points', () => {
+    const markup = render(
+      createElement(
+        DocsProvider,
+        { config: { labels: { copyCode: 'Copy inherited example' } } },
+        createElement(
+          StandaloneProvider,
+          { config: { codeBlock: { copyIcon: 'Copy icon' } } },
+          createElement(StandaloneCodeBlock, { code: 'focused entry point' }),
+          createElement(CodeBlock, { code: 'root entry point' }),
+        ),
+      ),
+    );
+    expect(markup.match(/aria-label="Copy inherited example"/g)).toHaveLength(
+      2,
+    );
+    expect(markup.match(/Copy icon/g)).toHaveLength(2);
+    expect(markup).toContain('focused entry point');
+    expect(markup).toContain('root entry point');
+  });
+
+  it('supports provider copy icons and per-block overrides with accessible labels', () => {
+    const markup = render(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            codeBlock: {
+              copyIcon: createElement('svg', { 'data-copy': 'provider' }),
+            },
+            labels: { copyCode: 'Copy example' },
+          },
+        },
+        createElement(CodeBlock, { code: 'first example' }),
+        createElement(CodeBlock, {
+          code: 'second example',
+          copyIcon: createElement('svg', { 'data-copy': 'instance' }),
+        }),
+      ),
+    );
+
+    expect(markup).toContain('data-copy="provider"');
+    expect(markup).toContain('data-copy="instance"');
+    expect(markup.match(/aria-label="Copy example"/g)).toHaveLength(2);
+  });
+
   it('uses neutral display defaults', () => {
     const markup = render(
       createElement(CodeBlock, { code: 'npm install', language: 'bash' }),
@@ -1416,6 +1748,16 @@ describe('DocsProvider / useDocsConfig', () => {
     );
   }
 
+  function IconsProbe(): ReactNode {
+    const config = useDocsConfig();
+    return createElement(
+      'div',
+      null,
+      config.icons?.sidebarIndicator,
+      config.icons?.mobileTocIndicator,
+    );
+  }
+
   it('provides default labels without a provider', () => {
     const markup = renderToStaticMarkup(createElement(LabelsProbe));
 
@@ -1453,6 +1795,36 @@ describe('DocsProvider / useDocsConfig', () => {
 
     expect(markup).toBe(
       '<div>Find|Nothing here|Searching…|Search is temporarily unavailable|On this page</div>',
+    );
+  });
+
+  it('merges navigation icon overrides across nested providers', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        DocsProvider,
+        {
+          config: {
+            icons: {
+              sidebarIndicator: createElement('span', null, 'Sidebar icon'),
+            },
+          },
+        },
+        createElement(
+          DocsProvider,
+          {
+            config: {
+              icons: {
+                mobileTocIndicator: createElement('span', null, 'TOC icon'),
+              },
+            },
+          },
+          createElement(IconsProbe),
+        ),
+      ),
+    );
+
+    expect(markup).toBe(
+      '<div><span>Sidebar icon</span><span>TOC icon</span></div>',
     );
   });
 });
@@ -1801,6 +2173,7 @@ describe('Docs content primitives', () => {
     expect(recipes[chakraDocsRecipeKeys.article].base.root).toMatchObject({
       minW: 0,
       maxW: '3xl',
+      mx: 'auto',
       w: 'full',
       '& :where(table:not([data-chakra-docs-table-scroll="external"]))': {
         display: 'block',
@@ -2150,7 +2523,10 @@ describe('Chakra Docs slot recipes', () => {
       chakraDocsRecipeKeys.tableOfContents,
       ['root', 'label', 'list', 'item', 'link', 'activeIndicator'],
     ],
-    [chakraDocsRecipeKeys.callout, ['root', 'title', 'content']],
+    [
+      chakraDocsRecipeKeys.callout,
+      ['root', 'left', 'icon', 'body', 'right', 'title', 'content'],
+    ],
     [
       chakraDocsRecipeKeys.pageActions,
       [

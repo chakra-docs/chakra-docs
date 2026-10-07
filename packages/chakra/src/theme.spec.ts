@@ -6,6 +6,32 @@ import {
 } from './theme.js';
 
 describe('Chakra Docs theme entry point', () => {
+  it('keeps callouts transparent and derives their border from the foreground in every status', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.callout];
+    expect(recipe.base.root).toMatchObject({
+      bg: 'transparent',
+      borderColor: 'currentColor',
+      borderWidth: '1px',
+      color: 'fg',
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 3,
+    });
+    expect(recipe.base.body).toMatchObject({ minW: 0, flex: '1' });
+    expect(recipe.base.icon.flexShrink).toBe(0);
+    for (const side of ['left', 'right']) {
+      expect(recipe.base[side]).toMatchObject({
+        display: 'inline-flex',
+        flexShrink: 0,
+        maxW: 'full',
+        minW: 0,
+      });
+    }
+    for (const status of ['info', 'warning', 'success', 'danger']) {
+      expect(recipe.variants?.status[status]).toEqual({});
+    }
+  });
+
   it('wraps long content without changing code whitespace or table scrolling', () => {
     const content = {
       cards: ['card', 'content'],
@@ -60,6 +86,25 @@ describe('Chakra Docs theme entry point', () => {
         });
     }
   });
+
+  it('aligns linked and label-only sidebar disclosure indicators', () => {
+    const sidebar = chakraDocsSlotRecipes[chakraDocsRecipeKeys.sidebar];
+
+    expect(sidebar.base.item).toMatchObject({
+      alignItems: 'center',
+      display: 'flex',
+      flexWrap: 'wrap',
+    });
+    expect(sidebar.base.children).toMatchObject({
+      flex: '0 0 100%',
+      w: 'full',
+    });
+    expect(sidebar.variants?.linked?.true).toMatchObject({
+      link: { flex: '1 1 0' },
+      trigger: { ms: 2, w: 'auto' },
+    });
+  });
+
   it('gives standalone mobile controls 44px hit areas without enlarging inline links', () => {
     const controls = {
       tabs: ['trigger'],
@@ -100,7 +145,7 @@ describe('Chakra Docs theme entry point', () => {
       mobileTableOfContents: ['trigger', 'link'],
       versionSelect: ['select'],
       pagination: ['link'],
-      search: ['trigger', 'input', 'resultLink'],
+      search: ['trigger', 'input', 'clearTrigger', 'resultLink'],
       feedback: ['option', 'comment', 'submit'],
     } as const;
     for (const [key, slots] of Object.entries(controls)) {
@@ -114,6 +159,21 @@ describe('Chakra Docs theme entry point', () => {
         );
       }
     }
+  });
+  it('keeps the search dialog title accessible without a visible header row', () => {
+    const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.search];
+    expect(recipe.base.header).toMatchObject({
+      clip: 'rect(0, 0, 0, 0)',
+      h: '1px',
+      overflow: 'hidden',
+      position: 'absolute',
+      w: '1px',
+    });
+    expect(recipe.variants?.visibleHeader?.true?.header).toMatchObject({
+      borderBottomWidth: '1px',
+      clip: 'auto',
+      position: 'static',
+    });
   });
   it('bounds page-action menus while keeping long rows readable and scrollable', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
@@ -140,6 +200,7 @@ describe('Chakra Docs theme entry point', () => {
   it('owns focus appearance for portaled menus and submenus', () => {
     const recipe = chakraDocsSlotRecipes[chakraDocsRecipeKeys.pageActions];
     for (const slot of ['menuContent', 'submenuContent']) {
+      expect(recipe.base[slot]['&[hidden]']).toEqual({ display: 'none' });
       expect(recipe.base[slot]._focusVisible).toEqual({
         outline: '1px solid',
         outlineColor: 'fg.muted',

@@ -1,6 +1,7 @@
 import type { DocsNavItem, DocsPage } from '@chakra-docs/core';
 import {
   DocsArticle,
+  DocsBreadcrumbs,
   DocsApiTable,
   DocsLayout,
   DocsPageActions,
@@ -9,12 +10,19 @@ import {
   type DocsVersionOption,
 } from '@chakra-docs/chakra';
 import type { GetStaticPaths, GetStaticProps } from 'next';
-import Head from 'next/head';
+import { SiteMetadata } from '../../components/site-metadata';
+import { Box, Flex } from '@chakra-ui/react';
+import { LuChevronDown } from 'react-icons/lu';
 import { PostkitMarkdown } from '../../components/postkit-markdown';
-import { SiteShell } from '../../components/site-shell';
+import { SiteSearch, SiteShell } from '../../components/site-shell';
 import { StructuredData } from '../../components/structured-data';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../../docs/search-recommendations';
 
 interface DocsRoutePageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
   collectionOptions: DocsVersionOption[];
   page: DocsPage;
   nav: DocsNavItem[];
@@ -23,12 +31,12 @@ interface DocsRoutePageProps {
 export default function DocsRoutePage(props: DocsRoutePageProps) {
   return (
     <>
-      <Head>
-        <title>{`${props.page.title} - Chakra Docs`}</title>
-        {props.page.description ? (
-          <meta name="description" content={props.page.description} />
-        ) : null}
-      </Head>
+      <SiteMetadata
+        title={`${props.page.title} - Chakra Docs`}
+        description={props.page.description}
+        path={props.page.route}
+        article
+      />
       <StructuredData
         breadcrumbs={createDocsBreadcrumbs(props.page)}
         description={props.page.description}
@@ -39,44 +47,81 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
       <SiteShell
         collectionOptions={props.collectionOptions}
         initialCollectionId={props.page.collectionId}
+        recommendedSearchResults={props.recommendedSearchResults}
       >
         <DocsLayout
           headings={props.page.headings}
           nav={props.nav}
           page={props.page}
-          slotProps={{ maxW: 'full', px: 0, py: 0 }}
+          sidebarCollapsible
+          sidebarDefaultExpanded="active"
+          mobileNavigationProps={{
+            title: 'Browse documentation',
+            search: (
+              <SiteSearch
+                collectionId={props.page.collectionId}
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
+            ),
+          }}
         >
           <DocsArticle
-            actions={
-              props.page.route === '/docs/components' ? (
-                <DocsPageActions.Root
-                  markdown={props.page.body}
+            breadcrumbs={
+              <Flex
+                align="center"
+                justify="space-between"
+                columnGap={4}
+                rowGap={3}
+                wrap="wrap"
+                w="full"
+              >
+                <DocsBreadcrumbs
+                  homeHref="/"
+                  homeLabel="Home"
+                  nav={props.nav}
                   page={props.page}
-                  variant="split"
-                >
-                  <DocsPageActions.CopyPage description={null} />
-                  <DocsPageActions.Menu
-                    ariaLabel="More page action examples"
-                    icon={<span aria-hidden="true">⌄</span>}
-                  >
-                    <DocsPageActions.Group label="Page tools">
-                      <DocsPageActions.CopyPage />
-                      <DocsPageActions.CopyLink />
-                    </DocsPageActions.Group>
-                    <DocsPageActions.Separator />
-                    <DocsPageActions.Submenu label="Open in another chat">
-                      <DocsPageActions.Item
-                        action="open-chatgpt"
-                        label="ChatGPT"
-                      />
-                      <DocsPageActions.Item
-                        action="open-claude"
-                        label="Claude"
-                      />
-                    </DocsPageActions.Submenu>
-                  </DocsPageActions.Menu>
-                </DocsPageActions.Root>
-              ) : undefined
+                />
+                <Box flexShrink={0} ms="auto">
+                  {props.page.route === '/docs/components' ? (
+                    <DocsPageActions.Root
+                      markdown={props.page.body}
+                      page={props.page}
+                      variant="split"
+                      size="md"
+                      editUrl={`https://github.com/chakra-docs/chakra-docs/edit/main/apps/docs/src/content/docs/${props.page.path}`}
+                    >
+                      <DocsPageActions.CopyPage description={null} />
+                      <DocsPageActions.Menu
+                        ariaLabel="More page action examples"
+                        icon={<LuChevronDown aria-hidden="true" />}
+                      >
+                        <DocsPageActions.Group label="Page tools">
+                          <DocsPageActions.CopyPage />
+                          <DocsPageActions.CopyLink />
+                        </DocsPageActions.Group>
+                        <DocsPageActions.Separator />
+                        <DocsPageActions.Submenu label="Open in another chat">
+                          <DocsPageActions.Item
+                            action="open-chatgpt"
+                            label="ChatGPT"
+                          />
+                          <DocsPageActions.Item
+                            action="open-claude"
+                            label="Claude"
+                          />
+                        </DocsPageActions.Submenu>
+                      </DocsPageActions.Menu>
+                    </DocsPageActions.Root>
+                  ) : (
+                    <DocsPageActions.Root
+                      page={props.page}
+                      size="sm"
+                      variant="split"
+                      editUrl={`https://github.com/chakra-docs/chakra-docs/edit/main/apps/docs/src/content/docs/${props.page.path}`}
+                    />
+                  )}
+                </Box>
+              </Flex>
             }
             headings={props.page.headings}
             page={props.page}
@@ -160,6 +205,7 @@ export const getStaticProps: GetStaticProps<DocsRoutePageProps> = async (
       collectionOptions: props.collectionOptions,
       nav: props.nav,
       page: props.page,
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
     }),
   };
 };

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isSafeDocsRoute, isSafeLinkHref, isSafeRelativeHref } from './href.js';
+import {
+  isSafeDocsRoute,
+  isSafeLinkHref,
+  isSafeRelativeHref,
+  resolveDocsUrl,
+} from './href.js';
 
 describe('safe hrefs', () => {
   it.each([
@@ -67,5 +72,36 @@ describe('safe docs routes', () => {
     'javascript:alert(1)',
   ])('rejects non-route value %s', (route) => {
     expect(isSafeDocsRoute(route)).toBe(false);
+  });
+});
+
+describe('resolveDocsUrl', () => {
+  it('resolves routes and document-relative links without browser globals', () => {
+    expect(
+      resolveDocsUrl('/docs/install', { siteUrl: 'https://docs.example.com' }),
+    ).toBe('https://docs.example.com/docs/install');
+    expect(
+      resolveDocsUrl('../configuration', {
+        baseUrl: 'https://docs.example.com/guides/install/',
+      }),
+    ).toBe('https://docs.example.com/guides/configuration');
+  });
+
+  it('preserves safe hrefs when no valid base is available', () => {
+    expect(resolveDocsUrl('/docs/install')).toBe('/docs/install');
+    expect(resolveDocsUrl('/docs/install', { siteUrl: 'not a URL' })).toBe(
+      '/docs/install',
+    );
+    expect(resolveDocsUrl('mailto:docs@example.com')).toBe(
+      'mailto:docs@example.com',
+    );
+  });
+
+  it('rejects unsafe hrefs', () => {
+    expect(
+      resolveDocsUrl('javascript:alert(1)', {
+        siteUrl: 'https://docs.example.com',
+      }),
+    ).toBeUndefined();
   });
 });

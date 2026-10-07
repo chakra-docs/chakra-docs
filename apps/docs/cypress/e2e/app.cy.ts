@@ -12,6 +12,76 @@ describe('docs', () => {
     cy.get('@consoleError').should('not.have.been.called');
   });
 
+  it('serves canonical social metadata, crawl endpoints, and a real PNG card', () => {
+    for (const path of ['/', '/docs/installation', '/showcase', '/withoss']) {
+      visit(`${path}?utm_source=test#ignored`);
+      cy.get('link[rel="canonical"]').should(
+        'have.attr',
+        'href',
+        `https://chakra-docs.dev${path}`,
+      );
+      cy.get('meta[property="og:url"]').should(
+        'have.attr',
+        'content',
+        `https://chakra-docs.dev${path}`,
+      );
+      cy.get('meta[property="og:title"]')
+        .invoke('attr', 'content')
+        .should('not.be.empty');
+      cy.get('meta[name="twitter:card"]').should(
+        'have.attr',
+        'content',
+        'summary_large_image',
+      );
+      cy.get('meta[property="og:image"]').should(
+        'have.attr',
+        'content',
+        'https://chakra-docs.dev/api/social-image',
+      );
+      cy.get('@consoleError').should('not.have.been.called');
+    }
+    cy.request('/sitemap.xml').then(({ headers, body }) => {
+      expect(headers['content-type']).to.contain('application/xml');
+      const xml = Cypress.$.parseXML(body);
+      if (!xml) throw new Error('Expected a valid XML sitemap');
+      const urls = [...xml.querySelectorAll('loc')].map(
+        (node) => node.textContent,
+      );
+      expect(urls).to.include.members([
+        'https://chakra-docs.dev/',
+        'https://chakra-docs.dev/docs',
+        'https://chakra-docs.dev/docs/installation',
+        'https://chakra-docs.dev/showcase',
+        'https://chakra-docs.dev/withoss',
+      ]);
+      expect(urls).to.have.length(12);
+      expect(
+        urls.some((url) => /og-image|\/api\/|\/404/.test(url ?? '')),
+      ).to.equal(false);
+    });
+    cy.request('/robots.txt').then(({ headers, body }) => {
+      expect(headers['content-type']).to.contain('text/plain');
+      expect(body).to.contain('Sitemap: https://chakra-docs.dev/sitemap.xml');
+      expect(body).to.contain('Allow: /api/social-image');
+    });
+    cy.request({ url: '/api/social-image', encoding: 'binary' }).then(
+      ({ headers, body }) => {
+        expect(headers['content-type']).to.contain('image/png');
+        expect(headers['cache-control']).to.contain('s-maxage=86400');
+        expect(
+          [...body.slice(0, 8)].map((character) => character.charCodeAt(0)),
+        ).to.deep.equal([137, 80, 78, 71, 13, 10, 26, 10]);
+        const bytes = Uint8Array.from(body, (character: string) =>
+          character.charCodeAt(0),
+        );
+        const view = new DataView(bytes.buffer);
+        expect(view.getUint32(16)).to.equal(1200);
+        expect(view.getUint32(20)).to.equal(630);
+        cy.writeFile('test-output/social-card.png', body, 'binary');
+      },
+    );
+  });
+
   it('lazily highlights Chakra Docs and Postkit code with the first-party adapter', () => {
     for (const route of ['/docs/components', '/docs/postkit']) {
       visit(route);
@@ -104,9 +174,21 @@ describe('docs', () => {
     cy.title().should('contain', 'Chakra Docs');
     cy.get('main').should('have.length', 1);
     cy.get('h1').should('have.text', 'Chakra Docs');
-    cy.get('nav[aria-label="Main navigation"]')
-      .contains('a', 'Docs')
-      .should('have.attr', 'href', '/docs');
+    cy.get('header a[aria-label="View chakra-docs on GitHub"]').should(
+      'have.attr',
+      'href',
+      'https://github.com/chakra-docs/chakra-docs',
+    );
+    cy.get('main a[href="/docs/installation"]').should(
+      'have.length.greaterThan',
+      0,
+    );
+    cy.get('footer a[href="/withoss"]').should('exist');
+    cy.get('[aria-label="By Commune Software"] a').should(
+      'have.attr',
+      'href',
+      'https://commune.software',
+    );
 
     cy.request('/').then((response) => {
       expect(response.headers['x-content-type-options']).to.equal('nosniff');
@@ -240,10 +322,12 @@ describe('docs', () => {
     cy.get('@pageActionsMenu')
       .should('have.attr', 'aria-expanded', 'false')
       .and('be.focused');
+    cy.get('[role="menu"]:visible').should('not.exist');
 
     cy.get('@pageActionsMenu').click();
     cy.get('h1').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[role="menu"]:visible').should('not.exist');
   });
 
   it('keeps page actions scrollable and readable in a small viewport', () => {
@@ -292,46 +376,50 @@ describe('docs', () => {
     );
   });
 
-  it('warms default results on keyboard focus and reuses them when opening search', () => {
-    cy.intercept(
-      { method: 'GET', pathname: '/api/docs/search', query: { q: '' } },
-      {
-        headers: { 'cache-control': 'no-store' },
-        body: {
-          query: '',
-          results: [
-            {
-              id: 'prefetched-install',
-              title: 'Prefetched installation',
-              route: '/docs/installation',
-            },
-            {
-              id: 'prefetched-config',
-              title: 'Prefetched configuration',
-              route: '/docs/configuration',
-            },
-          ],
-        },
-      },
-    ).as('defaultSearch');
+  it('opens, clears, and reopens curated recommendations without empty API searches', () => {
+    cy.intercept({ method: 'GET', pathname: '/api/docs/search' }).as(
+      'searchRequests',
+    );
     visit('/docs');
     cy.contains('button', 'Search').focus();
-    cy.wait('@defaultSearch');
     cy.get('[role="dialog"]').should('not.exist');
     cy.contains('button', 'Search').type('{ctrl}k');
     cy.get('[role="combobox"]').should('be.focused');
+    const recommendations = [
+      'Installation',
+      'Configuration',
+      'Components',
+      'Pages Router',
+      'Search',
+      'Machine-readable docs',
+    ];
     cy.get('[role="option"]')
-      .first()
-      .should('have.text', 'Prefetched installation');
+      .should('have.length', 6)
+      .each(($option, index) => {
+        expect($option.text()).to.contain(recommendations[index]);
+      });
     cy.get('[role="combobox"]').type('{downarrow}');
     cy.get('[role="option"][aria-selected="true"]').should(
-      'have.text',
-      'Prefetched configuration',
+      'contain.text',
+      'Configuration',
     );
+    cy.intercept('GET', '**/api/docs/search?q=installation*').as('typedSearch');
+    cy.get('[role="combobox"]').type('installation');
+    cy.wait('@typedSearch');
+    cy.get('button[aria-label="Clear search"]').click();
+    cy.get('[role="combobox"]').should('have.value', '');
+    cy.get('[role="option"]').should('have.length', 6);
     cy.get('[role="combobox"]').type('{esc}');
     cy.contains('button', 'Search').should('be.focused').type('{ctrl}k');
-    cy.get('[role="option"]').should('have.length', 2);
-    cy.get('@defaultSearch.all').should('have.length', 1);
+    cy.get('[role="option"]').should('have.length', 6);
+    cy.get('@searchRequests.all').should((requests) => {
+      const emptyRequests = (
+        requests as unknown as Array<{ request: { url: string } }>
+      ).filter(
+        ({ request }) => !new URL(request.url).searchParams.get('q')?.trim(),
+      );
+      expect(emptyRequests, 'empty-query API searches').to.have.length(0);
+    });
   });
 
   it('supports pointer search navigation through the Next router', () => {
@@ -346,7 +434,7 @@ describe('docs', () => {
       .and('be.focused')
       .type('installation');
     cy.wait('@installationSearch');
-    cy.contains('a', 'Installation').first().click();
+    cy.get('[role="dialog"]').contains('a', 'Installation').first().click();
 
     cy.location('pathname').should('equal', '/docs/installation');
     cy.get('h1').should('contain.text', 'Installation');
@@ -512,6 +600,46 @@ describe('docs', () => {
     cy.get('meta[name="robots"]').should('have.attr', 'content', 'noindex');
     cy.contains('a', 'Return home').should('have.attr', 'href', '/');
   });
-  // These open search to await hydration; run after the cold-cache prefetch test.
+  it('keeps the shared font stylesheet and compact site header across Next navigation', () => {
+    cy.viewport(375, 812);
+    visit('/');
+    cy.get('header').should('have.css', 'height', '69px');
+    cy.get(
+      'link[rel="stylesheet"][href="https://kits.fontstack.com/kit/o0v0t0oi.css"]',
+    ).should('have.length', 1);
+    cy.window().then((window) => {
+      (
+        window as Window & { docsNavigationMarker?: string }
+      ).docsNavigationMarker = 'preserved';
+    });
+    cy.contains('a', 'Read the getting-started guide').click();
+    cy.location('pathname').should('equal', '/docs/installation');
+    cy.window().its('docsNavigationMarker').should('equal', 'preserved');
+    cy.get(
+      'link[rel="stylesheet"][href="https://kits.fontstack.com/kit/o0v0t0oi.css"]',
+    ).should('have.length', 1);
+    cy.get('header').should('have.css', 'height', '69px');
+  });
+  it('renders the OSS acknowledgements with the shared artwork and no page overflow', () => {
+    cy.viewport(375, 812);
+    visit('/withoss');
+    cy.get('main').should('have.length', 1);
+    cy.get('h1').should(
+      'have.attr',
+      'aria-label',
+      'Made with open-source software',
+    );
+    cy.get('main img[src="/assets/oss.svg"]').should('be.visible');
+    cy.get('section[aria-labelledby="oss-library"]')
+      .find('a[href="https://chakra-ui.com/"]')
+      .should('be.visible');
+    cy.get('section[aria-labelledby="oss-site"]')
+      .find('a[href="https://chakra-ui.com/"]')
+      .should('exist');
+    cy.get('html').should((element) =>
+      expect(element[0].scrollWidth).to.be.at.most(element[0].clientWidth + 1),
+    );
+  });
+  // These open search to await hydration.
   registerResponsiveTableTests();
 });

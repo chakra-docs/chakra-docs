@@ -38,10 +38,9 @@ const skipBuild = args.has('--skip-build');
 const push = !args.has('--no-push');
 
 if (!skipBuild) {
-  await run('npm', [
+  await run('pnpm', [
     'exec',
     'nx',
-    '--',
     'run-many',
     '-t',
     'build',
@@ -66,8 +65,8 @@ for (const packageName of packageOrder) {
   }
 
   await run(
-    'npm',
-    ['exec', 'yalc', '--', 'publish', ...(push ? ['--push'] : [])],
+    'pnpm',
+    ['exec', 'yalc', 'publish', ...(push ? ['--push'] : [])],
     path.join(workspaceRoot, packageRoot),
   );
 }
