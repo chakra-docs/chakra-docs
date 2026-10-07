@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { evaluateAudit, bracesException } from './audit-dependencies.mjs';
+import {
+  evaluateAudit,
+  bracesException,
+  runAudit,
+} from './audit-dependencies.mjs';
 import { checkBracesPatch } from './check-braces-patch.mjs';
 
 const advisory = {
@@ -94,4 +98,17 @@ test('the exception expires and cannot hide other audit failures', () => {
     () => evaluateAudit({ ...report(), advisories: {} }, options),
     /incomplete audit report/,
   );
+});
+
+test('the CLI mitigation gate expires before installation or registry checks, even without an advisory response', () => {
+  for (const now of [
+    new Date(bracesException.expires),
+    new Date('2026-12-01T00:00:00Z'),
+    new Date('invalid'),
+  ]) {
+    assert.throws(
+      () => runAudit({ now }),
+      /temporary braces mitigation has expired/,
+    );
+  }
 });

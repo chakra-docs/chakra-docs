@@ -56,7 +56,14 @@ export function evaluateAudit(
   return { accepted, blocking };
 }
 
-export function runAudit() {
+export function runAudit({ now = new Date() } = {}) {
+  // The dependency-review allowlist must expire even if the registry stops
+  // returning this advisory while GitHub still reports it.
+  if (!(now.getTime() < Date.parse(bracesException.expires))) {
+    throw new Error(
+      'The temporary braces mitigation has expired; review SECURITY.md and replace it with an upstream fix.',
+    );
+  }
   const patchVerified = checkBracesPatch();
   // Do not pass --ignore: inspect the unfiltered report, including dev flags.
   const result = spawnSync('pnpm', ['audit', '--json'], {
@@ -69,6 +76,7 @@ export function runAudit() {
     throw new Error('Dependency audit could not complete.');
   const { accepted, blocking } = evaluateAudit(JSON.parse(result.stdout), {
     patchVerified,
+    now,
   });
   for (const advisory of accepted) {
     console.warn(

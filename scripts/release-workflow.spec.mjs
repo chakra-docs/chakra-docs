@@ -4,6 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
+import { bracesException } from './audit-dependencies.mjs';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
 const releaseWorkflow = await read('.github/workflows/release.yml');
@@ -136,7 +137,10 @@ test('production audits remain unfiltered and the development mitigation gate ru
   const ci = await read('.github/workflows/ci.yml');
   assert.match(ci, /run: pnpm audit --prod --audit-level=moderate\n/);
   assert.match(ci, /run: pnpm run audit:dependencies\n/);
-  assert.doesNotMatch(ci, /--ignore(?:-unfixable|-registry-errors)?\b/);
+  assert.doesNotMatch(
+    ci,
+    /pnpm audit[^\n]*--ignore(?:-unfixable|-registry-errors)?\b/,
+  );
   const manifest = JSON.parse(await read('package.json'));
   assert.equal(
     manifest.scripts['audit:dependencies'],
@@ -146,6 +150,47 @@ test('production audits remain unfiltered and the development mitigation gate ru
     manifest.nx.targets['release-validation'].options.command,
     /audit-dependencies\.spec\.mjs/,
   );
+});
+
+test('dependency review accepts only the verified time-bounded braces mitigation', async () => {
+  const ci = parseYaml(await read('.github/workflows/ci.yml'));
+  const job = ci.jobs['dependency-review'];
+  const steps = job.steps;
+  const reviewIndex = steps.findIndex((step) =>
+    step.uses?.startsWith('actions/dependency-review-action@'),
+  );
+  assert.ok(reviewIndex >= 0);
+  const review = steps[reviewIndex];
+  assert.deepEqual(review.with, {
+    'fail-on-severity': 'moderate',
+    'allow-ghsas': bracesException.id,
+  });
+  assert.equal(review.if, undefined);
+  assert.equal(review['continue-on-error'], undefined);
+  assert.deepEqual(job.permissions, { contents: 'read' });
+  assert.equal(job.if, "github.event_name == 'pull_request'");
+  assert.equal(steps[0].with['persist-credentials'], false);
+
+  const installIndex = steps.findIndex(
+    (step) => step.run === 'pnpm install --frozen-lockfile --ignore-scripts',
+  );
+  const gateIndex = steps.findIndex(
+    (step) => step.run === 'pnpm run audit:dependencies',
+  );
+  const productionIndex = steps.findIndex(
+    (step) => step.run === 'pnpm audit --prod --audit-level=moderate',
+  );
+  assert.ok(installIndex >= 0 && installIndex < gateIndex);
+  assert.ok(gateIndex < productionIndex && productionIndex < reviewIndex);
+  for (const step of [
+    steps[installIndex],
+    steps[gateIndex],
+    steps[productionIndex],
+  ]) {
+    assert.equal(step.if, undefined);
+    assert.equal(step['continue-on-error'], undefined);
+  }
+  assert.equal(bracesException.expires, '2026-11-04T00:00:00.000Z');
 });
 
 test('all public packages form one fixed, committed release group', () => {

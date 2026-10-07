@@ -43,3 +43,10 @@ it cannot detect a local patch. Release maintainers must review this
 mitigation before expiry. When an upstream fix is available, upgrade the
 dependency, remove the patch and acceptance, and rerun both audits and the
 complete release checks. Do not renew the exception without a fresh review.
+
+GitHub dependency review also checks package versions rather than patched
+contents. Its job allows only this advisory, after a frozen install with
+lifecycle scripts disabled and the same patch/expiry audit gate above. The
+job also runs the unfiltered production audit. No package-wide exclusion,
+severity reduction, or warning-only mode is used. Remove `allow-ghsas` from
+the dependency review step when replacing this mitigation with an upstream fix.
