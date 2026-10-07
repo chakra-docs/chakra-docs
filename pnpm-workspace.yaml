@@ -19,6 +19,7 @@ overrides:
   '@xhmikosr/decompress': ^11.1.4
   axios: ^1.20.0
   brace-expansion: ^5.0.12
+  compression: ^1.8.2
   devalue: 5.9.3
   'minimatch@3>brace-expansion': ^2.1.7
   fast-uri: ^3.1.8
@@ -26,11 +27,15 @@ overrides:
   js-yaml: ^4.3.2
   less: ^4.9.1
   nanoid: ^3.3.18
-  'nx>smol-toml': 1.7.1
   'piscina@4': ^4.9.4
   postcss: ^8.5.24
+  'postcss-selector-parser@7': ^7.1.6
+  proxy-addr: ^2.0.8
   qs: ^6.16.0
-  sharp: ^0.35.4
+  sharp: ^0.35.5
+  shell-quote: ^1.11.0
+  smol-toml: ^1.9.0
+  source-map-js: ^1.2.2
   supports-color: 8.1.1
   'svgo@3': ^3.3.5
   'svgo@4': ^4.1.0

@@ -46,6 +46,34 @@ test('development and release tooling remain pinned to Node 24 and pnpm', async 
   assert.ok(springbar.includes(`version = "${nodeVersion}"`));
 });
 
+test('Nx tooling is aligned and known vulnerable transitive versions stay out of the lockfile', async () => {
+  const manifest = JSON.parse(await read('package.json'));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  for (const [name, version] of Object.entries(manifest.devDependencies)) {
+    if (name === 'nx' || name.startsWith('@nx/')) {
+      assert.equal(
+        version,
+        '22.7.10',
+        `${name} must share the patched Nx version`,
+      );
+    }
+  }
+  for (const key of [
+    'nx@22.7.8',
+    'nx@22.7.9',
+    'smol-toml@1.7.1',
+    'smol-toml@1.8.0',
+    'source-map-js@1.2.1',
+    'proxy-addr@2.0.7',
+    'compression@1.8.1',
+    'postcss-selector-parser@7.1.5',
+    'sharp@0.35.4',
+    'shell-quote@1.10.0',
+  ]) {
+    assert.equal(lock.packages[key], undefined, `${key} must not be installed`);
+  }
+});
+
 test('packed consumers include pinned DOM declarations without weakening compatibility checks', async () => {
   const manifest = JSON.parse(await read('package.json'));
   const lock = parseYaml(await read('pnpm-lock.yaml'));
