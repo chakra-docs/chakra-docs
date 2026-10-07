@@ -4,6 +4,47 @@ The docs app is a state-free Next.js service. Build it once, promote the same
 artifact between environments, and run it behind HTTPS with a platform that can
 execute `next start`.
 
+## Vercel project setup
+
+Import `chakra-docs/chakra-docs` into the intended Vercel account. Configure:
+
+- **Framework:** Next.js.
+- **Root Directory:** `apps/docs`. Enable **Include source files outside of the
+  Root Directory in the Build Step**, since the app consumes workspace packages.
+- **Node.js Version:** `24.x`. Vercel manages the patch version; local development
+  and CI use the exact version in `.nvmrc`.
+- **Corepack:** set `ENABLE_EXPERIMENTAL_COREPACK=1` for Production and Preview
+  so Vercel honors the root `packageManager` pin (`pnpm@11.25.0`).
+- **Canonical origin:** set `NEXT_PUBLIC_SITE_URL=https://chakra-docs.dev` and
+  `CHAKRA_DOCS_REQUIRE_SITE_URL=true` for Production and Preview. These must be
+  available at build time and runtime. Previews should still canonicalize to
+  production, not to a changing `*.vercel.app` hostname.
+- **Domain:** assign `chakra-docs.dev` to this project and complete its DNS/TLS
+  setup before production promotion. Keep deployment protection enabled on
+  previews and verify their `X-Robots-Tag: noindex` response header.
+
+`vercel.json` supplies the frozen workspace install, Nx build (including package
+dependencies), and `.next` output directory relative to `apps/docs`. It forces
+the canonical-origin guard on, so a missing site URL fails the build. Do not use
+static export: search, health, sitemap, robots, and social images need Next
+server functions. No npm publishing credential is needed for this site.
+
+Optional analytics and Fontstack variables are documented in `.env.example`.
+Set public variables before building; changing them requires a new deployment.
+The Vercel account settings, DNS, analytics site ID, and Fontstack allowlist are
+not stored in the repository and must be confirmed in their respective dashboards.
+
+After the first preview, verify `/api/health`,
+`/api/docs/search?q=installation&limit=1`, `/sitemap.xml`, `/robots.txt`, and
+`/api/social-image`. Search and sitemap must work in the deployed functions,
+not just locally. Inspect the page source for production canonical/social URLs
+and confirm Suisse loads without blocked font requests. Promote only after CI
+passes for the exact deployed commit.
+
+Configuration references: [Vercel Nx support](https://vercel.com/docs/monorepos/nx),
+[shared monorepo files](https://vercel.com/docs/monorepos/monorepo-faq), and
+[Corepack build setup](https://vercel.com/docs/builds/configure-a-build#corepack).
+
 ## Required production contract
 
 - Use the Node and pnpm versions declared in the repository `.nvmrc` and
@@ -29,8 +70,9 @@ sub-footer. All site styling lives in `src/theme`; there are no site CSS files.
 
 The shared OSS Fontstack kit is loaded from `_document.tsx`, so its stylesheet
 stays in the document head during client-side navigation. The default kit is
-`https://kits.fontstack.com/kit/o0v0t0oi.css`. Ensure the kit allows the production
-domain and `chakra-docs.test`. Set `NEXT_PUBLIC_FONTSTACK_KIT_URL` before building
+`https://kits.fontstack.com/kit/o0v0t0oi.css`. Ensure the kit allows
+`chakra-docs.dev`, `chakra-docs.test`, and the preview hostname being reviewed.
+Set `NEXT_PUBLIC_FONTSTACK_KIT_URL` before building
 to use another Fontstack kit, or set it to an empty string to use system fonts.
 The CSP allows Fontstack styles and fonts, but not arbitrary stylesheet hosts.
 

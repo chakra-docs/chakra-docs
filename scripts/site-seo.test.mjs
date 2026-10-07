@@ -115,3 +115,22 @@ test('public pages share complete social metadata while error and capture pages 
     /'\/sitemap.xml': \['src\/content\/docs\/\*\*\/\*'\]/,
   );
 });
+
+test('Vercel installs the frozen workspace and builds Next with a required canonical origin', () => {
+  const config = JSON.parse(read('vercel.json'));
+  assert.equal(config.framework, 'nextjs');
+  assert.equal(
+    config.installCommand,
+    'cd ../.. && corepack enable && pnpm install --frozen-lockfile',
+  );
+  assert.equal(
+    config.buildCommand,
+    'cd ../.. && CHAKRA_DOCS_REQUIRE_SITE_URL=true pnpm nx run docs:build',
+  );
+  assert.equal(config.outputDirectory, '.next');
+  assert.match(
+    read('.env.example'),
+    /NEXT_PUBLIC_SITE_URL=https:\/\/chakra-docs.dev/,
+  );
+  assert.doesNotMatch(read('next.config.js'), /output:\s*['"]export/);
+});
