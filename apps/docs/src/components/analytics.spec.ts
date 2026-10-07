@@ -133,3 +133,37 @@ test('an absent site ID leaves analytics disabled', async () => {
   expect(document.querySelector('script[src*="fathom"]')).toBeNull();
   expect(client.trackPageview).not.toHaveBeenCalled();
 });
+
+test('unmounting a docs analytics hook cancels its pending search events', async () => {
+  vi.useFakeTimers();
+  try {
+    function SearchButton() {
+      const analytics = useDocsAnalytics();
+      return createElement(
+        'button',
+        { onClick: () => analytics.onSearch?.('private query') },
+        'Search',
+      );
+    }
+    await act(() =>
+      root.render(
+        createElement(
+          StrictMode,
+          null,
+          createElement(
+            FathomProvider,
+            { client },
+            createElement(SearchButton),
+          ),
+        ),
+      ),
+    );
+    await act(() => container.querySelector('button')?.click());
+    expect(client.trackEvent).not.toHaveBeenCalled();
+    await act(() => root.render(null));
+    await act(() => vi.advanceTimersByTime(1000));
+    expect(client.trackEvent).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
+});

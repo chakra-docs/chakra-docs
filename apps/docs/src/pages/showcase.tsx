@@ -17,8 +17,13 @@ import Head from 'next/head';
 import { SiteSearch, SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 import { guides } from '../docs/guides';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../docs/search-recommendations';
 
 interface ShowcasePageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
   collectionOptions: DocsCollectionOption[];
   nav: DocsNavItem[];
 }
@@ -45,7 +50,10 @@ export default function ShowcasePage(props: ShowcasePageProps) {
         title={page.title}
         description={page.description}
       />
-      <SiteShell collectionOptions={props.collectionOptions}>
+      <SiteShell
+        collectionOptions={props.collectionOptions}
+        recommendedSearchResults={props.recommendedSearchResults}
+      >
         <DocsLayout
           nav={props.nav}
           page={page}
@@ -53,7 +61,11 @@ export default function ShowcasePage(props: ShowcasePageProps) {
           sidebarDefaultExpanded="active"
           mobileNavigationProps={{
             title: 'Browse documentation',
-            search: <SiteSearch />,
+            search: (
+              <SiteSearch
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
+            ),
           }}
         >
           <DocsArticle page={page}>
@@ -88,6 +100,7 @@ export const getStaticProps: GetStaticProps<ShowcasePageProps> = async () => {
     props: serializeNextProps({
       collectionOptions: createCollectionOptions(manifest.collections),
       nav: manifest.nav,
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
     }),
   };
 };

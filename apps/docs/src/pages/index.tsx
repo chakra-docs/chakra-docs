@@ -19,8 +19,13 @@ import { SiteLink } from '../components/site-link';
 import { SiteSearch, SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 import { guides } from '../docs/guides';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../docs/search-recommendations';
 
 interface IndexPageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
   collectionOptions: DocsCollectionOption[];
   nav: DocsNavItem[];
 }
@@ -52,7 +57,10 @@ export default function Index(props: IndexPageProps) {
         <meta name="description" content={description} />
       </Head>
       <StructuredData description={description} path="/" title="Chakra Docs" />
-      <SiteShell collectionOptions={props.collectionOptions}>
+      <SiteShell
+        collectionOptions={props.collectionOptions}
+        recommendedSearchResults={props.recommendedSearchResults}
+      >
         <DocsLayout
           nav={props.nav}
           page={page}
@@ -61,7 +69,11 @@ export default function Index(props: IndexPageProps) {
           sidebarDefaultExpanded="active"
           mobileNavigationProps={{
             title: 'Browse documentation',
-            search: <SiteSearch />,
+            search: (
+              <SiteSearch
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
+            ),
           }}
         >
           <DocsArticle page={page} headings={page.headings}>
@@ -138,6 +150,7 @@ export const getStaticProps: GetStaticProps<IndexPageProps> = async () => {
     props: serializeNextProps({
       collectionOptions: createCollectionOptions(manifest.collections),
       nav: manifest.nav,
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
     }),
   };
 };

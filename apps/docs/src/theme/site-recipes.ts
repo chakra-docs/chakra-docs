@@ -5,7 +5,16 @@ import { siteOgImageRecipe } from './og-image';
 export const siteSlotRecipes = {
   siteOgImage: siteOgImageRecipe,
   siteShell: defineSlotRecipe({
-    slots: ['root', 'header', 'container', 'brand', 'githubTrigger', 'main'],
+    slots: [
+      'root',
+      'header',
+      'container',
+      'brandGroup',
+      'brand',
+      'version',
+      'githubTrigger',
+      'main',
+    ],
     base: {
       root: { bg: 'bg', color: 'fg' },
       header: {
@@ -18,6 +27,22 @@ export const siteSlotRecipes = {
         bg: 'bg',
       },
       container: { maxW: '7xl', h: 'full' },
+      brandGroup: { alignItems: 'center', gap: 2, flexWrap: 'wrap', minW: 0 },
+      version: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        flexShrink: 0,
+        px: 2,
+        py: '0.5',
+        borderWidth: '1px',
+        borderColor: 'border',
+        borderRadius: 'full',
+        color: 'fg.muted',
+        fontFamily: 'mono',
+        fontSize: 'xs',
+        lineHeight: 'short',
+        whiteSpace: 'nowrap',
+      },
       brand: {
         fontWeight: 'medium',
         fontSize: 'lg',

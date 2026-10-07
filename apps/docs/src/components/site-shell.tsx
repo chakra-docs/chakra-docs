@@ -17,21 +17,31 @@ import {
 import { useRouter } from 'next/router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { SiGithub } from 'react-icons/si';
+import type { RecommendedSearchResult } from '../docs/search-recommendations';
 import { SiteLink } from './site-link';
 
 export interface SiteShellProps {
   children: ReactNode;
   collectionOptions?: DocsVersionOption[];
   initialCollectionId?: string;
+  recommendedSearchResults?: readonly RecommendedSearchResult[];
 }
 
 const searchProvider = createHttpSearchProvider('/api/docs/search');
 
-export function SiteSearch({ collectionId }: { collectionId?: string }) {
+export function SiteSearch({
+  collectionId,
+  recommendedSearchResults,
+}: {
+  collectionId?: string;
+  recommendedSearchResults?: readonly RecommendedSearchResult[];
+}) {
   const router = useRouter();
   return (
     <DocsSearch
-      prefetch="intent"
+      defaultResults={recommendedSearchResults}
+      defaultResultsLabel="Recommended"
+      popularLimit={6}
       collectionId={collectionId || undefined}
       searchProvider={searchProvider}
       onNavigate={(href) => {
@@ -55,9 +65,14 @@ export function SiteShell(props: SiteShellProps) {
       <Box as="header" css={styles.header}>
         <Container css={styles.container}>
           <Flex align="center" justify="space-between" h="full" gap={2}>
-            <SiteLink href="/" css={styles.brand}>
-              chakra-docs
-            </SiteLink>
+            <Flex css={styles.brandGroup}>
+              <SiteLink href="/" css={styles.brand}>
+                chakra-docs
+              </SiteLink>
+              <Box as="span" css={styles.version}>
+                v0.3.0
+              </Box>
+            </Flex>
             <HStack gap={2}>
               {collectionOptions.length > 1 ? (
                 <DocsVersionSelect
@@ -70,7 +85,10 @@ export function SiteShell(props: SiteShellProps) {
                   value={selectedCollectionId}
                 />
               ) : null}
-              <SiteSearch collectionId={selectedCollectionId} />
+              <SiteSearch
+                collectionId={selectedCollectionId}
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
                   <IconButton

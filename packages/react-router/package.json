@@ -83,7 +83,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://github.com/chakra-docs/chakra-docs/tree/main/packages/react-router#readme",
+  "homepage": "https://chakra-docs.dev",
   "nx": {
     "tags": [
       "layer:adapter",

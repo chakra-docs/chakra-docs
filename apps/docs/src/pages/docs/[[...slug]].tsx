@@ -16,8 +16,13 @@ import { LuChevronDown } from 'react-icons/lu';
 import { PostkitMarkdown } from '../../components/postkit-markdown';
 import { SiteSearch, SiteShell } from '../../components/site-shell';
 import { StructuredData } from '../../components/structured-data';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../../docs/search-recommendations';
 
 interface DocsRoutePageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
   collectionOptions: DocsVersionOption[];
   page: DocsPage;
   nav: DocsNavItem[];
@@ -42,6 +47,7 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
       <SiteShell
         collectionOptions={props.collectionOptions}
         initialCollectionId={props.page.collectionId}
+        recommendedSearchResults={props.recommendedSearchResults}
       >
         <DocsLayout
           headings={props.page.headings}
@@ -51,7 +57,12 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
           sidebarDefaultExpanded="active"
           mobileNavigationProps={{
             title: 'Browse documentation',
-            search: <SiteSearch collectionId={props.page.collectionId} />,
+            search: (
+              <SiteSearch
+                collectionId={props.page.collectionId}
+                recommendedSearchResults={props.recommendedSearchResults}
+              />
+            ),
           }}
         >
           <DocsArticle
@@ -194,6 +205,7 @@ export const getStaticProps: GetStaticProps<DocsRoutePageProps> = async (
       collectionOptions: props.collectionOptions,
       nav: props.nav,
       page: props.page,
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
     }),
   };
 };

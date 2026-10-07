@@ -8,13 +8,23 @@ import {
   useSlotRecipe,
 } from '@chakra-ui/react';
 import Head from 'next/head';
+import type { GetStaticProps } from 'next';
+import { serializeNextProps } from '@chakra-docs/next/pages';
+import {
+  getRecommendedSearchResults,
+  type RecommendedSearchResult,
+} from '../docs/search-recommendations';
 import { ossProjectGroups } from '../lib/oss-projects';
 import { OssMark } from '../components/site-footer';
 import { SiteLink } from '../components/site-link';
 import { SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 
-export default function WithOssPage() {
+interface WithOssPageProps {
+  recommendedSearchResults: RecommendedSearchResult[];
+}
+
+export default function WithOssPage(props: WithOssPageProps) {
   const styles = useSlotRecipe({ key: 'siteWithOss' })();
   return (
     <>
@@ -26,7 +36,7 @@ export default function WithOssPage() {
         />
       </Head>
       <StructuredData path="/withoss" title="Made with OSS" />
-      <SiteShell>
+      <SiteShell recommendedSearchResults={props.recommendedSearchResults}>
         <Container css={styles.root}>
           <Flex css={styles.hero}>
             <Heading
@@ -85,3 +95,13 @@ export default function WithOssPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<WithOssPageProps> = async () => {
+  const { getDocsManifest } = await import('../docs/manifest');
+  const manifest = await getDocsManifest();
+  return {
+    props: serializeNextProps({
+      recommendedSearchResults: getRecommendedSearchResults(manifest.search),
+    }),
+  };
+};
