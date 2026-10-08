@@ -136,20 +136,17 @@ and `twitter:image` metadata, **not** the HTML capture URL.
 
 ## React Fathom analytics
 
-The site uses public `react-fathom@0.2.0` and a site-local Pages Router tracker for initial and
+The site uses public `react-fathom@0.3.0` and a site-local Pages Router tracker for initial and
 client-side pageviews, plus documentation interaction events. Set
 `NEXT_PUBLIC_FATHOM_SITE_ID` and optionally
 `NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN` before building. No ID means no analytics
 script or pageviews. Query strings, fragments, clipboard contents, search text,
 and feedback comments are not sent; social-image capture pages bypass analytics.
 
-The temporary tracker imports `useFathom` from the same root entry point as
-`FathomProvider`, and imports Next's router directly. It avoids the separate
-context bundled into the public 0.2.0 Next adapter. Once the corrected React
-Fathom release is public, update the immutable dependency pin and restore its
-Pages Router adapter, retaining URL filtering and the navigation regression
-tests. No local yalc packages are required. React Fathom is a site dependency
-only, not a published Chakra Docs package dependency.
+The site-local tracker retains URL filtering, router readiness checks, and
+query/hash deduplication, covered by navigation regression tests. No local yalc
+packages are required. React Fathom is a site dependency only, not a published
+Chakra Docs package dependency.
 
 ## Release and rollback
 
