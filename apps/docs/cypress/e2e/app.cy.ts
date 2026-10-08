@@ -94,6 +94,29 @@ describe('docs', () => {
     }
   });
 
+  it('uses icon-only Postkit copy buttons and confirms successful copies', () => {
+    visit('/docs/postkit');
+    cy.window().then((window) => {
+      Object.defineProperty(window.navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: cy.stub().as('copyCode').resolves() },
+      });
+    });
+    cy.get(
+      '[data-postkit-component="CodeBlock"] button[aria-label="Copy code"]',
+    )
+      .first()
+      .as('postkitCopy')
+      .should('be.visible')
+      .and('have.text', '')
+      .find('svg')
+      .should('exist');
+    cy.get('@postkitCopy').click();
+    cy.get('@copyCode').should('have.been.calledOnce');
+    cy.get('@postkitCopy').should('have.text', '').find('svg').should('exist');
+    cy.get('[role="tooltip"]').should('contain.text', 'Copied!');
+  });
+
   function registerResponsiveTableTests() {
     for (const width of [320, 375, 768, 1440]) {
       it(`contains wide API, Markdown and Postkit tables at ${width}px without page overflow`, () => {

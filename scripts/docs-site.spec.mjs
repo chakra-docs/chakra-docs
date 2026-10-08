@@ -134,6 +134,23 @@ test('fonts are document-owned and the theme provider precedes Emotion styles', 
   assert.match(app, /<CommuneFooter/);
 });
 
+test('Postkit code blocks use icon-only copy controls with accessible feedback', () => {
+  const provider = read('src/pages/_app.tsx').match(
+    /<PostkitProvider\b[\s\S]*?\n      >/,
+  );
+  assert.ok(
+    provider,
+    'The app must configure Postkit separately from Chakra Docs',
+  );
+  assert.match(provider[0], /codeBlock=\{\{/);
+  assert.match(provider[0], /copyIcon: <LuCopy aria-hidden="true" \/>/);
+  assert.match(provider[0], /copiedIcon: <LuCheck aria-hidden="true" \/>/);
+  assert.match(provider[0], /copyLabel: null/);
+  assert.match(provider[0], /copyAriaLabel: 'Copy code'/);
+  assert.match(provider[0], /copyFeedback: 'tooltip'/);
+  assert.match(provider[0], /copiedLabel: 'Copied!'/);
+});
+
 test('site footer fills the viewport before the Commune section', () => {
   const app = read('src/pages/_app.tsx');
   assert.match(
