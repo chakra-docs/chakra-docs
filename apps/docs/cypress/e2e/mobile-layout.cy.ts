@@ -16,6 +16,34 @@ describe('documentation controls layout', () => {
       'overflow-y',
       'auto',
     );
+    cy.get('[role="dialog"] .chakra-dialog__header').should(($header) => {
+      const header = $header[0];
+      const title = header.querySelector('.chakra-dialog__title');
+      const close = header.querySelector(
+        'button[aria-label="Close navigation"]',
+      );
+      if (!title || !close) throw new Error('Expected both header controls');
+      const headerBounds = header.getBoundingClientRect();
+      const headerCenter = headerBounds.top + headerBounds.height / 2;
+      for (const control of [title, close]) {
+        const bounds = control.getBoundingClientRect();
+        expect(
+          Math.abs(bounds.top + bounds.height / 2 - headerCenter),
+        ).to.be.at.most(1);
+      }
+    });
+    cy.get('[role="dialog"] button[data-part="trigger"]').should(($trigger) => {
+      const trigger = $trigger[0];
+      const row = trigger.parentElement;
+      if (!row) throw new Error('Expected a search row');
+      const availableWidth =
+        row.clientWidth -
+        parseFloat(Cypress.$(row).css('padding-left')) -
+        parseFloat(Cypress.$(row).css('padding-right'));
+      expect(
+        Math.abs(trigger.getBoundingClientRect().width - availableWidth),
+      ).to.be.at.most(1);
+    });
   }
 
   for (const route of ['/', '/docs/installation']) {

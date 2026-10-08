@@ -258,7 +258,11 @@ test('the site mobile menu fills the dynamic viewport without changing the libra
   assert.match(recipe[0], /maxW: 'none'/);
   assert.match(recipe[0], /borderRadius: 0/);
   assert.match(recipe[0], /overflow: 'hidden'/);
-  assert.match(recipe[0], /env\(safe-area-inset-top\)/);
+  assert.match(
+    recipe[0],
+    /pt: 'calc\(env\(safe-area-inset-top, 0px\) \+ 6px\)'/,
+  );
+  assert.match(recipe[0], /pb: '6px'/);
   assert.match(recipe[0], /env\(safe-area-inset-bottom\)/);
 });
 
