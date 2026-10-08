@@ -69,14 +69,19 @@ test('site CSP permits Shiki WebAssembly but limits JavaScript eval to developme
       .split('; ')
       .find((directive) => directive.startsWith('script-src '))
       .split(' ');
-    assert.ok(scriptSources.includes("'wasm-unsafe-eval'"), environment);
-    assert.equal(
-      scriptSources.includes("'unsafe-eval'"),
-      environment === 'development',
+    // Compare complete CSP tokens, not URL substrings or partial allowlists.
+    assert.deepEqual(
+      scriptSources,
+      [
+        'script-src',
+        "'self'",
+        "'unsafe-inline'",
+        "'wasm-unsafe-eval'",
+        ...(environment === 'development' ? ["'unsafe-eval'"] : []),
+        'https://cdn.usefathom.com',
+      ],
       environment,
     );
-    assert.ok(scriptSources.includes("'self'"));
-    assert.ok(scriptSources.includes('https://cdn.usefathom.com'));
   }
 });
 
