@@ -45,6 +45,15 @@ Configuration references: [Vercel Nx support](https://vercel.com/docs/monorepos/
 [shared monorepo files](https://vercel.com/docs/monorepos/monorepo-faq), and
 [Corepack build setup](https://vercel.com/docs/builds/configure-a-build#corepack).
 
+## LLM documentation
+
+`/llms.txt` indexes the published documentation using canonical page URLs;
+`/llms-full.txt` includes its complete Markdown content. Both are generated from
+the docs manifest and exclude draft and hidden pages. Like the sitemap, these
+routes require `NEXT_PUBLIC_SITE_URL` and trace their Markdown sources into the
+serverless deployment. Verify both URLs after deploying; no package publish is
+needed for these site endpoints.
+
 ## Required production contract
 
 - Use the Node and pnpm versions declared in the repository `.nvmrc` and

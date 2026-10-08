@@ -28,6 +28,7 @@
         "{workspaceRoot}/scripts/site-analytics.test.mjs",
         "{workspaceRoot}/scripts/search-recommendations.test.mjs",
         "{workspaceRoot}/scripts/site-seo.test.mjs",
+        "{workspaceRoot}/scripts/site-llms.test.mjs",
         "{workspaceRoot}/.github/workflows/ci.yml"
       ]
     },
