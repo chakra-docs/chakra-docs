@@ -7,6 +7,9 @@ export default defineConfig({
     name: 'docs-analytics',
     environment: 'jsdom',
     environmentOptions: { jsdom: { url: 'https://chakra-docs.dev' } },
-    include: ['src/components/analytics.spec.ts'],
+    include: [
+      'src/components/analytics.spec.ts',
+      'src/components/mobile-navigation.spec.tsx',
+    ],
   },
 });

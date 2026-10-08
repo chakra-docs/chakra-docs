@@ -108,18 +108,30 @@ export const siteThemeConfig = defineConfig({
       chakraDocsMobileNavigation: defineSlotRecipe({
         slots: [...chakraDocsSlotRecipes.chakraDocsMobileNavigation.slots],
         base: {
+          trigger: {
+            borderWidth: 0,
+            boxSize: '44px',
+            minW: '44px',
+            minH: '44px',
+            px: 0,
+            gap: 0,
+            justifyContent: 'center',
+          },
+          triggerLabel: { display: 'none' },
           positioner: {
             position: 'fixed',
             inset: 0,
             w: '100dvw',
             h: '100dvh',
             p: 0,
+            overflow: 'hidden',
           },
           content: {
             w: '100dvw',
             maxW: 'none',
             h: '100dvh',
             maxH: '100dvh',
+            flexShrink: 0,
             m: 0,
             borderEndWidth: 0,
             borderRadius: 0,
@@ -127,7 +139,13 @@ export const siteThemeConfig = defineConfig({
             overflow: 'hidden',
           },
           header: { pt: 'env(safe-area-inset-top)' },
-          body: { pb: 'max(1rem, env(safe-area-inset-bottom))' },
+          body: {
+            flex: 1,
+            minH: 0,
+            overflowY: 'auto',
+            overscrollBehaviorY: 'contain',
+            pb: 'max(1rem, env(safe-area-inset-bottom))',
+          },
         },
       }),
       chakraDocsMarkdownContent: defineSlotRecipe({

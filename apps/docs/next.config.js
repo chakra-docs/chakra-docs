@@ -16,7 +16,8 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'none'",
-  "img-src 'self' data:",
+  // Fathom sends pageviews and events through image beacons.
+  `img-src 'self' data: ${fathomOrigin}`,
   "manifest-src 'self'",
   "object-src 'none'",
   // Shiki's Oniguruma engine needs WebAssembly, not JavaScript eval.

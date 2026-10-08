@@ -18,24 +18,53 @@ import {
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
 
+async function getSiteContentSecurityPolicy(env) {
+  const context = {
+    module: { exports: {} },
+    process: { env },
+    require: (specifier) => {
+      assert.equal(specifier, '@nx/next');
+      return {
+        composePlugins: () => (config) => config,
+        withNx: (config) => config,
+      };
+    },
+  };
+  runInNewContext(read('next.config.js'), context);
+  const headers = await context.module.exports.headers();
+  return headers
+    .find(({ source }) => source === '/(.*)')
+    .headers.find(({ key }) => key === 'Content-Security-Policy').value;
+}
+
+test('site CSP allows Fathom tracking images without permitting arbitrary external images', async () => {
+  for (const environment of ['production', 'development']) {
+    for (const [customDomain, origin] of [
+      [undefined, 'https://cdn.usefathom.com'],
+      ['https://analytics.example.com/', 'https://analytics.example.com'],
+    ]) {
+      const policy = await getSiteContentSecurityPolicy({
+        NODE_ENV: environment,
+        NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN: customDomain,
+      });
+      const directives = new Map(
+        policy.split('; ').map((directive) => {
+          const [name, ...sources] = directive.split(' ');
+          return [name, sources];
+        }),
+      );
+      assert.deepEqual(directives.get('img-src'), ["'self'", 'data:', origin]);
+      assert.ok(directives.get('script-src').includes(origin));
+      assert.ok(directives.get('connect-src').includes(origin));
+    }
+  }
+});
+
 test('site CSP permits Shiki WebAssembly but limits JavaScript eval to development', async () => {
   for (const environment of ['production', 'development']) {
-    const context = {
-      module: { exports: {} },
-      process: { env: { NODE_ENV: environment } },
-      require: (specifier) => {
-        assert.equal(specifier, '@nx/next');
-        return {
-          composePlugins: () => (config) => config,
-          withNx: (config) => config,
-        };
-      },
-    };
-    runInNewContext(read('next.config.js'), context);
-    const headers = await context.module.exports.headers();
-    const policy = headers
-      .find(({ source }) => source === '/(.*)')
-      .headers.find(({ key }) => key === 'Content-Security-Policy').value;
+    const policy = await getSiteContentSecurityPolicy({
+      NODE_ENV: environment,
+    });
     const scriptSources = policy
       .split('; ')
       .find((directive) => directive.startsWith('script-src '))
@@ -203,6 +232,15 @@ test('every page using DocsLayout composes the shared mobile controls', () => {
       page,
     );
   }
+});
+
+test('On this page uses an explicit SVG chevron instead of a text fallback', () => {
+  const controls = read('src/components/site-docs-mobile-controls.tsx');
+  assert.match(controls, /import \{ LuChevronDown \} from 'react-icons\/lu'/);
+  assert.match(
+    controls,
+    /<DocsMobileTableOfContents\b[^>]*indicator=\{<LuChevronDown size=\{16\} aria-hidden="true" \/>\}/,
+  );
 });
 
 test('the site mobile menu fills the dynamic viewport without changing the library drawer', () => {
