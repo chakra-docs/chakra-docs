@@ -34,6 +34,8 @@ describe('documentation controls layout', () => {
     });
     cy.get('[role="dialog"] button[data-part="trigger"]').should(($trigger) => {
       const trigger = $trigger[0];
+      expect(Cypress.$(trigger).css('border-top-width')).to.equal('0px');
+      expect(Cypress.$(trigger).css('border-radius')).to.equal('0px');
       const row = trigger.parentElement;
       if (!row) throw new Error('Expected a search row');
       const availableWidth =
