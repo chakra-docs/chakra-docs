@@ -4,7 +4,7 @@ import {
   DocsMobileTableOfContents,
 } from '@chakra-docs/chakra';
 import { Box, useSlotRecipe } from '@chakra-ui/react';
-import { LuChevronDown } from 'react-icons/lu';
+import { LuChevronDown, LuMenu, LuX } from 'react-icons/lu';
 import type { RecommendedSearchResult } from '../docs/search-recommendations';
 import { SiteSearch } from './site-shell';
 
@@ -37,7 +37,21 @@ export function SiteDocsMobileControls({
             recommendedSearchResults={recommendedSearchResults}
           />
         }
-      />
+      >
+        <DocsMobileNavigation.Trigger
+          icon={<LuMenu size={24} aria-hidden="true" focusable="false" />}
+        />
+        <DocsMobileNavigation.Content>
+          <DocsMobileNavigation.Header>
+            <DocsMobileNavigation.Title />
+            <DocsMobileNavigation.CloseTrigger>
+              <LuX size={24} aria-hidden="true" focusable="false" />
+            </DocsMobileNavigation.CloseTrigger>
+          </DocsMobileNavigation.Header>
+          <DocsMobileNavigation.Search />
+          <DocsMobileNavigation.Body />
+        </DocsMobileNavigation.Content>
+      </DocsMobileNavigation.Root>
       <DocsMobileTableOfContents
         headings={page.headings}
         indicator={<LuChevronDown size={16} aria-hidden="true" />}

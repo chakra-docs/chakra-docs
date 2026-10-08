@@ -236,7 +236,10 @@ test('every page using DocsLayout composes the shared mobile controls', () => {
 
 test('On this page uses an explicit SVG chevron instead of a text fallback', () => {
   const controls = read('src/components/site-docs-mobile-controls.tsx');
-  assert.match(controls, /import \{ LuChevronDown \} from 'react-icons\/lu'/);
+  assert.match(
+    controls,
+    /import \{[^}]*\bLuChevronDown\b[^}]*\} from 'react-icons\/lu'/,
+  );
   assert.match(
     controls,
     /<DocsMobileTableOfContents\b[^>]*indicator=\{<LuChevronDown size=\{16\} aria-hidden="true" \/>\}/,
