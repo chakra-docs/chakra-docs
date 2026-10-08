@@ -16,10 +16,12 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'none'",
-  "img-src 'self' data:",
+  // Fathom sends pageviews and events through image beacons.
+  `img-src 'self' data: ${fathomOrigin}`,
   "manifest-src 'self'",
   "object-src 'none'",
-  `script-src 'self' 'unsafe-inline'${developmentScriptPolicy} ${fathomOrigin}`,
+  // Shiki's Oniguruma engine needs WebAssembly, not JavaScript eval.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${developmentScriptPolicy} ${fathomOrigin}`,
   "style-src 'self' 'unsafe-inline' https://kits.fontstack.com",
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',

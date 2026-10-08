@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import {
   getFontstackKitUrl,
   SHARED_FONTSTACK_KIT_URL,
@@ -16,6 +17,73 @@ import {
 
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
+
+async function getSiteContentSecurityPolicy(env) {
+  const context = {
+    module: { exports: {} },
+    process: { env },
+    require: (specifier) => {
+      assert.equal(specifier, '@nx/next');
+      return {
+        composePlugins: () => (config) => config,
+        withNx: (config) => config,
+      };
+    },
+  };
+  runInNewContext(read('next.config.js'), context);
+  const headers = await context.module.exports.headers();
+  return headers
+    .find(({ source }) => source === '/(.*)')
+    .headers.find(({ key }) => key === 'Content-Security-Policy').value;
+}
+
+test('site CSP allows Fathom tracking images without permitting arbitrary external images', async () => {
+  for (const environment of ['production', 'development']) {
+    for (const [customDomain, origin] of [
+      [undefined, 'https://cdn.usefathom.com'],
+      ['https://analytics.example.com/', 'https://analytics.example.com'],
+    ]) {
+      const policy = await getSiteContentSecurityPolicy({
+        NODE_ENV: environment,
+        NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN: customDomain,
+      });
+      const directives = new Map(
+        policy.split('; ').map((directive) => {
+          const [name, ...sources] = directive.split(' ');
+          return [name, sources];
+        }),
+      );
+      assert.deepEqual(directives.get('img-src'), ["'self'", 'data:', origin]);
+      assert.ok(directives.get('script-src').includes(origin));
+      assert.ok(directives.get('connect-src').includes(origin));
+    }
+  }
+});
+
+test('site CSP permits Shiki WebAssembly but limits JavaScript eval to development', async () => {
+  for (const environment of ['production', 'development']) {
+    const policy = await getSiteContentSecurityPolicy({
+      NODE_ENV: environment,
+    });
+    const scriptSources = policy
+      .split('; ')
+      .find((directive) => directive.startsWith('script-src '))
+      .split(' ');
+    // Compare complete CSP tokens, not URL substrings or partial allowlists.
+    assert.deepEqual(
+      scriptSources,
+      [
+        'script-src',
+        "'self'",
+        "'unsafe-inline'",
+        "'wasm-unsafe-eval'",
+        ...(environment === 'development' ? ["'unsafe-eval'"] : []),
+        'https://cdn.usefathom.com',
+      ],
+      environment,
+    );
+  }
+});
 
 test('OG capture copy is bounded Unicode text with safe defaults', () => {
   assert.deepEqual(getOgImageContent(new URLSearchParams()), OG_IMAGE_DEFAULTS);
@@ -132,6 +200,76 @@ test('fonts are document-owned and the theme provider precedes Emotion styles', 
   assert.match(app, /defaultTheme="system"/);
   assert.match(app, /<SiteFooter/);
   assert.match(app, /<CommuneFooter/);
+});
+
+test('Postkit code blocks use icon-only copy controls with accessible feedback', () => {
+  const provider = read('src/pages/_app.tsx').match(
+    /<PostkitProvider\b[\s\S]*?\n      >/,
+  );
+  assert.ok(
+    provider,
+    'The app must configure Postkit separately from Chakra Docs',
+  );
+  assert.match(provider[0], /codeBlock=\{\{/);
+  assert.match(provider[0], /copyIcon: <LuCopy aria-hidden="true" \/>/);
+  assert.match(provider[0], /copiedIcon: <LuCheck aria-hidden="true" \/>/);
+  assert.match(provider[0], /copyLabel: null/);
+  assert.match(provider[0], /copyAriaLabel: 'Copy code'/);
+  assert.match(provider[0], /copyFeedback: 'tooltip'/);
+  assert.match(provider[0], /copiedLabel: 'Copied!'/);
+});
+
+test('every page using DocsLayout composes the shared mobile controls', () => {
+  for (const page of [
+    'src/pages/index.tsx',
+    'src/pages/showcase.tsx',
+    'src/pages/docs/[[...slug]].tsx',
+  ]) {
+    const source = read(page);
+    const layout = source.match(/<DocsLayout\b[\s\S]*?>/);
+    assert.ok(layout, page);
+    assert.match(layout[0], /mobileNavigation=\{false\}/, page);
+    assert.match(layout[0], /mobileToc=\{false\}/, page);
+    assert.match(source, /<SiteDocsMobileControls/, page);
+    assert.ok(
+      source.indexOf('<SiteDocsMobileControls') <
+        source.indexOf('<DocsArticle'),
+      page,
+    );
+  }
+});
+
+test('On this page uses an explicit SVG chevron instead of a text fallback', () => {
+  const controls = read('src/components/site-docs-mobile-controls.tsx');
+  assert.match(
+    controls,
+    /import \{[^}]*\bLuChevronDown\b[^}]*\} from 'react-icons\/lu'/,
+  );
+  assert.match(
+    controls,
+    /<DocsMobileTableOfContents\b[^>]*indicator=\{<LuChevronDown size=\{16\} aria-hidden="true" \/>\}/,
+  );
+});
+
+test('the site mobile menu fills the dynamic viewport without changing the library drawer', () => {
+  const recipe = read('src/theme/system.ts').match(
+    /chakraDocsMobileNavigation: defineSlotRecipe\(\{[\s\S]*?\n      \}\),/,
+  );
+  assert.ok(recipe);
+  assert.match(recipe[0], /position: 'fixed'/);
+  assert.match(recipe[0], /inset: 0/);
+  assert.match(recipe[0], /w: '100dvw'/);
+  assert.match(recipe[0], /h: '100dvh'/);
+  assert.match(recipe[0], /maxW: 'none'/);
+  assert.match(recipe[0], /borderRadius: 0/);
+  assert.match(recipe[0], /overflow: 'hidden'/);
+  assert.match(
+    read('src/theme/system.ts'),
+    /pt: 'calc\(env\(safe-area-inset-top, 0px\) \+ 6px\)'/,
+  );
+  assert.match(read('src/theme/system.ts'), /pb: '6px'/);
+  assert.match(recipe[0], /\.\.\.siteMobileNavigationStyles/);
+  assert.match(recipe[0], /env\(safe-area-inset-bottom\)/);
 });
 
 test('site footer fills the viewport before the Commune section', () => {

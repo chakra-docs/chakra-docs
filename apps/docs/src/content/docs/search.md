@@ -9,7 +9,7 @@ Every manifest includes a `search` array. The records are created from published
 
 ## Server search
 
-This demo keeps the corpus on the server. `@chakra-docs/search` builds a reusable in-memory index, `@chakra-docs/next/search` exposes it through a Pages Router API route, and the browser loads only a bounded list of compact results.
+This site keeps the corpus on the server. `@chakra-docs/search` builds a reusable in-memory index, `@chakra-docs/next/search` exposes it through a Pages Router API route, and the browser loads only a bounded list of compact results.
 
 ```ts
 // pages/api/docs/search.ts
@@ -195,7 +195,7 @@ composing overrides.
 
 ## Keyboard shortcut
 
-The demo search listens for `Command+K` and `Ctrl+K`. When the dialog opens, the input receives focus. Arrow keys move through results and Enter opens the active result.
+The search dialog listens for `Command+K` and `Ctrl+K`. When the dialog opens, the input receives focus. Arrow keys move through results and Enter opens the active result.
 
 Heading results use the same route contract as page results, so selecting one can deep-link directly to a section such as `/docs/components#docslayout`.
 

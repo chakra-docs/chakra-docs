@@ -94,6 +94,29 @@ describe('docs', () => {
     }
   });
 
+  it('uses icon-only Postkit copy buttons and confirms successful copies', () => {
+    visit('/docs/postkit');
+    cy.window().then((window) => {
+      Object.defineProperty(window.navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: cy.stub().as('copyCode').resolves() },
+      });
+    });
+    cy.get(
+      '[data-postkit-component="CodeBlock"] button[aria-label="Copy code"]',
+    )
+      .first()
+      .as('postkitCopy')
+      .should('be.visible')
+      .and('have.text', '')
+      .find('svg')
+      .should('exist');
+    cy.get('@postkitCopy').click();
+    cy.get('@copyCode').should('have.been.calledOnce');
+    cy.get('@postkitCopy').should('have.text', '').find('svg').should('exist');
+    cy.get('[role="tooltip"]').should('contain.text', 'Copied!');
+  });
+
   function registerResponsiveTableTests() {
     for (const width of [320, 375, 768, 1440]) {
       it(`contains wide API, Markdown and Postkit tables at ${width}px without page overflow`, () => {
@@ -203,6 +226,9 @@ describe('docs', () => {
       expect(response.headers['content-security-policy']).to.contain(
         "frame-ancestors 'none'",
       );
+      expect(response.headers['content-security-policy']).to.contain(
+        "'wasm-unsafe-eval'",
+      );
       expect(response.headers['strict-transport-security']).to.equal(
         'max-age=31536000; includeSubDomains',
       );
@@ -223,8 +249,8 @@ describe('docs', () => {
 
     cy.get('main').should('have.length', 1);
     cy.get('h1').should('contain.text', 'Overview');
-    cy.get('#what-this-example-includes').should('exist');
-    cy.get('a[href="#what-this-example-includes"]').should('exist');
+    cy.get('#explore-the-documentation-site').should('exist');
+    cy.get('a[href="#explore-the-documentation-site"]').should('exist');
   });
 
   it('renders the Postkit integration page through Postkit prose and directives', () => {
@@ -318,7 +344,15 @@ describe('docs', () => {
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
 
     cy.get('@pageActionsMenu').click();
-    cy.get('[role="menu"]').should('be.visible').type('{esc}');
+    cy.get('@pageActionsMenu')
+      .invoke('attr', 'aria-controls')
+      .should('be.a', 'string')
+      .then((menuId) => {
+        cy.get(`[id="${menuId}"]`)
+          .should('have.length', 1)
+          .and('be.visible')
+          .type('{esc}');
+      });
     cy.get('@pageActionsMenu')
       .should('have.attr', 'aria-expanded', 'false')
       .and('be.focused');
@@ -514,7 +548,7 @@ describe('docs', () => {
     cy.get('[role="option"]').should('have.length', 12);
     cy.get('[role="combobox"]').as('searchInput').should('be.focused');
 
-    function activeRowIsVisible() {
+    function activeRowIsVisible(index: number) {
       cy.get('@searchInput')
         .should(($input) => {
           const input = $input[0];
@@ -525,17 +559,45 @@ describe('docs', () => {
           const row = option?.parentElement;
           const scroller = row?.parentElement?.parentElement;
           if (!row || !scroller) throw new Error('Missing active result row');
+          expect(row.getAttribute('data-search-result-index')).to.equal(
+            String(index),
+          );
           const bounds = row.getBoundingClientRect();
           const viewport = scroller.getBoundingClientRect();
-          expect(bounds.top).to.be.at.least(viewport.top);
-          expect(bounds.bottom).to.be.at.most(viewport.bottom);
+          // CSS transforms produce fractional rectangles. Allow one CSS pixel
+          // of rounding, not the partially hidden rows this regression guards.
+          expect(bounds.top).to.be.at.least(viewport.top - 1);
+          expect(
+            bounds.bottom,
+            JSON.stringify({
+              row: bounds.toJSON(),
+              viewport: viewport.toJSON(),
+              clientHeight: scroller.clientHeight,
+              scrollTop: scroller.scrollTop,
+              scrollHeight: scroller.scrollHeight,
+              scrollBehavior: Cypress.$(scroller).css('scroll-behavior'),
+            }),
+          ).to.be.at.most(viewport.bottom + 1);
         })
         .and('be.focused');
     }
 
     for (let index = 1; index < 12; index++) {
       cy.get('@searchInput').type('{downarrow}', { scrollBehavior: false });
-      activeRowIsVisible();
+      activeRowIsVisible(index);
+      if (index === 5) {
+        // Keep the scale used by the open animation to exercise visual versus
+        // layout pixel measurements independently of runner animation timing.
+        cy.get('[role="dialog"]').invoke('css', 'scale', '0.95');
+        // Model a late font/content reflow after the keyboard scroll effect.
+        // Resizing must keep the same row visible without another key press.
+        cy.get('[data-search-result-index="5"]').invoke(
+          'css',
+          'padding-bottom',
+          '60px',
+        );
+        activeRowIsVisible(index);
+      }
     }
     cy.get('[role="listbox"]')
       .parent()
@@ -544,7 +606,7 @@ describe('docs', () => {
       });
     for (let index = 10; index >= 0; index--) {
       cy.get('@searchInput').type('{uparrow}', { scrollBehavior: false });
-      activeRowIsVisible();
+      activeRowIsVisible(index);
     }
     cy.get('[role="dialog"]').should(($dialog) => {
       expect($dialog[0].getBoundingClientRect().bottom).to.be.at.most(480);

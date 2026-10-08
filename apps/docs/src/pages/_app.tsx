@@ -60,7 +60,18 @@ function CustomApp({ Component, pageProps, router }: AppProps) {
       disableTransitionOnChange
       storageKey="chakra-docs-system-color-mode"
     >
-      <PostkitProvider system={docsSystem} codeBlockAdapter={shikiAdapter}>
+      <PostkitProvider
+        system={docsSystem}
+        codeBlockAdapter={shikiAdapter}
+        codeBlock={{
+          copyIcon: <LuCopy aria-hidden="true" />,
+          copiedIcon: <LuCheck aria-hidden="true" />,
+          copyLabel: null,
+          copyAriaLabel: 'Copy code',
+          copyFeedback: 'tooltip',
+          copiedLabel: 'Copied!',
+        }}
+      >
         <Analytics>
           <DocumentationProvider>
             <Box

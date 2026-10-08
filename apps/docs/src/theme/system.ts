@@ -1,3 +1,4 @@
+import type { SystemStyleObject } from '@chakra-ui/react';
 import {
   chakraDocsSlotRecipes,
   chakraDocsThemeConfig,
@@ -33,6 +34,55 @@ const postkitTheme = createPostkitTheme({
     },
   },
 });
+
+// Apply these through slotProps as well as the recipe: unlayered Dialog and
+// Button styles otherwise take precedence over the recipe cascade layer.
+export const siteMobileNavigationStyles = {
+  header: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minH: '56px',
+    gap: 3,
+    px: 4,
+    pt: 'calc(env(safe-area-inset-top, 0px) + 6px)',
+    pb: '6px',
+  },
+  title: { flex: 1, minW: 0, m: 0, lineHeight: '24px' },
+  closeTrigger: {
+    // asChild merges Dialog.CloseTrigger styles after the Button styles.
+    '&&': { position: 'static', inset: 'auto' },
+    flexShrink: 0,
+    p: 0,
+    boxSize: '44px',
+    minW: '44px',
+    minH: '44px',
+    _icon: { boxSize: '24px', display: 'block' },
+  },
+  search: {
+    minW: 0,
+    p: 0,
+    '& button[data-scope="dialog"][data-part="trigger"]': {
+      w: '100%',
+      minW: 0,
+      maxW: '100%',
+      minH: '56px',
+      borderWidth: 0,
+      borderRadius: 0,
+      bg: 'transparent',
+      boxShadow: 'none',
+      px: 4,
+      justifyContent: 'space-between',
+      _hover: { bg: 'bg.subtle' },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'fg',
+        outlineOffset: '-2px',
+      },
+    },
+  },
+} satisfies Record<string, SystemStyleObject>;
 
 export const siteThemeConfig = defineConfig({
   globalCss: {
@@ -101,6 +151,62 @@ export const siteThemeConfig = defineConfig({
     },
     slotRecipes: {
       ...siteSlotRecipes,
+      chakraDocsLayout: defineSlotRecipe({
+        slots: [...chakraDocsSlotRecipes.chakraDocsLayout.slots],
+        base: { root: { pt: { base: 4, lg: 8 } } },
+      }),
+      chakraDocsMobileNavigation: defineSlotRecipe({
+        slots: [...chakraDocsSlotRecipes.chakraDocsMobileNavigation.slots],
+        base: {
+          trigger: {
+            borderWidth: 0,
+            boxSize: '44px',
+            minW: '44px',
+            minH: '44px',
+            px: 0,
+            gap: 0,
+            justifyContent: 'center',
+            _icon: { boxSize: '24px' },
+          },
+          triggerIcon: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSize: '24px',
+            lineHeight: 1,
+            '& svg': { display: 'block' },
+          },
+          triggerLabel: { display: 'none' },
+          positioner: {
+            position: 'fixed',
+            inset: 0,
+            w: '100dvw',
+            h: '100dvh',
+            p: 0,
+            overflow: 'hidden',
+          },
+          content: {
+            w: '100dvw',
+            maxW: 'none',
+            h: '100dvh',
+            maxH: '100dvh',
+            flexShrink: 0,
+            m: 0,
+            borderEndWidth: 0,
+            borderRadius: 0,
+            boxShadow: 'none',
+            overflow: 'hidden',
+          },
+          ...siteMobileNavigationStyles,
+          body: {
+            flex: 1,
+            minH: 0,
+            overflowY: 'auto',
+            overscrollBehaviorY: 'contain',
+            pb: 'max(1rem, env(safe-area-inset-bottom))',
+          },
+        },
+      }),
       chakraDocsMarkdownContent: defineSlotRecipe({
         slots: [...chakraDocsSlotRecipes.chakraDocsMarkdownContent.slots],
         base: {

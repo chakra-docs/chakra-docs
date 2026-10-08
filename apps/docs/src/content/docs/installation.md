@@ -5,34 +5,40 @@ order: 1
 tags: [setup]
 ---
 
-The demo app is a pnpm workspace package named `docs`. It declares the local Chakra Docs packages it imports and keeps Next, React, and Chakra UI as application dependencies.
+Add Chakra Docs to an existing Next.js Pages Router application. Your application owns Next.js, React, React DOM, and Chakra UI; install the documentation packages for the features you use.
 
-## Workspace dependencies
+## Install
 
-Use the package manager to link local packages into the app workspace.
+For a filesystem-backed documentation section with server search:
 
 ```bash
-pnpm --filter docs add @chakra-docs/core @chakra-docs/chakra @chakra-docs/next @chakra-docs/search @chakra-docs/source-filesystem @chakra-ui/react
+npm install @chakra-docs/core @chakra-docs/chakra @chakra-docs/next @chakra-docs/search @chakra-docs/source-filesystem @chakra-ui/react @emotion/react
 ```
 
 For Pagefind indexing, add the optional search adapter too.
 
 ```bash
-pnpm --filter docs add @chakra-docs/search-pagefind
+npm install @chakra-docs/search-pagefind
 ```
+
+Using pnpm, Yarn, or Bun? Use that package manager's `add` command with the same package names. In a monorepo, run the command in the application workspace or select it with your package manager's workspace filter.
 
 ## App provider
 
-Wrap the Pages Router app with Chakra and Chakra Docs providers in `_app.tsx`. The host app owns the Chakra system, theme, and link adapter.
+Wrap the Pages Router app with Chakra and Chakra Docs providers in `_app.tsx`. Include the Chakra Docs theme configuration so its component recipes are available. The host app owns the Chakra system, theme, and link adapter.
 
 ```tsx
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import type { AppProps } from 'next/app';
+import { ChakraProvider, createSystem, defaultConfig } from '@chakra-ui/react';
 import { DocsProvider } from '@chakra-docs/chakra';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
 import { NextLink } from '@chakra-docs/next/link';
 
-export default function App({ Component, pageProps }) {
+const system = createSystem(defaultConfig, chakraDocsThemeConfig);
+
+export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ChakraProvider value={defaultSystem}>
+    <ChakraProvider value={system}>
       <DocsProvider config={{ linkComponent: NextLink }}>
         <Component {...pageProps} />
       </DocsProvider>
@@ -43,7 +49,7 @@ export default function App({ Component, pageProps }) {
 
 ## Project structure
 
-This app keeps the documentation content near the Pages Router app:
+This repository keeps the documentation content near the Pages Router app:
 
 ```txt
 apps/docs/
@@ -57,4 +63,4 @@ apps/docs/
   src/docs/manifest.ts
 ```
 
-That location is a choice made by the host app. A real product site can point Chakra Docs at a package docs folder, a generated directory, or a repository-backed source.
+That location is a choice made by the host app. Point Chakra Docs at your own content directory using the [discovery configuration](/docs/configuration), then connect the [Pages Router route](/docs/pages-router).

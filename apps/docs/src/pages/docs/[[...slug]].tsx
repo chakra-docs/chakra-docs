@@ -14,7 +14,8 @@ import { SiteMetadata } from '../../components/site-metadata';
 import { Box, Flex } from '@chakra-ui/react';
 import { LuChevronDown } from 'react-icons/lu';
 import { PostkitMarkdown } from '../../components/postkit-markdown';
-import { SiteSearch, SiteShell } from '../../components/site-shell';
+import { SiteDocsMobileControls } from '../../components/site-docs-mobile-controls';
+import { SiteShell } from '../../components/site-shell';
 import { StructuredData } from '../../components/structured-data';
 import {
   getRecommendedSearchResults,
@@ -55,16 +56,14 @@ export default function DocsRoutePage(props: DocsRoutePageProps) {
           page={props.page}
           sidebarCollapsible
           sidebarDefaultExpanded="active"
-          mobileNavigationProps={{
-            title: 'Browse documentation',
-            search: (
-              <SiteSearch
-                collectionId={props.page.collectionId}
-                recommendedSearchResults={props.recommendedSearchResults}
-              />
-            ),
-          }}
+          mobileNavigation={false}
+          mobileToc={false}
         >
+          <SiteDocsMobileControls
+            nav={props.nav}
+            page={props.page}
+            recommendedSearchResults={props.recommendedSearchResults}
+          />
           <DocsArticle
             breadcrumbs={
               <Flex

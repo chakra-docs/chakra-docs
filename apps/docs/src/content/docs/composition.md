@@ -22,7 +22,7 @@ Product sites often need docs beside pricing pages, customer stories, dashboards
 
 ## Common customizations
 
-- Replace the demo Markdown renderer with MDX.
+- Use MDX when your content needs interactive React components.
 - Point `contentPath` at a package-specific docs directory.
 - Add multiple collections under different `basePath` values.
 - Swap server search for local records, Pagefind, or a hosted search service.
@@ -31,4 +31,4 @@ Product sites often need docs beside pricing pages, customer stories, dashboards
 
 ## Next steps
 
-Replace the sample Markdown with package documentation, add MDX rendering if the site needs rich examples, and extend the showcase page with real integrations as they land.
+Start with [configuration](/docs/configuration) to connect your content source, then follow the [Pages Router guide](/docs/pages-router) to render it. Use the [component reference](/docs/components) to customize navigation, page actions, and code blocks, or add [Postkit](/docs/postkit) for richer Markdown rendering.

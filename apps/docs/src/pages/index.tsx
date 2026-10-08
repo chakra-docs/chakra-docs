@@ -16,7 +16,8 @@ import type { GetStaticProps } from 'next';
 import { SiteMetadata } from '../components/site-metadata';
 import { LuArrowRight } from 'react-icons/lu';
 import { SiteLink } from '../components/site-link';
-import { SiteSearch, SiteShell } from '../components/site-shell';
+import { SiteDocsMobileControls } from '../components/site-docs-mobile-controls';
+import { SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 import { guides } from '../docs/guides';
 import {
@@ -68,15 +69,14 @@ export default function Index(props: IndexPageProps) {
           headings={page.headings}
           sidebarCollapsible
           sidebarDefaultExpanded="active"
-          mobileNavigationProps={{
-            title: 'Browse documentation',
-            search: (
-              <SiteSearch
-                recommendedSearchResults={props.recommendedSearchResults}
-              />
-            ),
-          }}
+          mobileNavigation={false}
+          mobileToc={false}
         >
+          <SiteDocsMobileControls
+            nav={props.nav}
+            page={page}
+            recommendedSearchResults={props.recommendedSearchResults}
+          />
           <DocsArticle page={page} headings={page.headings}>
             <Stack gap={10}>
               <Stack align="flex-start" gap={4}>

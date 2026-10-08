@@ -4245,7 +4245,8 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
     scrollTop: number;
     clientTop: number;
     clientHeight: number;
-    getBoundingClientRect: () => { top: number };
+    offsetHeight: number;
+    getBoundingClientRect: () => { top: number; height: number };
     querySelector: (selector: string) => {
       getBoundingClientRect: () => { top: number; bottom: number };
     } | null;
@@ -4491,23 +4492,52 @@ export function DocsSearch(props: DocsSearchProps): ReactNode {
 
   useEffect(() => {
     const scroller = resultsRef.current;
-    if (!activeResultId || !scroller) return;
+    if (!open || !activeResultId || !scroller) return;
     const row = scroller.querySelector(
       `[data-search-result-index="${selectedIndex}"]`,
     );
     if (!row) return;
 
-    // Scroll only the results pane, not the dialog or the host document. Keep
-    // the whole row visible without smooth-scroll lag during key repeat.
-    const top = scroller.getBoundingClientRect().top + scroller.clientTop;
-    const bottom = top + scroller.clientHeight;
-    const bounds = row.getBoundingClientRect();
-    if (bounds.top < top) {
-      scroller.scrollTop += bounds.top - top;
-    } else if (bounds.bottom > bottom) {
-      scroller.scrollTop += Math.min(bounds.bottom - bottom, bounds.top - top);
+    function keepActiveRowVisible() {
+      if (!scroller || !row) return;
+      // Scroll only the results pane, not the dialog or the host document.
+      const viewport = scroller.getBoundingClientRect();
+      // Rects include the dialog's scale animation; client sizes and scrollTop
+      // are layout pixels. Convert both the viewport and scroll delta.
+      const scale =
+        scroller.offsetHeight > 0 && viewport.height > 0
+          ? viewport.height / scroller.offsetHeight
+          : 1;
+      const top = viewport.top + scroller.clientTop * scale;
+      const bottom = top + scroller.clientHeight * scale;
+      const bounds = row.getBoundingClientRect();
+      if (bounds.top < top) {
+        scroller.scrollTop += (bounds.top - top) / scale;
+      } else if (bounds.bottom > bottom) {
+        scroller.scrollTop +=
+          Math.min(bounds.bottom - bottom, bounds.top - top) / scale;
+      }
     }
-  }, [activeResultId, results, selectedIndex]);
+
+    keepActiveRowVisible();
+    // Webfonts, wrapping, and viewport resizing can change the geometry after
+    // the selection effect. Recheck after layout without moving input focus.
+    const ResizeObserver = (
+      globalThis as unknown as {
+        ResizeObserver?: new (callback: () => void) => {
+          observe: (target: unknown) => void;
+          disconnect: () => void;
+        };
+      }
+    ).ResizeObserver;
+    if (!ResizeObserver) return;
+    const observer = new ResizeObserver(keepActiveRowVisible);
+    observer.observe(scroller);
+    observer.observe(row);
+    const list = scroller.querySelector('[role="listbox"]');
+    if (list) observer.observe(list);
+    return () => observer.disconnect();
+  }, [activeResultId, open, results, selectedIndex]);
 
   function closeSearch() {
     setOpen(false);
