@@ -90,4 +90,4 @@ The built manifest includes:
 - `search` for server search, local client search, or external indexing.
 - `sitemap` and `feeds` records for site integrations.
 
-The docs route consumes the manifest for static paths, page props, and navigation. The demo search API consumes the same process-cached manifest without serializing its search corpus into every page.
+The docs route consumes the manifest for static paths, page props, and navigation. The search API consumes the same process-cached manifest without serializing its search corpus into every page.

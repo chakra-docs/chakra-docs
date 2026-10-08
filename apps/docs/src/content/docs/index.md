@@ -7,7 +7,7 @@ tags: [overview]
 
 Chakra Docs is built for teams that already have a product site. It gives the documentation section a shared document model, navigation, headings, pagination, search records, and Chakra UI primitives while the host app keeps ownership of the rest of the experience.
 
-## What this example includes
+## Explore the documentation site
 
 - A docs-first welcome page at `/`, composed with the native docs layout.
 - Working component examples linked from `/showcase`.
