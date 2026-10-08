@@ -14,7 +14,8 @@ import { serializeNextProps } from '@chakra-docs/next/pages';
 import { Stack, Text } from '@chakra-ui/react';
 import type { GetStaticProps } from 'next';
 import { SiteMetadata } from '../components/site-metadata';
-import { SiteSearch, SiteShell } from '../components/site-shell';
+import { SiteDocsMobileControls } from '../components/site-docs-mobile-controls';
+import { SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
 import { guides } from '../docs/guides';
 import {
@@ -60,15 +61,14 @@ export default function ShowcasePage(props: ShowcasePageProps) {
           page={page}
           sidebarCollapsible
           sidebarDefaultExpanded="active"
-          mobileNavigationProps={{
-            title: 'Browse documentation',
-            search: (
-              <SiteSearch
-                recommendedSearchResults={props.recommendedSearchResults}
-              />
-            ),
-          }}
+          mobileNavigation={false}
+          mobileToc={false}
         >
+          <SiteDocsMobileControls
+            nav={props.nav}
+            page={page}
+            recommendedSearchResults={props.recommendedSearchResults}
+          />
           <DocsArticle page={page}>
             <Stack gap={8}>
               <Text color="fg.muted">

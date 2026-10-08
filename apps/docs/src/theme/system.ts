@@ -101,6 +101,35 @@ export const siteThemeConfig = defineConfig({
     },
     slotRecipes: {
       ...siteSlotRecipes,
+      chakraDocsLayout: defineSlotRecipe({
+        slots: [...chakraDocsSlotRecipes.chakraDocsLayout.slots],
+        base: { root: { pt: { base: 4, lg: 8 } } },
+      }),
+      chakraDocsMobileNavigation: defineSlotRecipe({
+        slots: [...chakraDocsSlotRecipes.chakraDocsMobileNavigation.slots],
+        base: {
+          positioner: {
+            position: 'fixed',
+            inset: 0,
+            w: '100dvw',
+            h: '100dvh',
+            p: 0,
+          },
+          content: {
+            w: '100dvw',
+            maxW: 'none',
+            h: '100dvh',
+            maxH: '100dvh',
+            m: 0,
+            borderEndWidth: 0,
+            borderRadius: 0,
+            boxShadow: 'none',
+            overflow: 'hidden',
+          },
+          header: { pt: 'env(safe-area-inset-top)' },
+          body: { pb: 'max(1rem, env(safe-area-inset-bottom))' },
+        },
+      }),
       chakraDocsMarkdownContent: defineSlotRecipe({
         slots: [...chakraDocsSlotRecipes.chakraDocsMarkdownContent.slots],
         base: {

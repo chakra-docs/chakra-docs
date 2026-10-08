@@ -4,6 +4,29 @@ import { siteOgImageRecipe } from './og-image';
 /** Site chrome matches react-fathom; library component recipes stay reusable. */
 export const siteSlotRecipes = {
   siteOgImage: siteOgImageRecipe,
+  siteDocsMobileControls: defineSlotRecipe({
+    slots: ['root', 'navigation', 'toc', 'tocLabel'],
+    base: {
+      root: {
+        display: { base: 'flex', xl: 'none' },
+        alignItems: 'flex-start',
+        gap: 3,
+        minW: 0,
+        mb: 6,
+        pb: 3,
+        borderBottomWidth: '1px',
+      },
+      navigation: { flexShrink: 0 },
+      toc: { flex: '1', minW: 0, mb: 0, pb: 0, borderBottomWidth: 0 },
+      tocLabel: { flexShrink: 0, whiteSpace: 'nowrap' },
+    },
+    variants: {
+      hasToc: {
+        true: {},
+        false: { root: { display: { base: 'flex', lg: 'none' } } },
+      },
+    },
+  }),
   siteShell: defineSlotRecipe({
     slots: [
       'root',

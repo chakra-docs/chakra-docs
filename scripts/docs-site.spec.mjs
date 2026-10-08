@@ -185,6 +185,42 @@ test('Postkit code blocks use icon-only copy controls with accessible feedback',
   assert.match(provider[0], /copiedLabel: 'Copied!'/);
 });
 
+test('every page using DocsLayout composes the shared mobile controls', () => {
+  for (const page of [
+    'src/pages/index.tsx',
+    'src/pages/showcase.tsx',
+    'src/pages/docs/[[...slug]].tsx',
+  ]) {
+    const source = read(page);
+    const layout = source.match(/<DocsLayout\b[\s\S]*?>/);
+    assert.ok(layout, page);
+    assert.match(layout[0], /mobileNavigation=\{false\}/, page);
+    assert.match(layout[0], /mobileToc=\{false\}/, page);
+    assert.match(source, /<SiteDocsMobileControls/, page);
+    assert.ok(
+      source.indexOf('<SiteDocsMobileControls') <
+        source.indexOf('<DocsArticle'),
+      page,
+    );
+  }
+});
+
+test('the site mobile menu fills the dynamic viewport without changing the library drawer', () => {
+  const recipe = read('src/theme/system.ts').match(
+    /chakraDocsMobileNavigation: defineSlotRecipe\(\{[\s\S]*?\n      \}\),/,
+  );
+  assert.ok(recipe);
+  assert.match(recipe[0], /position: 'fixed'/);
+  assert.match(recipe[0], /inset: 0/);
+  assert.match(recipe[0], /w: '100dvw'/);
+  assert.match(recipe[0], /h: '100dvh'/);
+  assert.match(recipe[0], /maxW: 'none'/);
+  assert.match(recipe[0], /borderRadius: 0/);
+  assert.match(recipe[0], /overflow: 'hidden'/);
+  assert.match(recipe[0], /env\(safe-area-inset-top\)/);
+  assert.match(recipe[0], /env\(safe-area-inset-bottom\)/);
+});
+
 test('site footer fills the viewport before the Commune section', () => {
   const app = read('src/pages/_app.tsx');
   assert.match(
