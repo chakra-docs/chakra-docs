@@ -1119,7 +1119,99 @@ describe('DocsSearch keyboard interactions', () => {
     expect(document.activeElement).toBe(input);
   });
 
-  it('keeps the active row visible in both directions without moving focus or scrolling the page', async () => {
+  it.each([1, 0.95])(
+    'keeps the active row visible in both directions at %s dialog scale without moving focus or scrolling the page',
+    async (scale) => {
+      const input = await openSearch();
+      const list = required(
+        document.getElementById(required(input.getAttribute('aria-controls'))),
+      );
+      const scroller = required(list.parentElement);
+      const rows = [
+        ...list.querySelectorAll<HTMLElement>('[data-search-result-index]'),
+      ];
+      const options = [
+        ...list.querySelectorAll<HTMLElement>('[role="option"]'),
+      ];
+      expect(options).toHaveLength(12);
+      Object.defineProperties(scroller, {
+        clientHeight: { configurable: true, value: 100 },
+        clientTop: { configurable: true, value: 1 },
+        offsetHeight: { configurable: true, value: 102 },
+      });
+      vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue({
+        top: 100,
+        height: 102 * scale,
+      } as DOMRect);
+      rows.forEach((row, index) => {
+        vi.spyOn(row, 'getBoundingClientRect').mockImplementation(
+          () =>
+            ({
+              top: 100 + (1 + index * 40 - scroller.scrollTop) * scale,
+              bottom: 100 + (41 + index * 40 - scroller.scrollTop) * scale,
+            }) as DOMRect,
+        );
+      });
+      const assertSelected = (index: number) => {
+        expect(input.getAttribute('aria-activedescendant')).toBe(
+          options[index].id,
+        );
+        expect(
+          options.filter(
+            (option) => option.getAttribute('aria-selected') === 'true',
+          ),
+        ).toEqual([options[index]]);
+        expect(options.every((option) => option.tabIndex === -1)).toBe(true);
+        expect(document.activeElement).toBe(input);
+      };
+      assertSelected(0);
+      await press(input, 'ArrowUp');
+      assertSelected(0);
+      for (let index = 1; index < options.length; index++) {
+        await press(input, 'ArrowDown');
+        assertSelected(index);
+        expect(rows[index].getBoundingClientRect().bottom).toBeLessThanOrEqual(
+          100 + 101 * scale + 1e-8,
+        );
+      }
+      await press(input, 'ArrowDown');
+      assertSelected(11);
+      expect(scroller.scrollTop).toBeCloseTo(380);
+      for (let index = 10; index >= 0; index--) {
+        await press(input, 'ArrowUp');
+        assertSelected(index);
+        expect(rows[index].getBoundingClientRect().top).toBeGreaterThanOrEqual(
+          100 + scale - 1e-8,
+        );
+      }
+      expect(scroller.scrollTop).toBeCloseTo(0);
+      expect(document.documentElement.scrollTop).toBe(0);
+      expect(document.body.scrollTop).toBe(0);
+    },
+  );
+
+  it('keeps the active result visible after pane and result-content resizing', async () => {
+    const observers: {
+      callback: () => void;
+      targets: Set<Element>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        targets = new Set<Element>();
+        disconnect = vi.fn();
+        constructor(public callback: () => void) {
+          observers.push(this);
+        }
+        observe(target: Element) {
+          this.targets.add(target);
+        }
+        unobserve(target: Element) {
+          this.targets.delete(target);
+        }
+      },
+    );
     const input = await openSearch();
     const list = required(
       document.getElementById(required(input.getAttribute('aria-controls'))),
@@ -1128,10 +1220,10 @@ describe('DocsSearch keyboard interactions', () => {
     const rows = [
       ...list.querySelectorAll<HTMLElement>('[data-search-result-index]'),
     ];
-    const options = [...list.querySelectorAll<HTMLElement>('[role="option"]')];
-    expect(options).toHaveLength(12);
+    let paneHeight = 100;
+    let rowHeight = 40;
     Object.defineProperties(scroller, {
-      clientHeight: { configurable: true, value: 100 },
+      clientHeight: { configurable: true, get: () => paneHeight },
       clientTop: { configurable: true, value: 1 },
     });
     vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue({
@@ -1141,46 +1233,27 @@ describe('DocsSearch keyboard interactions', () => {
       vi.spyOn(row, 'getBoundingClientRect').mockImplementation(
         () =>
           ({
-            top: 101 + index * 40 - scroller.scrollTop,
-            bottom: 141 + index * 40 - scroller.scrollTop,
+            top: 101 + index * rowHeight - scroller.scrollTop,
+            bottom: 101 + (index + 1) * rowHeight - scroller.scrollTop,
           }) as DOMRect,
       );
     });
-    const assertSelected = (index: number) => {
-      expect(input.getAttribute('aria-activedescendant')).toBe(
-        options[index].id,
-      );
-      expect(
-        options.filter(
-          (option) => option.getAttribute('aria-selected') === 'true',
-        ),
-      ).toEqual([options[index]]);
-      expect(options.every((option) => option.tabIndex === -1)).toBe(true);
-      expect(document.activeElement).toBe(input);
-    };
-    assertSelected(0);
-    await press(input, 'ArrowUp');
-    assertSelected(0);
-    for (let index = 1; index < options.length; index++) {
-      await press(input, 'ArrowDown');
-      assertSelected(index);
-      expect(rows[index].getBoundingClientRect().bottom).toBeLessThanOrEqual(
-        201,
-      );
-    }
     await press(input, 'ArrowDown');
-    assertSelected(11);
-    expect(scroller.scrollTop).toBe(380);
-    for (let index = 10; index >= 0; index--) {
-      await press(input, 'ArrowUp');
-      assertSelected(index);
-      expect(rows[index].getBoundingClientRect().top).toBeGreaterThanOrEqual(
-        101,
-      );
-    }
-    expect(scroller.scrollTop).toBe(0);
+    const observer = required(
+      observers.find((entry) => entry.targets.has(rows[1])),
+    );
+    expect(observer.targets.has(scroller)).toBe(true);
+    expect(observer.targets.has(list)).toBe(true);
+    paneHeight = 60;
+    await act(() => observer.callback());
+    expect(scroller.scrollTop).toBe(20);
+    rowHeight = 60;
+    await act(() => observer.callback());
+    expect(rows[1].getBoundingClientRect().bottom).toBe(161);
+    expect(document.activeElement).toBe(input);
     expect(document.documentElement.scrollTop).toBe(0);
-    expect(document.body.scrollTop).toBe(0);
+    await press(input, 'Escape');
+    expect(observer.disconnect).toHaveBeenCalled();
   });
 
   it('keeps Tab navigation inside the dialog and restores the trigger after button activation', async () => {
