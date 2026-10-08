@@ -96,7 +96,7 @@ describe('documentation controls layout', () => {
           .contains('a[href="/docs/configuration"]', 'Configuration')
           .click();
         cy.location('pathname').should('equal', '/docs/configuration');
-        cy.get('[role="dialog"]').should('not.be.visible');
+        cy.get('[role="dialog"][data-state="open"]').should('not.exist');
       });
     }
   }
@@ -110,7 +110,7 @@ describe('documentation controls layout', () => {
     cy.get('button[aria-label="Open navigation"]').click();
     assertFullscreenMenu(375, 812);
     cy.get('button[aria-label="Close navigation"]').click();
-    cy.get('[role="dialog"]').should('not.be.visible');
+    cy.get('[role="dialog"][data-state="open"]').should('not.exist');
     cy.get('button[aria-label="Open navigation"]').should('be.focused');
     cy.viewport(1024, 900);
     cy.get('[aria-label="Documentation controls"]').should('not.be.visible');
