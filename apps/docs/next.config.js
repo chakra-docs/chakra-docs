@@ -19,7 +19,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data:",
   "manifest-src 'self'",
   "object-src 'none'",
-  `script-src 'self' 'unsafe-inline'${developmentScriptPolicy} ${fathomOrigin}`,
+  // Shiki's Oniguruma engine needs WebAssembly, not JavaScript eval.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${developmentScriptPolicy} ${fathomOrigin}`,
   "style-src 'self' 'unsafe-inline' https://kits.fontstack.com",
   "worker-src 'self' blob:",
   'upgrade-insecure-requests',

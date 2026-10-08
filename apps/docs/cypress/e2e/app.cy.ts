@@ -226,6 +226,9 @@ describe('docs', () => {
       expect(response.headers['content-security-policy']).to.contain(
         "frame-ancestors 'none'",
       );
+      expect(response.headers['content-security-policy']).to.contain(
+        "'wasm-unsafe-eval'",
+      );
       expect(response.headers['strict-transport-security']).to.equal(
         'max-age=31536000; includeSubDomains',
       );

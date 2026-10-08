@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import {
   getFontstackKitUrl,
   SHARED_FONTSTACK_KIT_URL,
@@ -16,6 +17,39 @@ import {
 
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
+
+test('site CSP permits Shiki WebAssembly but limits JavaScript eval to development', async () => {
+  for (const environment of ['production', 'development']) {
+    const context = {
+      module: { exports: {} },
+      process: { env: { NODE_ENV: environment } },
+      require: (specifier) => {
+        assert.equal(specifier, '@nx/next');
+        return {
+          composePlugins: () => (config) => config,
+          withNx: (config) => config,
+        };
+      },
+    };
+    runInNewContext(read('next.config.js'), context);
+    const headers = await context.module.exports.headers();
+    const policy = headers
+      .find(({ source }) => source === '/(.*)')
+      .headers.find(({ key }) => key === 'Content-Security-Policy').value;
+    const scriptSources = policy
+      .split('; ')
+      .find((directive) => directive.startsWith('script-src '))
+      .split(' ');
+    assert.ok(scriptSources.includes("'wasm-unsafe-eval'"), environment);
+    assert.equal(
+      scriptSources.includes("'unsafe-eval'"),
+      environment === 'development',
+      environment,
+    );
+    assert.ok(scriptSources.includes("'self'"));
+    assert.ok(scriptSources.includes('https://cdn.usefathom.com'));
+  }
+});
 
 test('OG capture copy is bounded Unicode text with safe defaults', () => {
   assert.deepEqual(getOgImageContent(new URLSearchParams()), OG_IMAGE_DEFAULTS);
