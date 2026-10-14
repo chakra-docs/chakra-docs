@@ -1,5 +1,5 @@
 import { Container, Heading, Stack, Text } from '@chakra-ui/react';
-import Head from 'next/head';
+import { PageMeta } from 'next-meta/pages';
 import type { GetStaticProps } from 'next';
 import { serializeNextProps } from '@chakra-docs/next/pages';
 import {
@@ -16,10 +16,9 @@ interface NotFoundPageProps {
 export default function NotFoundPage(props: NotFoundPageProps) {
   return (
     <>
-      <Head>
-        <title>Page not found - Chakra Docs</title>
+      <PageMeta title="Page not found - Chakra Docs">
         <meta name="robots" content="noindex" />
-      </Head>
+      </PageMeta>
       <SiteShell recommendedSearchResults={props.recommendedSearchResults}>
         <Container maxW="7xl" py={{ base: 12, md: 20 }}>
           <Stack gap={4} align="flex-start">

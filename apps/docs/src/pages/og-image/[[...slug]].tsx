@@ -1,4 +1,4 @@
-import Head from 'next/head';
+import { PageMeta } from 'next-meta/pages';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import type { GetStaticPaths, GetStaticProps } from 'next';
@@ -29,10 +29,9 @@ export default function OgImagePage({ defaults }: OgImagePageProps) {
   const ready = router.isReady && state?.path === router.asPath;
   return (
     <>
-      <Head>
-        <title>Open Graph image - Chakra Docs</title>
+      <PageMeta title="Open Graph image - Chakra Docs">
         <meta name="robots" content="noindex, nofollow" />
-      </Head>
+      </PageMeta>
       <OgImageCard {...(ready ? state.copy : defaults)} captureReady={ready} />
     </>
   );

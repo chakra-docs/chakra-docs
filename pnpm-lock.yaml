@@ -247,6 +247,9 @@ importers:
       next:
         specifier: ~16.3.8
         version: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.99.0)
+      next-meta:
+        specifier: 0.5.0
+        version: 0.5.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.99.0))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       next-themes:
         specifier: 0.4.6
         version: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -7001,6 +7004,17 @@ packages:
   neotraverse@1.0.1:
     resolution: {integrity: sha512-WmmLty1YWwJl9yZi77v2dVIV6X2kuYV8YYBI/G3LWGKdGHmHUvL1z7FW0iDvEvGAwNEoc5x1tOOOyDnf5jJw/w==}
     engines: {node: '>= 10'}
+
+  next-meta@0.5.0:
+    resolution: {integrity: sha512-gvPc2FpoJfNVaPMxLaECDeCBkWuyTOpnobmjtS4iADCF1AfQ3qjVrtedvMt+baRPKath8erCzILbQWys8PA9Wg==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      next: '>=10.0.0'
+      react: '>=16.8'
+      react-dom: '>=16.8'
+    peerDependenciesMeta:
+      next:
+        optional: true
 
   next-themes@0.4.6:
     resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
@@ -17690,6 +17704,13 @@ snapshots:
   neo-async@2.6.2: {}
 
   neotraverse@1.0.1: {}
+
+  next-meta@0.5.0(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.99.0))(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+    optionalDependencies:
+      next: 16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.99.0)
 
   next-themes@0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
