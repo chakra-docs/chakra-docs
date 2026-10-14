@@ -269,8 +269,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.7)(supports-color@8.1.1)
       react-structured:
-        specifier: ^0.1.0
-        version: 0.1.0(react@19.2.7)
+        specifier: 0.1.1
+        version: 0.1.1(react@19.2.7)
       remark-directive:
         specifier: ^4.0.0
         version: 4.0.0(supports-color@8.1.1)
@@ -7846,10 +7846,10 @@ packages:
       react-dom:
         optional: true
 
-  react-structured@0.1.0:
-    resolution: {integrity: sha512-kPwEa3YHgyPJkVDD91oGZUGN82D2ycmLD9hA06h2/Sqg85IG+uMETIrdzsTS4qqtiaViGNm6Z5Zgq1IPLIli+A==}
+  react-structured@0.1.1:
+    resolution: {integrity: sha512-RUbm1+NoTDYu1YJxCkLufM/zucn3jXl0SvDZUYQfIiiQ6GMln9q1o7GRaTkJljO4lLubuw6jmrqx8FKc4Zshig==}
     peerDependencies:
-      react: '>=16.8'
+      react: '>=16.14'
 
   react@19.2.7:
     resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
@@ -8216,8 +8216,12 @@ packages:
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
-  schema-dts@1.1.5:
-    resolution: {integrity: sha512-RJr9EaCmsLzBX2NDiO5Z3ux2BVosNZN5jo0gWgsyKvxKIUL5R3swNvoorulAeL9kLB0iTSX7V6aokhla2m7xbg==}
+  schema-dts-lib@1.1.0:
+    resolution: {integrity: sha512-Nx00FDPHDimSENMznVpADeYUJDsqlMiO9wcs2S+giggNTm5+ruNkM4m9z9qCk6xUJT+ThDM3NxxpwfHfFk1G+Q==}
+    engines: {node: '>=14.0.0'}
+
+  schema-dts@2.1.0:
+    resolution: {integrity: sha512-Y/NvOvuJUZwrm+EmNqJF3M+bRufERJs1h5GJPLilUuK5D5b53ttU+XZgIjEFaAVRToh+ib+cQawFmxKC5Jt9ow==}
 
   schema-utils@3.3.0:
     resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}
@@ -18670,10 +18674,10 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  react-structured@0.1.0(react@19.2.7):
+  react-structured@0.1.1(react@19.2.7):
     dependencies:
       react: 19.2.7
-      schema-dts: 1.1.5
+      schema-dts: 2.1.0
 
   react@19.2.7: {}
 
@@ -19112,7 +19116,11 @@ snapshots:
 
   scheduler@0.27.0: {}
 
-  schema-dts@1.1.5: {}
+  schema-dts-lib@1.1.0: {}
+
+  schema-dts@2.1.0:
+    dependencies:
+      schema-dts-lib: 1.1.0
 
   schema-utils@3.3.0:
     dependencies:

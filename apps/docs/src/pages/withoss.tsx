@@ -33,7 +33,11 @@ export default function WithOssPage(props: WithOssPageProps) {
         description="The open-source projects behind Chakra Docs and its documentation site."
         path="/withoss"
       />
-      <StructuredData path="/withoss" title="Made with OSS" />
+      <StructuredData
+        path="/withoss"
+        title="Made with OSS"
+        description="The open-source projects behind Chakra Docs and its documentation site."
+      />
       <SiteShell recommendedSearchResults={props.recommendedSearchResults}>
         <Container css={styles.root}>
           <Flex css={styles.hero}>

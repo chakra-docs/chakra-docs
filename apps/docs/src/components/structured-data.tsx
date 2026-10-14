@@ -1,84 +1,49 @@
-import { Graph, type GraphData, type Thing } from 'react-structured';
+import { Graph } from 'react-structured';
 import { getPublicSiteUrl } from '../lib/public-env';
+import {
+  createPageGraph,
+  type StructuredPageOptions,
+} from '../lib/structured-data';
+import { ossProjectGroups } from '../lib/oss-projects';
 
 export interface StructuredDataProps {
   title: string;
   description?: string;
   path: string;
   type?: 'WebPage' | 'TechArticle';
-  breadcrumbs?: Array<{
-    name: string;
-    path: string;
-  }>;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  items?: StructuredPageOptions['items'];
 }
-
-const siteName = 'Chakra Docs';
-const siteUrl = getPublicSiteUrl();
 
 export function StructuredData(props: StructuredDataProps) {
-  const pageUrl = createAbsoluteUrl(props.path);
-  const graphItems = [
-    compactThing({
-      '@type': 'WebSite',
-      name: siteName,
-      url: siteUrl,
-    }),
-    compactThing({
-      '@type': props.type ?? 'WebPage',
-      name: props.title,
-      headline: props.title,
-      description: props.description,
-      url: pageUrl,
-      isPartOf: {
-        '@type': 'WebSite',
-        name: siteName,
-        url: siteUrl,
-      },
-    }),
-    createBreadcrumbSchema(props.breadcrumbs),
-  ].filter(isDefined);
-
-  return <Graph data={{ '@graph': graphItems } satisfies GraphData} />;
-}
-
-function createBreadcrumbSchema(
-  breadcrumbs: StructuredDataProps['breadcrumbs'],
-) {
-  if (!siteUrl || !breadcrumbs?.length) {
-    return undefined;
-  }
-
-  return compactThing({
-    '@type': 'BreadcrumbList',
-    itemListElement: breadcrumbs.map((breadcrumb, index) =>
-      compactObject({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: breadcrumb.name,
-        item: createAbsoluteUrl(breadcrumb.path),
-      }),
-    ),
-  });
-}
-
-function createAbsoluteUrl(path: string) {
-  if (!siteUrl) {
-    return undefined;
-  }
-
-  return `${siteUrl}${path.startsWith('/') ? path : `/${path}`}`;
-}
-
-function compactObject<TValue extends Record<string, unknown>>(value: TValue) {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  const siteUrl = getPublicSiteUrl();
+  if (!siteUrl) return null;
+  const items =
+    props.path === '/withoss'
+      ? ossProjectGroups.flatMap((group) =>
+          group.projects.map((project) => ({
+            name: project.name,
+            url: project.href,
+            description: project.description,
+          })),
+        )
+      : props.items;
+  return (
+    <Graph
+      id="page-structured-data"
+      data={createPageGraph(
+        {
+          route: props.path,
+          title: props.title,
+          description: props.description,
+        },
+        {
+          documentation: props.type === 'TechArticle',
+          breadcrumbs: props.breadcrumbs,
+          items,
+        },
+        siteUrl,
+      )}
+    />
   );
-}
-
-function compactThing(value: Record<string, unknown>) {
-  return compactObject(value) as unknown as Thing;
-}
-
-function isDefined<TValue>(value: TValue | undefined): value is TValue {
-  return value !== undefined;
 }

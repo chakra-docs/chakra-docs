@@ -12,6 +12,7 @@ export default defineConfig({
       'src/components/analytics.spec.ts',
       'src/components/mobile-navigation.spec.tsx',
       'src/components/site-metadata.spec.tsx',
+      'src/lib/structured-data.test.tsx',
     ],
   },
 });
