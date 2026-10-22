@@ -269,8 +269,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.7)(supports-color@8.1.1)
       react-structured:
-        specifier: 0.1.1
-        version: 0.1.1(react@19.2.7)
+        specifier: 0.2.0
+        version: 0.2.0(react@19.2.7)
       remark-directive:
         specifier: ^4.0.0
         version: 4.0.0(supports-color@8.1.1)
@@ -7846,8 +7846,8 @@ packages:
       react-dom:
         optional: true
 
-  react-structured@0.1.1:
-    resolution: {integrity: sha512-RUbm1+NoTDYu1YJxCkLufM/zucn3jXl0SvDZUYQfIiiQ6GMln9q1o7GRaTkJljO4lLubuw6jmrqx8FKc4Zshig==}
+  react-structured@0.2.0:
+    resolution: {integrity: sha512-yZV+6krfbh3uo0g8q7UvWjpbOlgu80gkNd+1xEtx+9jW8SnYFwBglBOcr5sTmTShIQ05NriD37RBhSOmqA5+1A==}
     peerDependencies:
       react: '>=16.14'
 
@@ -18674,7 +18674,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  react-structured@0.1.1(react@19.2.7):
+  react-structured@0.2.0(react@19.2.7):
     dependencies:
       react: 19.2.7
       schema-dts: 2.1.0

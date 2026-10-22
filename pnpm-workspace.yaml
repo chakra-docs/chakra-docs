@@ -43,7 +43,7 @@ overrides:
   uuid: ^11.1.1
 
 minimumReleaseAgeExclude:
-  - react-structured@0.1.1
+  - react-structured@0.2.0
   - next-meta@0.5.0
   - react-fathom@0.3.0
   - http-cache-semantics@4.3.0
