@@ -1,5 +1,7 @@
 # @chakra-docs/feed
 
+[Documentation](https://chakra-docs.dev/docs/feed) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 RSS, Atom, and JSON Feed artifact helpers for Chakra Docs.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
@@ -16,20 +18,44 @@ No peer dependencies.
 
 ## Usage
 
+Generate complete artifacts from records without writing files:
+
+<!-- quickstart:start -->
+
+```ts
+import { createFeedArtifacts } from '@chakra-docs/feed';
+
+export const artifacts = createFeedArtifacts(
+  [
+    {
+      id: 'getting-started',
+      title: 'Getting started',
+      url: '/docs/getting-started',
+      description: 'Install and configure your documentation.',
+      date: '2026-10-01',
+    },
+  ],
+  {
+    title: 'Docs',
+    siteUrl: 'https://example.com',
+    description: 'Product documentation updates',
+    feedUrl: 'https://example.com/feed.xml',
+    language: 'en',
+    // Used when a manifest entry has no date.
+    updated: '2026-10-01T00:00:00.000Z',
+  },
+);
+```
+
+<!-- quickstart:end -->
+
+In an application, pass `docsManifest.feeds` instead of the sample array. Write
+the resulting strings in your own build script or serve them from a route:
+
 ```ts
 import { writeFile } from 'node:fs/promises';
-import { createFeedArtifacts } from '@chakra-docs/feed';
-import { docsManifest } from './.chakra-docs/generated';
 
-const { rss, atom, json } = createFeedArtifacts(docsManifest.feeds, {
-  title: 'Docs',
-  siteUrl: 'https://example.com',
-  description: 'Product documentation updates',
-  feedUrl: 'https://example.com/feed.xml',
-  language: 'en',
-  // Used when a manifest entry has no date.
-  updated: '2026-03-15T12:00:00.000Z',
-});
+const { rss, atom, json } = artifacts;
 
 await writeFile('public/feed.xml', rss, 'utf8');
 await writeFile('public/atom.xml', atom, 'utf8');

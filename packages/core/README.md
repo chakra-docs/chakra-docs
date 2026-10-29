@@ -1,5 +1,7 @@
 # @chakra-docs/core
 
+[Documentation](https://chakra-docs.dev/docs#package-roles) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Framework-agnostic Markdown and MDX document models and manifest utilities for documentation sites.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
@@ -18,6 +20,8 @@ No peer dependencies.
 
 Build a `DocsManifest` from one or more collections, then query it with the pure helpers:
 
+<!-- quickstart:start -->
+
 ```ts
 import {
   createDocsManifest,
@@ -26,7 +30,7 @@ import {
   getPublishedPages,
 } from '@chakra-docs/core';
 
-const manifest = createDocsManifest({
+export const manifest = createDocsManifest({
   collections: [
     {
       id: 'docs',
@@ -50,10 +54,14 @@ const manifest = createDocsManifest({
   config: { siteUrl: 'https://example.com' },
 });
 
-const page = getPageByRoute(manifest, '/docs/getting-started');
-const samePage = getPageBySlug(manifest, 'docs', ['getting-started']);
-const published = getPublishedPages(manifest.pages, { includeDrafts: false });
+export const page = getPageByRoute(manifest, '/docs/getting-started');
+export const samePage = getPageBySlug(manifest, 'docs', ['getting-started']);
+export const published = getPublishedPages(manifest.pages, {
+  includeDrafts: false,
+});
 ```
+
+<!-- quickstart:end -->
 
 `createDocsManifest` derives `byCollection`, `bySlug`, and `byRoute` indexes plus `search`, `sitemap`, and `feeds` records from the pages in each collection. Draft (`frontmatter.draft`) and hidden (`frontmatter.hidden`) pages are excluded from the derived search, sitemap, and feed outputs. Duplicate collection ids, page ids, slugs, or routes throw, as do pages whose `collectionId` does not match their containing collection.
 

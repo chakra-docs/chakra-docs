@@ -1,8 +1,9 @@
 {
   "name": "@chakra-docs/chakra",
   "version": "0.3.0",
-  "description": "Chakra UI component layer for Chakra Docs.",
+  "description": "Composable Chakra UI documentation layouts, navigation, search, Markdown rendering, and code blocks for existing React apps.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "react",
     "documentation",

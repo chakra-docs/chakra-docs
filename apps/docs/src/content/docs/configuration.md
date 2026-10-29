@@ -18,7 +18,7 @@ import {
 } from '@chakra-docs/source-filesystem';
 
 export const docsDiscoveryConfig = defineDocsDiscoveryConfig({
-  rootDir: appRoot,
+  rootDir: process.cwd(),
   collections: [
     {
       id: 'docs',

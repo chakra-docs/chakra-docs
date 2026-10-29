@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "Filesystem Markdown and MDX content source for Chakra Docs.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "docs",

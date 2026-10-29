@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "React Router route helpers for Chakra Docs manifests.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "documentation-site",
@@ -83,7 +84,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://chakra-docs.dev",
+  "homepage": "https://chakra-docs.dev/docs/react-router",
   "nx": {
     "tags": [
       "layer:adapter",

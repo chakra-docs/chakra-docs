@@ -17,6 +17,12 @@
     "order": 3,
     "badge": "Next"
   },
+  "app-router": { "title": "App Router", "order": 3.1, "badge": "Next" },
+  "astro": { "title": "Astro", "order": 3.2 },
+  "react-router": { "title": "React Router", "order": 3.3 },
+  "source-git": { "title": "Git sources", "order": 2.1, "badge": "Source" },
+  "cli": { "title": "CLI", "order": 2.2 },
+  "feed": { "title": "Feeds", "order": 6.1 },
   "components": {
     "title": "Components",
     "order": 4,

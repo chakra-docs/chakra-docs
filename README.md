@@ -2,6 +2,8 @@
 
 **Add a beautiful documentation section to your existing Chakra UI app — without handing your whole site over to a docs framework.**
 
+[Documentation](https://chakra-docs.dev) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
 
 Most documentation tools want to own your entire site. Chakra Docs takes the opposite approach: a framework-free document model at the core, Chakra UI components on top, and small adapters for your router and content source. You compose exactly the pieces you need, and your app stays yours.
@@ -24,81 +26,83 @@ The document model and content sources are framework-independent. Add the UI and
 
 | Stack                 | Start here                                                                     |
 | --------------------- | ------------------------------------------------------------------------------ |
-| Next.js App Router    | [`@chakra-docs/next` App Router guide](packages/next#app-router)               |
-| Next.js Pages Router  | [`@chakra-docs/next` Pages Router guide](packages/next#pages-router)           |
-| Astro                 | [`@chakra-docs/astro`](packages/astro#usage)                                   |
-| React Router or Remix | [`@chakra-docs/react-router`](packages/react-router#usage)                     |
+| Next.js App Router    | [App Router guide](https://chakra-docs.dev/docs/app-router)                    |
+| Next.js Pages Router  | [Pages Router guide](https://chakra-docs.dev/docs/pages-router)                |
+| Astro                 | [Astro guide](https://chakra-docs.dev/docs/astro)                              |
+| React Router or Remix | [React Router guide](https://chakra-docs.dev/docs/react-router)                |
 | Custom framework      | [`@chakra-docs/core`](packages/core#usage) with your own routing and rendering |
 
 Use [`@chakra-docs/chakra`](packages/chakra) when you want the ready-made Chakra UI documentation experience, or render the framework-free manifest with your own components.
 
-## Quick start: Next.js Pages Router
+## Quick start: render a docs page
 
-This example assumes an existing Chakra UI application with `@chakra-ui/react`, `@emotion/react`, React, and Next.js already installed. The repository's [`apps/docs`](apps/docs) project is a complete working implementation; App Router users can follow the package's [App Router guide](packages/next#app-router) with the same manifest and UI packages.
+Try the UI inside your existing React application before adding a filesystem
+source or router adapter:
 
 ```bash
-npm install @chakra-docs/core @chakra-docs/source-filesystem @chakra-docs/chakra @chakra-docs/next
+npm install @chakra-docs/core @chakra-docs/chakra @chakra-ui/react @emotion/react react react-dom
 ```
 
-Describe where your content lives:
-
-```ts
-// docs/manifest.ts
-import {
-  buildFilesystemManifest,
-  defineDocsDiscoveryConfig,
-} from '@chakra-docs/source-filesystem';
-
-const config = defineDocsDiscoveryConfig({
-  rootDir: process.cwd(),
-  collections: [
-    {
-      id: 'docs',
-      name: 'Docs',
-      contentPath: 'content/docs',
-      basePath: '/docs',
-    },
-  ],
-});
-
-export const getDocsManifest = () => buildFilesystemManifest({ config });
-```
-
-Render it with a catch-all route:
+<!-- quickstart:start -->
 
 ```tsx
-// pages/docs/[[...slug]].tsx
-import { DocsArticle, DocsLayout, MarkdownContent } from '@chakra-docs/chakra';
-import {
-  createGetStaticPaths,
-  createPagesRouterDocProps,
-  serializeNextProps,
-} from '@chakra-docs/next/pages';
-import { getDocsManifest } from '../../docs/manifest';
+'use client';
 
-export default function DocsPage({ page, nav }) {
+import type { DocsPage } from '@chakra-docs/core';
+import {
+  DocsArticle,
+  DocsLayout,
+  DocsProvider,
+  MarkdownContent,
+} from '@chakra-docs/chakra';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
+import { ChakraProvider, createSystem, defaultConfig } from '@chakra-ui/react';
+
+const system = createSystem(defaultConfig, chakraDocsThemeConfig);
+const page: DocsPage = {
+  id: 'getting-started',
+  collectionId: 'docs',
+  slug: ['getting-started'],
+  path: 'getting-started.md',
+  route: '/docs/getting-started',
+  title: 'Getting started',
+  body: '## Welcome\n\nYour first documentation page is ready.',
+  frontmatter: {},
+  headings: [{ id: 'welcome', title: 'Welcome', level: 2 }],
+};
+const nav = [{ id: page.id, title: page.title, href: page.route }];
+
+export default function DocumentationPage() {
   return (
-    <DocsLayout headings={page.headings} nav={nav} page={page}>
-      <DocsArticle headings={page.headings} page={page}>
-        <MarkdownContent source={page.body ?? ''} />
-      </DocsArticle>
-    </DocsLayout>
+    <ChakraProvider value={system}>
+      <DocsProvider>
+        <DocsLayout page={page} nav={nav} headings={page.headings}>
+          <DocsArticle page={page} headings={page.headings}>
+            <MarkdownContent source={page.body ?? ''} />
+          </DocsArticle>
+        </DocsLayout>
+      </DocsProvider>
+    </ChakraProvider>
   );
 }
-
-export const getStaticPaths = async () =>
-  createGetStaticPaths({ manifest: await getDocsManifest() })();
-
-export const getStaticProps = async ({ params }) => {
-  const manifest = await getDocsManifest();
-  const route = `/docs/${(params?.slug ?? []).join('/')}`;
-  const props = createPagesRouterDocProps({ manifest }, route);
-
-  return props ? { props: serializeNextProps(props) } : { notFound: true };
-};
 ```
 
-Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [`apps/docs`](apps/docs) app in this repo is a complete working example.
+<!-- quickstart:end -->
+
+Render `DocumentationPage` in your app. If you already use Chakra UI, merge
+`chakraDocsThemeConfig` into your existing system instead of adding another
+Chakra provider. React 18/19 and Chakra UI 3 are supported; the installed
+framework's own peer requirements also apply. Packages are ESM-only and support
+Node.js 22.22 or newer; Node.js 24 is recommended for new build environments.
+
+Next, follow your [router guide](#choose-your-stack), connect a
+[filesystem collection](https://chakra-docs.dev/docs/configuration) or
+[CLI-generated manifest](https://chakra-docs.dev/docs/cli), and add
+[server search](https://chakra-docs.dev/docs/search) if needed. Markdown/MDX
+discovery produces content records, not an executable MDX compiler: choose a
+trusted rendering pipeline for expressions or custom MDX components.
+
+The [`apps/docs`](apps/docs) project is a complete Pages Router example.
 
 ## Packages
 
@@ -120,6 +124,10 @@ Drop Markdown or MDX files in `content/docs/` and you have a docs section. The [
 ## Development
 
 This repo uses Nx for package orchestration.
+
+Repository development uses the Node.js 24 version in `.nvmrc` and the pnpm
+version in `packageManager`; the published package engine floor below is a
+consumer compatibility range, not the contributor runtime pin.
 
 The packages are ESM-only and require Node.js 22.22 or newer. Framework peer
 ranges are deliberately bounded and are exercised in CI at both the minimum

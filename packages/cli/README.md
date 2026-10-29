@@ -1,5 +1,7 @@
 # @chakra-docs/cli
 
+[Documentation](https://chakra-docs.dev/docs/cli) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 CLI for generating, validating, and watching Markdown and MDX documentation manifests.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).

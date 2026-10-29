@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "Framework-agnostic Markdown and MDX document models and manifest utilities for documentation sites.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "documentation-site",

@@ -1,5 +1,7 @@
 # @chakra-docs/astro
 
+[Documentation](https://chakra-docs.dev/docs/astro) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Astro static path helpers for Chakra Docs manifests.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).

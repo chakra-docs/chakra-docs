@@ -1,5 +1,7 @@
 # @chakra-docs/chakra
 
+[Documentation](https://chakra-docs.dev/docs/components) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Chakra UI component layer for Chakra Docs.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
@@ -50,7 +52,8 @@ Keep the host's existing Chakra provider and theme configuration.
 Wrap your docs pages in your app's `ChakraProvider`, add a `DocsProvider` for shared configuration, and compose a page from `DocsLayout`, `DocsArticle`, and friends. Pages, nav, and headings come from a Chakra Docs manifest (built with `@chakra-docs/source-filesystem` or the `@chakra-docs/cli` generated output):
 
 ```tsx
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import { ChakraProvider, createSystem, defaultConfig } from '@chakra-ui/react';
+import { chakraDocsThemeConfig } from '@chakra-docs/chakra/theme';
 import {
   Callout,
   DocsArticle,
@@ -63,6 +66,8 @@ import {
 } from '@chakra-docs/chakra';
 import type { DocsManifest, DocsPage } from '@chakra-docs/core';
 
+const system = createSystem(defaultConfig, chakraDocsThemeConfig);
+
 export function DocsRoutePage(props: {
   manifest: DocsManifest;
   page: DocsPage;
@@ -70,7 +75,7 @@ export function DocsRoutePage(props: {
   const { manifest, page } = props;
 
   return (
-    <ChakraProvider value={defaultSystem}>
+    <ChakraProvider value={system}>
       <DocsProvider config={{ labels: { search: 'Search docs' } }}>
         <DocsLayout headings={page.headings} nav={manifest.nav} page={page}>
           <DocsArticle

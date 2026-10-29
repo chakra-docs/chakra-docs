@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "Server-side search engine, Fetch handler, and HTTP client for Chakra Docs.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "docs",
