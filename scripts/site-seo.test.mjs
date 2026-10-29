@@ -129,7 +129,7 @@ test('Vercel installs the frozen workspace and builds Next with a required canon
     config.buildCommand,
     'cd ../.. && CHAKRA_DOCS_REQUIRE_SITE_URL=true pnpm nx run docs:build',
   );
-  assert.equal(config.outputDirectory, '.next');
+  assert.equal(config.outputDirectory, undefined);
   assert.match(
     read('.env.example'),
     /NEXT_PUBLIC_SITE_URL=https:\/\/chakra-docs.dev/,

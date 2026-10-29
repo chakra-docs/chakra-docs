@@ -24,6 +24,8 @@
     "search:performance:check": "nx run @chakra-docs/search:build && node scripts/check-search-performance.mjs",
     "typecheck": "nx run-many -t typecheck",
     "release:smoke": "node scripts/release-smoke.mjs",
+    "onboarding:check": "nx run chakra-docs-workspace:onboarding-check",
+    "docs:smoke": "nx run docs:http-smoke",
     "yalc:publish": "nx yalc-publish"
   },
   "private": true,
@@ -91,6 +93,24 @@
   "nx": {
     "includedScripts": [],
     "targets": {
+      "onboarding-check": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          {
+            "projects": [
+              "@chakra-docs/core",
+              "@chakra-docs/chakra",
+              "@chakra-docs/source-filesystem",
+              "@chakra-docs/feed"
+            ],
+            "target": "build",
+            "params": "ignore"
+          }
+        ],
+        "options": {
+          "command": "node --test scripts/onboarding-check.spec.mjs && node scripts/onboarding-check.mjs"
+        }
+      },
       "local-registry": {
         "executor": "@nx/js:verdaccio",
         "options": {

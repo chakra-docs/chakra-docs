@@ -6,6 +6,11 @@
   "tags": ["layer:app", "scope:docs"],
   "// targets": "to see all targets run: nx show project docs --web",
   "targets": {
+    "http-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": { "command": "node scripts/docs-http-smoke.mjs" }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

@@ -58,6 +58,12 @@ jobs:
       - name: Build
         run: pnpm nx run-many -t build --parallel=3
 
+      - name: Verify package onboarding and documentation links
+        run: pnpm run onboarding:check
+
+      - name: Production documentation HTTP smoke
+        run: pnpm run docs:smoke
+
       - name: Check public theme declaration performance
         run: pnpm run types:performance:check
 

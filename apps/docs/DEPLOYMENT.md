@@ -23,8 +23,9 @@ Import `chakra-docs/chakra-docs` into the intended Vercel account. Configure:
   setup before production promotion. Keep deployment protection enabled on
   previews and verify their `X-Robots-Tag: noindex` response header.
 
-`vercel.json` supplies the frozen workspace install, Nx build (including package
-dependencies), and `.next` output directory relative to `apps/docs`. It forces
+`vercel.json` supplies the frozen workspace install and Nx build (including
+package dependencies). Leave Vercel's Output Directory override off: the Next.js
+adapter discovers `.next` automatically. It forces
 the canonical-origin guard on, so a missing site URL fails the build. Do not use
 static export: search, health, sitemap, robots, and social images need Next
 server functions. No npm publishing credential is needed for this site.
@@ -33,6 +34,12 @@ Optional analytics and Fontstack variables are documented in `.env.example`.
 Set public variables before building; changing them requires a new deployment.
 The Vercel account settings, DNS, analytics site ID, and Fontstack allowlist are
 not stored in the repository and must be confirmed in their respective dashboards.
+
+Before deploying, run `pnpm run onboarding:check` and
+`NEXT_PUBLIC_SITE_URL=https://chakra-docs.dev pnpm run docs:smoke` from the
+repository root. The latter builds and starts a temporary production server,
+checks metadata, guides, crawler files, API search, health, and real 404s, then
+stops that server. It does not publish packages or change Vercel settings.
 
 After the first preview, verify `/api/health`,
 `/api/docs/search?q=installation&limit=1`, `/sitemap.xml`, `/robots.txt`, and
