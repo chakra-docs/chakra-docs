@@ -128,9 +128,30 @@ test('docs and workspace UI packages share one Chakra runtime', async () => {
   );
 });
 
-test('the Next adapter excludes the vulnerable 16.3 framework releases', () => {
+test('the Next adapter retains its supported framework API ranges', () => {
   const next = publicPackages.find(({ name }) => name === '@chakra-docs/next');
   assert.equal(next.peerDependencies.next, '>=15.5.24 <16 || >=16.3.6 <17');
+});
+
+test('the docs app and workspace use the patched Next.js release', async () => {
+  const root = JSON.parse(await read('package.json'));
+  const docs = JSON.parse(await read('apps/docs/package.json'));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  for (const [directory, manifest] of [
+    ['.', root],
+    ['apps/docs', docs],
+  ]) {
+    assert.equal(manifest.dependencies.next, '16.4.2');
+    assert.equal(
+      lock.importers[directory].dependencies.next.specifier,
+      '16.4.2',
+    );
+    assert.match(
+      lock.importers[directory].dependencies.next.version,
+      /^16\.4\.2\(/,
+    );
+  }
+  assert.equal(root.devDependencies['@next/eslint-plugin-next'], '16.4.2');
 });
 
 test('production audits remain unfiltered and the development mitigation gate runs in CI', async () => {
