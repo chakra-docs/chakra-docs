@@ -273,6 +273,30 @@ test('all public packages form one fixed, committed release group', () => {
   }
 });
 
+test('the documentation header, changelog, and lockfile follow the committed release', async () => {
+  const header = await read('apps/docs/src/components/site-shell.tsx');
+  assert.ok(header.includes(`v${committedVersion}`));
+  assert.ok((await read('CHANGELOG.md')).includes(`## ${committedVersion} (`));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  for (const [importer, entry] of Object.entries(lock.importers)) {
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'optionalDependencies',
+    ]) {
+      for (const [name, { specifier }] of Object.entries(entry[field] ?? {})) {
+        if (
+          releaseProjects.has(name) &&
+          specifier !== '*' &&
+          !specifier.startsWith('workspace:')
+        ) {
+          assert.equal(specifier, committedVersion, `${importer}: ${name}`);
+        }
+      }
+    }
+  }
+});
+
 test('release version validation accepts only the committed stable version', () => {
   const valid = runVersionAssertion(committedVersion);
   assert.equal(valid.status, 0, valid.stderr);

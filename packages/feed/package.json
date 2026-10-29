@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/feed",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Generate RSS, Atom, and JSON Feed artifacts from Chakra Docs documentation manifests.",
   "keywords": [
     "chakra-docs",
@@ -61,7 +61,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/core": "0.3.1",
     "tslib": "^2.3.0"
   },
   "engines": {

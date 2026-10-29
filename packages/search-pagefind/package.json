@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/search-pagefind",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Pagefind document record helpers for Chakra Docs search manifests.",
   "keywords": [
     "chakra-docs",
@@ -60,7 +60,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/core": "0.3.1",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

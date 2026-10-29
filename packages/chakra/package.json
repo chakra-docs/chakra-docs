@@ -1,6 +1,6 @@
 {
   "name": "@chakra-docs/chakra",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Composable Chakra UI documentation layouts, navigation, search, Markdown rendering, and code blocks for existing React apps.",
   "keywords": [
     "chakra-docs",
@@ -78,8 +78,8 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.3.0",
-    "@chakra-docs/search": "0.3.0",
+    "@chakra-docs/core": "0.3.1",
+    "@chakra-docs/search": "0.3.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tslib": "^2.3.0"
