@@ -146,17 +146,13 @@ jobs:
           node-version-file: '.nvmrc'
       - run: corepack enable
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Verify patched development-only advisory and expiry
+      - name: Audit all dependencies without exceptions
         run: pnpm run audit:dependencies
       - name: Audit production dependencies without exceptions
         run: pnpm audit --prod --audit-level=moderate
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
-          # Version-based review cannot detect pnpm patches. The preceding gate
-          # verifies this exact dev-only mitigation, expiring 2026-11-04 UTC.
-          # It fails on a missing patch, runtime exposure, or an upstream fix.
-          allow-ghsas: GHSA-vfj7-8cjw-p6xm
 
   minimum-peers:
     name: Minimum supported peers

@@ -4,7 +4,6 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
-import { bracesException } from './audit-dependencies.mjs';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
 const releaseWorkflow = await read('.github/workflows/release.yml');
@@ -185,7 +184,7 @@ test('the docs app and workspace use the patched Next.js release', async () => {
   );
 });
 
-test('production audits remain unfiltered and the development mitigation gate runs in CI', async () => {
+test('production and development audits remain unfiltered without exceptions or expiry gates', async () => {
   const ci = await read('.github/workflows/ci.yml');
   assert.match(ci, /run: pnpm audit --prod --audit-level=moderate\n/);
   assert.match(ci, /run: pnpm run audit:dependencies\n/);
@@ -196,15 +195,16 @@ test('production audits remain unfiltered and the development mitigation gate ru
   const manifest = JSON.parse(await read('package.json'));
   assert.equal(
     manifest.scripts['audit:dependencies'],
-    'node scripts/audit-dependencies.mjs',
+    'pnpm audit --audit-level=high',
   );
-  assert.match(
-    manifest.nx.targets['release-validation'].options.command,
-    /audit-dependencies\.spec\.mjs/,
-  );
+  const workspace = parseYaml(await read('pnpm-workspace.yaml'));
+  const lockfile = parseYaml(await read('pnpm-lock.yaml'));
+  assert.equal(workspace.patchedDependencies, undefined);
+  assert.equal(lockfile.patchedDependencies, undefined);
+  assert.doesNotMatch(JSON.stringify(workspace), /ignoreCves|ignoreGhsas/);
 });
 
-test('dependency review accepts only the verified time-bounded braces mitigation', async () => {
+test('dependency review blocks moderate findings without advisory allowlists', async () => {
   const ci = parseYaml(await read('.github/workflows/ci.yml'));
   const job = ci.jobs['dependency-review'];
   const steps = job.steps;
@@ -215,7 +215,6 @@ test('dependency review accepts only the verified time-bounded braces mitigation
   const review = steps[reviewIndex];
   assert.deepEqual(review.with, {
     'fail-on-severity': 'moderate',
-    'allow-ghsas': bracesException.id,
   });
   assert.equal(review.if, undefined);
   assert.equal(review['continue-on-error'], undefined);
@@ -242,7 +241,6 @@ test('dependency review accepts only the verified time-bounded braces mitigation
     assert.equal(step.if, undefined);
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(bracesException.expires, '2026-11-04T00:00:00.000Z');
 });
 
 test('all public packages form one fixed, committed release group', () => {
