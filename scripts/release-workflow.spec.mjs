@@ -70,6 +70,20 @@ test('Nx tooling is aligned and known vulnerable transitive versions stay out of
     'postcss-selector-parser@7.1.5',
     'sharp@0.35.4',
     'shell-quote@1.10.0',
+    'next@16.3.8',
+    'handlebars@4.7.9',
+    'follow-redirects@1.16.0',
+    'body-parser@1.20.6',
+    'launch-editor@2.14.1',
+    'systeminformation@5.31.15',
+    'undici@7.30.0',
+    'zod@4.6.2',
+    'fast-uri@3.1.8',
+    'qs@6.16.0',
+    'vite@7.3.6',
+    'vite@8.1.4',
+    'vitest@4.1.11',
+    '@vitest/mocker@4.1.11',
   ]) {
     assert.equal(lock.packages[key], undefined, `${key} must not be installed`);
   }
@@ -152,6 +166,23 @@ test('the docs app and workspace use the patched Next.js release', async () => {
     );
   }
   assert.equal(root.devDependencies['@next/eslint-plugin-next'], '16.4.2');
+  const adapter = publicPackages.find(
+    ({ name }) => name === '@chakra-docs/next',
+  );
+  assert.equal(adapter.devDependencies.next, '16.4.2');
+  assert.equal(
+    lock.importers['packages/next'].devDependencies.next.specifier,
+    '16.4.2',
+  );
+  assert.match(
+    lock.importers['packages/next'].devDependencies.next.version,
+    /^16\.4\.2\(/,
+  );
+  assert.deepEqual(
+    Object.keys(lock.packages).filter((name) => name.startsWith('next@')),
+    ['next@16.4.2'],
+    'automatic peer installation must not retain an older Next.js copy',
+  );
 });
 
 test('production audits remain unfiltered and the development mitigation gate runs in CI', async () => {
