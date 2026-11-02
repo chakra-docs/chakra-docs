@@ -95,8 +95,8 @@ importers:
         specifier: ^9.8.0
         version: 9.39.5
       '@next/eslint-plugin-next':
-        specifier: ^16.3.8
-        version: 16.3.8(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))
+        specifier: ^16.4.3
+        version: 16.4.3(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))
       '@nx/cypress':
         specifier: 22.7.10
         version: 22.7.10(@babel/traverse@7.29.7(supports-color@8.1.1))(@swc-node/register@1.11.1(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@swc/core@1.15.43(@swc/helpers@0.5.23))(@swc/types@0.1.27)(supports-color@8.1.1)(typescript@5.9.3))(@swc/core@1.15.43(@swc/helpers@0.5.23))(@zkochan/js-yaml@0.0.7)(cypress@15.18.1)(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))(nx@22.7.10(@swc-node/register@1.11.1(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@swc/core@1.15.43(@swc/helpers@0.5.23))(@swc/types@0.1.27)(supports-color@8.1.1)(typescript@5.9.3))(@swc/core@1.15.43(@swc/helpers@0.5.23)))(supports-color@8.1.1)(typescript@5.9.3)(verdaccio@6.9.0(encoding@0.1.13)(supports-color@8.1.1)(typanion@3.14.0))
@@ -2167,8 +2167,8 @@ packages:
   '@next/env@16.3.8':
     resolution: {integrity: sha512-Al9zqHVV7TJv0eFuOU4U7Lvv74PTih4Ch63sk2xCIpSTkE3udFnaOcnzP2lQVymiL7yS9Cj2iClUXlR3EQ5sEw==}
 
-  '@next/eslint-plugin-next@16.3.8':
-    resolution: {integrity: sha512-eCR9RcLTZrVS+K3+VOhi0xMdUUGNuriCHHhU1ZoABC/QQ/Gp0OWbLKQxV2/9DkmihYdYRcQWFmZXW8M1AMUXYw==}
+  '@next/eslint-plugin-next@16.4.3':
+    resolution: {integrity: sha512-oxuC06wt/71h6ACYCV9GbKOfnf5a7VlRe/p80YHTut15TNgDEmynDnaq8t/xhy5rlvk7dhItIPs6H3rvIM4kyw==}
 
   '@next/swc-darwin-arm64@16.3.8':
     resolution: {integrity: sha512-2JPRMh2nmQG5CiL7cXGL9AGwnPWJQ//cTtAUCT+w511QHk79SYz3LGv/pc5X643B/WEO0rvu3Yww0hqwt3kgeA==}
@@ -11413,7 +11413,7 @@ snapshots:
 
   '@next/env@16.3.8': {}
 
-  '@next/eslint-plugin-next@16.3.8(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))':
+  '@next/eslint-plugin-next@16.4.3(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))':
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.5(jiti@2.4.2)(supports-color@8.1.1))
       fast-glob: 3.3.1
