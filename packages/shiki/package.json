@@ -58,7 +58,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "shiki": "^4.3.1",
+    "shiki": "^4.5.0",
     "tslib": "^2.3.0"
   },
   "engines": {
