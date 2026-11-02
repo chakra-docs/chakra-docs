@@ -61,7 +61,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/lib-dom": "npm:@types/web@0.0.356",
     "@vitest/coverage-v8": "4.1.11",
-    "astro": "7.3.2",
+    "astro": "7.4.4",
     "cypress": "^15.8.0",
     "eslint": "^9.39.4",
     "eslint-plugin-cypress": "^3.5.0",
