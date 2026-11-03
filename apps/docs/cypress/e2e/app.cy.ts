@@ -365,6 +365,15 @@ describe('docs', () => {
     cy.get('[role="menu"]:visible').should('not.exist');
 
     cy.get('@pageActionsMenu').click();
+    // Opening state commits before the deferred focus/dismissal effects.
+    // Synchronize with the actual reopened menu, not an arbitrary delay.
+    cy.get('@pageActionsMenu')
+      .should('have.attr', 'aria-expanded', 'true')
+      .invoke('attr', 'aria-controls')
+      .should('be.a', 'string')
+      .then((menuId) => {
+        cy.get(`[id="${menuId}"]`).should('be.visible').and('be.focused');
+      });
     cy.get('h1').click();
     cy.get('@pageActionsMenu').should('have.attr', 'aria-expanded', 'false');
     cy.get('[role="menu"]:visible').should('not.exist');
