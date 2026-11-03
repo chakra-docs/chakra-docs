@@ -14,6 +14,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { JSDOM } from 'jsdom';
 import ts from 'typescript';
+import { hasExactLink, markdownLinkTargets } from './documentation-links.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = (filename) => readFileSync(path.join(root, filename), 'utf8');
@@ -36,6 +37,19 @@ export function extractQuickstart(markdown, filename) {
   assert.equal(examples.length, 1, `${filename}: one complete TS/TSX example`);
   assert.ok(examples[0][2].trim(), `${filename}: nonempty example`);
   return { language: examples[0][1], source: examples[0][2] };
+}
+
+export function validateReadmeAttribution(markdown, label) {
+  const targets = markdownLinkTargets(markdown);
+  for (const href of [
+    'https://www.ryanhefner.com',
+    'https://commune.software',
+  ]) {
+    assert.ok(
+      hasExactLink(targets, href),
+      `${label}: attribution link ${href}`,
+    );
+  }
 }
 
 export function validateSiteUrl(href, manifest, label) {
@@ -245,14 +259,9 @@ export async function checkOnboarding() {
     ...packages.map(({ directory }) => `packages/${directory}/README.md`),
   ]) {
     const markdown = read(filename);
-    assert.ok(markdown.includes('https://www.ryanhefner.com'), filename);
-    assert.ok(markdown.includes('https://commune.software'), filename);
-    const withoutExamples = markdown.replace(
-      /^```[^\n]*\r?\n[\s\S]*?^```\s*$/gm,
-      '',
-    );
+    validateReadmeAttribution(markdown, filename);
     let canonicalLinks = 0;
-    for (const [, href] of withoutExamples.matchAll(/\]\(([^)\s]+)\)/g)) {
+    for (const href of markdownLinkTargets(markdown)) {
       if (href.startsWith('#')) continue;
       if (!/^[a-z][a-z\d+.-]*:/i.test(href)) {
         assert.ok(

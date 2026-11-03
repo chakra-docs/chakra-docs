@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
+import { discoveryLinkTargets, hasExactLink } from './documentation-links.mjs';
 
 const app = new URL('../apps/docs/', import.meta.url);
 const require = createRequire(new URL('package.json', app));
@@ -123,7 +124,13 @@ try {
     const text = await response.text();
     assert.ok(text.length > 50, file);
     if (file !== 'robots.txt')
-      assert.ok(text.includes('https://chakra-docs.dev/docs/app-router'), file);
+      assert.ok(
+        hasExactLink(
+          discoveryLinkTargets(text, file),
+          'https://chakra-docs.dev/docs/app-router',
+        ),
+        file,
+      );
     const head = await request('/' + file, { method: 'HEAD' });
     assert.equal(head.status, 200, file);
     assert.equal(await head.text(), '', file);
