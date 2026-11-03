@@ -40,24 +40,30 @@ describe('docs', () => {
       );
       cy.get('@consoleError').should('not.have.been.called');
     }
-    cy.request('/sitemap.xml').then(({ headers, body }) => {
-      expect(headers['content-type']).to.contain('application/xml');
-      const xml = Cypress.$.parseXML(body);
-      if (!xml) throw new Error('Expected a valid XML sitemap');
-      const urls = [...xml.querySelectorAll('loc')].map(
-        (node) => node.textContent,
+    cy.task<string[]>('publicDocsRoutes').then((routes) => {
+      const expectedUrls = ['/', '/showcase', '/withoss', ...routes].map(
+        (route) => new URL(route, 'https://chakra-docs.dev').href,
       );
-      expect(urls).to.include.members([
-        'https://chakra-docs.dev/',
-        'https://chakra-docs.dev/docs',
-        'https://chakra-docs.dev/docs/installation',
-        'https://chakra-docs.dev/showcase',
-        'https://chakra-docs.dev/withoss',
-      ]);
-      expect(urls).to.have.length(12);
-      expect(
-        urls.some((url) => /og-image|\/api\/|\/404/.test(url ?? '')),
-      ).to.equal(false);
+      cy.request('/sitemap.xml').then(({ headers, body }) => {
+        expect(headers['content-type']).to.contain('application/xml');
+        const xml = Cypress.$.parseXML(body);
+        if (!xml) throw new Error('Expected a valid XML sitemap');
+        const urls = [...xml.querySelectorAll('loc')].map(
+          (node) => node.textContent,
+        );
+        expect(urls).to.include.members([
+          'https://chakra-docs.dev/',
+          'https://chakra-docs.dev/docs',
+          'https://chakra-docs.dev/docs/installation',
+          'https://chakra-docs.dev/showcase',
+          'https://chakra-docs.dev/withoss',
+        ]);
+        expect(urls).to.have.members([...new Set(expectedUrls)]);
+        expect(new Set(urls).size).to.equal(urls.length);
+        expect(
+          urls.some((url) => /og-image|\/api\/|\/404/.test(url ?? '')),
+        ).to.equal(false);
+      });
     });
     cy.request('/robots.txt').then(({ headers, body }) => {
       expect(headers['content-type']).to.contain('text/plain');
