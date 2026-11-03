@@ -11,7 +11,7 @@ export interface AnalyticsProps {
   children: ReactNode;
 }
 
-/** Temporary compatibility tracker for the public react-fathom@0.2.0 context. */
+/** Tracks router-ready pageviews while deduplicating private query/hash changes. */
 export function DocsPageviewTracker() {
   const { client, trackPageview } = useFathom();
   const { asPath, isReady } = useRouter();

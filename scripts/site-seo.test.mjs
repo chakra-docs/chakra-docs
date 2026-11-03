@@ -95,16 +95,18 @@ test('public pages share complete social metadata while error and capture pages 
     assert.match(read(`src/pages/${path}`), /<SiteMetadata/);
   }
   const component = read('src/components/site-metadata.tsx');
+  assert.match(component, /import \{ PageMeta \} from 'next-meta\/pages'/);
+  assert.match(component, /<PageMeta/);
   for (const name of [
+    'title',
+    'description',
     'canonical',
-    'og:title',
-    'og:description',
-    'og:url',
-    'og:image',
-    'twitter:card',
-    'twitter:image',
+    'url',
+    'type',
+    'images',
+    'twitter',
   ]) {
-    assert.ok(component.includes(`"${name}"`));
+    assert.ok(component.includes(`${name}={`));
   }
   assert.match(component, /\/api\/social-image/);
   assert.match(read('src/pages/404.tsx'), /content="noindex"/);
@@ -127,7 +129,7 @@ test('Vercel installs the frozen workspace and builds Next with a required canon
     config.buildCommand,
     'cd ../.. && CHAKRA_DOCS_REQUIRE_SITE_URL=true pnpm nx run docs:build',
   );
-  assert.equal(config.outputDirectory, '.next');
+  assert.equal(config.outputDirectory, undefined);
   assert.match(
     read('.env.example'),
     /NEXT_PUBLIC_SITE_URL=https:\/\/chakra-docs.dev/,

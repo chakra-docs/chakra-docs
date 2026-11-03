@@ -1,5 +1,7 @@
 # @chakra-docs/search
 
+[Documentation](https://chakra-docs.dev/docs/search) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Reusable server-side search for Chakra Docs manifests. It keeps the full search
 corpus in a warm Next or Nest process and returns only compact display and
 navigation fields to the browser.

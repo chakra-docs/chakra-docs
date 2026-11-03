@@ -1,5 +1,7 @@
 # @chakra-docs/source-git
 
+[Documentation](https://chakra-docs.dev/docs/source-git) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Remote Git content source for Chakra Docs.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).

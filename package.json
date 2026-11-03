@@ -19,11 +19,13 @@
     "test": "nx run-many -t test",
     "test:coverage": "nx run-many -t test --coverage",
     "test:release": "nx run chakra-docs-workspace:release-validation",
-    "audit:dependencies": "node scripts/audit-dependencies.mjs",
+    "audit:dependencies": "pnpm audit --audit-level=high",
     "types:performance:check": "nx run @chakra-docs/chakra:build && node scripts/check-chakra-theme-types.mjs",
     "search:performance:check": "nx run @chakra-docs/search:build && node scripts/check-search-performance.mjs",
     "typecheck": "nx run-many -t typecheck",
     "release:smoke": "node scripts/release-smoke.mjs",
+    "onboarding:check": "nx run chakra-docs-workspace:onboarding-check",
+    "docs:smoke": "nx run docs:http-smoke",
     "yalc:publish": "nx yalc-publish"
   },
   "private": true,
@@ -43,7 +45,7 @@
     "@chakra-ui/react": "3.36.0",
     "@emotion/react": "^11.14.0",
     "@eslint/js": "^9.8.0",
-    "@next/eslint-plugin-next": "^16.3.8",
+    "@next/eslint-plugin-next": "16.4.2",
     "@nx/cypress": "22.7.10",
     "@nx/eslint": "22.7.10",
     "@nx/eslint-plugin": "22.7.10",
@@ -60,7 +62,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/lib-dom": "npm:@types/web@0.0.356",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "astro": "7.3.2",
     "cypress": "^15.8.0",
     "eslint": "^9.39.4",
@@ -79,8 +81,8 @@
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.40.0",
     "verdaccio": "6.9.0",
-    "vite": "^8.1.4",
-    "vitest": "4.1.11",
+    "vite": "8.1.6",
+    "vitest": "4.1.12",
     "yaml": "^2.9.0",
     "yalc": "^1.0.0-pre.53"
   },
@@ -91,6 +93,24 @@
   "nx": {
     "includedScripts": [],
     "targets": {
+      "onboarding-check": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          {
+            "projects": [
+              "@chakra-docs/core",
+              "@chakra-docs/chakra",
+              "@chakra-docs/source-filesystem",
+              "@chakra-docs/feed"
+            ],
+            "target": "build",
+            "params": "ignore"
+          }
+        ],
+        "options": {
+          "command": "node --test scripts/onboarding-check.spec.mjs && node scripts/onboarding-check.mjs"
+        }
+      },
       "local-registry": {
         "executor": "@nx/js:verdaccio",
         "options": {
@@ -102,7 +122,7 @@
       "release-validation": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "node --test scripts/release-workflow.spec.mjs scripts/verify-published-version.spec.mjs scripts/audit-dependencies.spec.mjs"
+          "command": "node --test scripts/release-workflow.spec.mjs scripts/verify-published-version.spec.mjs"
         }
       },
       "yalc-publish": {
@@ -125,7 +145,7 @@
     }
   },
   "dependencies": {
-    "next": "~16.3.8",
+    "next": "16.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -1,6 +1,7 @@
 import './oss-credits.test.mjs';
 import './search-recommendations.test.mjs';
 import './site-seo.test.mjs';
+import './site-llms.test.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
@@ -17,6 +18,19 @@ import {
 
 const read = (path) =>
   readFileSync(new URL(`../apps/docs/${path}`, import.meta.url), 'utf8');
+
+test('site analytics uses the pinned public React Fathom release', () => {
+  assert.equal(
+    JSON.parse(read('package.json')).dependencies['react-fathom'],
+    '0.3.0',
+  );
+  const lockfile = readFileSync(
+    new URL('../pnpm-lock.yaml', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(lockfile, /file:.*\.yalc\/react-fathom/);
+  assert.match(lockfile, /react-fathom@0\.3\.0:/);
+});
 
 async function getSiteContentSecurityPolicy(env) {
   const context = {

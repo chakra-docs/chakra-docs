@@ -1,5 +1,7 @@
 # @chakra-docs/next
 
+[Documentation](https://chakra-docs.dev/docs/app-router) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Next.js App and Pages Router integration for Chakra Docs documentation sites.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
@@ -22,8 +24,8 @@ npm install @chakra-docs/next next react react-dom
 ```
 
 Peer dependencies: `next` (>=15.5.24 <16 or >=16.3.6 <17), `react` (>=18 <20),
-and `react-dom` (>=18 <20). The lower bounds intentionally follow maintained,
-security-patched Next.js release lines rather than unsupported Next.js 14.
+and `react-dom` (>=18 <20). The ranges describe API compatibility, not security
+guarantees. Keep Next.js updated independently to a maintained, patched release.
 
 For strict declaration checking (`skipLibCheck: false`) with Next.js 16.3 and
 TypeScript 5.9, install the standalone DOM declarations to provide the global

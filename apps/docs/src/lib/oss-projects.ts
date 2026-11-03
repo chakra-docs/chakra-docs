@@ -112,6 +112,12 @@ export const ossProjectGroups = [
         href: 'https://nextjs.org/',
       },
       {
+        name: 'next-meta',
+        packages: ['next-meta'],
+        description: 'Composable canonical and social metadata for the site.',
+        href: 'https://next-meta.dev/',
+      },
+      {
         name: 'Chakra UI',
         packages: ['@chakra-ui/react'],
         description:

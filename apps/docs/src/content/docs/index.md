@@ -48,7 +48,15 @@ The docs route is just another Pages Router file:
 - `@chakra-docs/chakra` provides composable Chakra UI documentation primitives.
 - `@chakra-docs/search` provides shared local/server ranking plus HTTP and client helpers.
 - `@chakra-docs/search-pagefind` converts search records into Pagefind document records when a production search index is needed.
+- [`@chakra-docs/cli`](/docs/cli) generates and validates manifests during builds.
+- [`@chakra-docs/source-git`](/docs/source-git) syncs documentation from Git repositories.
+- [`@chakra-docs/astro`](/docs/astro) generates Astro static paths.
+- [`@chakra-docs/react-router`](/docs/react-router) maps pages to React Router routes.
+- [`@chakra-docs/feed`](/docs/feed) generates RSS, Atom, and JSON Feed artifacts.
+- [`@chakra-docs/shiki`](/docs/components#codeblock-highlighting) adds optional code highlighting.
 
 ## Start here
 
 Read Configuration next if you want to see how the documents directory is selected. Read Pages Router if you want to see the route-level static generation wiring.
+
+For Next.js App Router applications, follow the [App Router guide](/docs/app-router).

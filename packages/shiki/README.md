@@ -1,12 +1,20 @@
 # @chakra-docs/shiki
 
+[Documentation](https://chakra-docs.dev/docs/components#codeblock-highlighting) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Optional, first-party Shiki syntax highlighting for Chakra Docs. No React, Chakra UI, or Postkit dependency. The adapter contract also works with Chakra UI's CodeBlock provider and Postkit's `codeBlockAdapter` prop.
+
+Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).
+
+## Install
 
 ```sh
 npm install @chakra-docs/shiki
 ```
 
-Create one adapter at module scope and use your existing Chakra provider:
+The example below assumes `@chakra-docs/chakra`, Chakra UI, Emotion, and React
+are already installed and the [Chakra Docs theme](https://chakra-docs.dev/docs/installation) is merged
+into the existing Chakra provider. Create one adapter at module scope:
 
 ```tsx
 import { DocsProvider, MarkdownContent } from '@chakra-docs/chakra';

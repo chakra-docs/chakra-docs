@@ -23,8 +23,9 @@ Import `chakra-docs/chakra-docs` into the intended Vercel account. Configure:
   setup before production promotion. Keep deployment protection enabled on
   previews and verify their `X-Robots-Tag: noindex` response header.
 
-`vercel.json` supplies the frozen workspace install, Nx build (including package
-dependencies), and `.next` output directory relative to `apps/docs`. It forces
+`vercel.json` supplies the frozen workspace install and Nx build (including
+package dependencies). Leave Vercel's Output Directory override off: the Next.js
+adapter discovers `.next` automatically. It forces
 the canonical-origin guard on, so a missing site URL fails the build. Do not use
 static export: search, health, sitemap, robots, and social images need Next
 server functions. No npm publishing credential is needed for this site.
@@ -33,6 +34,12 @@ Optional analytics and Fontstack variables are documented in `.env.example`.
 Set public variables before building; changing them requires a new deployment.
 The Vercel account settings, DNS, analytics site ID, and Fontstack allowlist are
 not stored in the repository and must be confirmed in their respective dashboards.
+
+Before deploying, run `pnpm run onboarding:check` and
+`NEXT_PUBLIC_SITE_URL=https://chakra-docs.dev pnpm run docs:smoke` from the
+repository root. The latter builds and starts a temporary production server,
+checks metadata, guides, crawler files, API search, health, and real 404s, then
+stops that server. It does not publish packages or change Vercel settings.
 
 After the first preview, verify `/api/health`,
 `/api/docs/search?q=installation&limit=1`, `/sitemap.xml`, `/robots.txt`, and
@@ -44,6 +51,15 @@ passes for the exact deployed commit.
 Configuration references: [Vercel Nx support](https://vercel.com/docs/monorepos/nx),
 [shared monorepo files](https://vercel.com/docs/monorepos/monorepo-faq), and
 [Corepack build setup](https://vercel.com/docs/builds/configure-a-build#corepack).
+
+## LLM documentation
+
+`/llms.txt` indexes the published documentation using canonical page URLs;
+`/llms-full.txt` includes its complete Markdown content. Both are generated from
+the docs manifest and exclude draft and hidden pages. Like the sitemap, these
+routes require `NEXT_PUBLIC_SITE_URL` and trace their Markdown sources into the
+serverless deployment. Verify both URLs after deploying; no package publish is
+needed for these site endpoints.
 
 ## Required production contract
 
@@ -136,20 +152,17 @@ and `twitter:image` metadata, **not** the HTML capture URL.
 
 ## React Fathom analytics
 
-The site uses public `react-fathom@0.2.0` and a site-local Pages Router tracker for initial and
+The site uses public `react-fathom@0.3.0` and a site-local Pages Router tracker for initial and
 client-side pageviews, plus documentation interaction events. Set
 `NEXT_PUBLIC_FATHOM_SITE_ID` and optionally
 `NEXT_PUBLIC_FATHOM_CUSTOM_DOMAIN` before building. No ID means no analytics
 script or pageviews. Query strings, fragments, clipboard contents, search text,
 and feedback comments are not sent; social-image capture pages bypass analytics.
 
-The temporary tracker imports `useFathom` from the same root entry point as
-`FathomProvider`, and imports Next's router directly. It avoids the separate
-context bundled into the public 0.2.0 Next adapter. Once the corrected React
-Fathom release is public, update the immutable dependency pin and restore its
-Pages Router adapter, retaining URL filtering and the navigation regression
-tests. No local yalc packages are required. React Fathom is a site dependency
-only, not a published Chakra Docs package dependency.
+The site-local tracker retains URL filtering, router readiness checks, and
+query/hash deduplication, covered by navigation regression tests. No local yalc
+packages are required. React Fathom is a site dependency only, not a published
+Chakra Docs package dependency.
 
 ## Release and rollback
 

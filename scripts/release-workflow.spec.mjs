@@ -4,7 +4,6 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
-import { bracesException } from './audit-dependencies.mjs';
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..');
 const releaseWorkflow = await read('.github/workflows/release.yml');
@@ -70,6 +69,21 @@ test('Nx tooling is aligned and known vulnerable transitive versions stay out of
     'postcss-selector-parser@7.1.5',
     'sharp@0.35.4',
     'shell-quote@1.10.0',
+    'next@16.3.8',
+    'handlebars@4.7.9',
+    'follow-redirects@1.16.0',
+    'follow-redirects@1.16.1',
+    'body-parser@1.20.6',
+    'launch-editor@2.14.1',
+    'systeminformation@5.31.15',
+    'undici@7.30.0',
+    'zod@4.6.2',
+    'fast-uri@3.1.8',
+    'qs@6.16.0',
+    'vite@7.3.6',
+    'vite@8.1.4',
+    'vitest@4.1.11',
+    '@vitest/mocker@4.1.11',
   ]) {
     assert.equal(lock.packages[key], undefined, `${key} must not be installed`);
   }
@@ -128,12 +142,50 @@ test('docs and workspace UI packages share one Chakra runtime', async () => {
   );
 });
 
-test('the Next adapter excludes the vulnerable 16.3 framework releases', () => {
+test('the Next adapter retains its supported framework API ranges', () => {
   const next = publicPackages.find(({ name }) => name === '@chakra-docs/next');
   assert.equal(next.peerDependencies.next, '>=15.5.24 <16 || >=16.3.6 <17');
 });
 
-test('production audits remain unfiltered and the development mitigation gate runs in CI', async () => {
+test('the docs app and workspace use the patched Next.js release', async () => {
+  const root = JSON.parse(await read('package.json'));
+  const docs = JSON.parse(await read('apps/docs/package.json'));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  for (const [directory, manifest] of [
+    ['.', root],
+    ['apps/docs', docs],
+  ]) {
+    assert.equal(manifest.dependencies.next, '16.4.2');
+    assert.equal(
+      lock.importers[directory].dependencies.next.specifier,
+      '16.4.2',
+    );
+    assert.match(
+      lock.importers[directory].dependencies.next.version,
+      /^16\.4\.2\(/,
+    );
+  }
+  assert.equal(root.devDependencies['@next/eslint-plugin-next'], '16.4.2');
+  const adapter = publicPackages.find(
+    ({ name }) => name === '@chakra-docs/next',
+  );
+  assert.equal(adapter.devDependencies.next, '16.4.2');
+  assert.equal(
+    lock.importers['packages/next'].devDependencies.next.specifier,
+    '16.4.2',
+  );
+  assert.match(
+    lock.importers['packages/next'].devDependencies.next.version,
+    /^16\.4\.2\(/,
+  );
+  assert.deepEqual(
+    Object.keys(lock.packages).filter((name) => name.startsWith('next@')),
+    ['next@16.4.2'],
+    'automatic peer installation must not retain an older Next.js copy',
+  );
+});
+
+test('production and development audits remain unfiltered without exceptions or expiry gates', async () => {
   const ci = await read('.github/workflows/ci.yml');
   assert.match(ci, /run: pnpm audit --prod --audit-level=moderate\n/);
   assert.match(ci, /run: pnpm run audit:dependencies\n/);
@@ -144,15 +196,16 @@ test('production audits remain unfiltered and the development mitigation gate ru
   const manifest = JSON.parse(await read('package.json'));
   assert.equal(
     manifest.scripts['audit:dependencies'],
-    'node scripts/audit-dependencies.mjs',
+    'pnpm audit --audit-level=high',
   );
-  assert.match(
-    manifest.nx.targets['release-validation'].options.command,
-    /audit-dependencies\.spec\.mjs/,
-  );
+  const workspace = parseYaml(await read('pnpm-workspace.yaml'));
+  const lockfile = parseYaml(await read('pnpm-lock.yaml'));
+  assert.equal(workspace.patchedDependencies, undefined);
+  assert.equal(lockfile.patchedDependencies, undefined);
+  assert.doesNotMatch(JSON.stringify(workspace), /ignoreCves|ignoreGhsas/);
 });
 
-test('dependency review accepts only the verified time-bounded braces mitigation', async () => {
+test('dependency review blocks moderate findings without advisory allowlists', async () => {
   const ci = parseYaml(await read('.github/workflows/ci.yml'));
   const job = ci.jobs['dependency-review'];
   const steps = job.steps;
@@ -163,7 +216,6 @@ test('dependency review accepts only the verified time-bounded braces mitigation
   const review = steps[reviewIndex];
   assert.deepEqual(review.with, {
     'fail-on-severity': 'moderate',
-    'allow-ghsas': bracesException.id,
   });
   assert.equal(review.if, undefined);
   assert.equal(review['continue-on-error'], undefined);
@@ -190,7 +242,6 @@ test('dependency review accepts only the verified time-bounded braces mitigation
     assert.equal(step.if, undefined);
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(bracesException.expires, '2026-11-04T00:00:00.000Z');
 });
 
 test('all public packages form one fixed, committed release group', () => {
@@ -217,6 +268,30 @@ test('all public packages form one fixed, committed release group', () => {
             committedVersion,
             `${manifest.name} must pin ${dependency} to the fixed version`,
           );
+        }
+      }
+    }
+  }
+});
+
+test('the documentation header, changelog, and lockfile follow the committed release', async () => {
+  const header = await read('apps/docs/src/components/site-shell.tsx');
+  assert.ok(header.includes(`v${committedVersion}`));
+  assert.ok((await read('CHANGELOG.md')).includes(`## ${committedVersion} (`));
+  const lock = parseYaml(await read('pnpm-lock.yaml'));
+  for (const [importer, entry] of Object.entries(lock.importers)) {
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'optionalDependencies',
+    ]) {
+      for (const [name, { specifier }] of Object.entries(entry[field] ?? {})) {
+        if (
+          releaseProjects.has(name) &&
+          specifier !== '*' &&
+          !specifier.startsWith('workspace:')
+        ) {
+          assert.equal(specifier, committedVersion, `${importer}: ${name}`);
         }
       }
     }

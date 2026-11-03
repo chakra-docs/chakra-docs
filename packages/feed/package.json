@@ -1,8 +1,9 @@
 {
   "name": "@chakra-docs/feed",
-  "version": "0.3.0",
-  "description": "RSS, Atom, and JSON Feed artifact helpers for Chakra Docs.",
+  "version": "0.3.1",
+  "description": "Generate RSS, Atom, and JSON Feed artifacts from Chakra Docs documentation manifests.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "docs",
@@ -60,7 +61,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/core": "0.3.1",
     "tslib": "^2.3.0"
   },
   "engines": {
@@ -77,7 +78,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://chakra-docs.dev",
+  "homepage": "https://chakra-docs.dev/docs/feed",
   "nx": {
     "tags": [
       "layer:integration",

@@ -37,6 +37,8 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/api/docs/search': ['src/content/docs/**/*'],
     '/sitemap.xml': ['src/content/docs/**/*'],
+    '/llms.txt': ['src/content/docs/**/*'],
+    '/llms-full.txt': ['src/content/docs/**/*'],
   },
   poweredByHeader: false,
   reactStrictMode: true,

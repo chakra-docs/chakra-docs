@@ -1,5 +1,7 @@
 # @chakra-docs/search-pagefind
 
+[Documentation](https://chakra-docs.dev/docs/search#pagefind-adapter) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 Pagefind document record helpers for Chakra Docs search manifests.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).

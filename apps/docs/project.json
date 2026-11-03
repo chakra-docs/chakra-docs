@@ -6,6 +6,11 @@
   "tags": ["layer:app", "scope:docs"],
   "// targets": "to see all targets run: nx show project docs --web",
   "targets": {
+    "http-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": { "command": "node scripts/docs-http-smoke.mjs" }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {
@@ -28,6 +33,7 @@
         "{workspaceRoot}/scripts/site-analytics.test.mjs",
         "{workspaceRoot}/scripts/search-recommendations.test.mjs",
         "{workspaceRoot}/scripts/site-seo.test.mjs",
+        "{workspaceRoot}/scripts/site-llms.test.mjs",
         "{workspaceRoot}/.github/workflows/ci.yml"
       ]
     },

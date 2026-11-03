@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.3.1 (2026-10-29)
+
+### Documentation
+
+- Add complete framework and source guides for Next.js App Router, Astro,
+  React Router, Git sources, the CLI, and feeds.
+- Point package homepages to their own guides and improve npm discovery metadata,
+  attribution, support links, and self-contained README quick starts.
+- Add page-specific metadata, structured data, and machine-readable documentation
+  files to the site.
+
+### Maintenance
+
+- Update documentation and development tooling to Next.js 16.4.2 and patch
+  vulnerable workspace dependencies without changing public peer ranges.
+- Retire the local braces patch and expiring advisory exception after GitHub
+  withdrew GHSA-vfj7-8cjw-p6xm. Development, production, and dependency-review
+  audits remain strict and unfiltered.
+- Compile and exercise actual README examples, validate all package documentation
+  links, and smoke-test production HTTP, search, metadata, and crawler endpoints.
+- Let Vercel's Next.js integration determine the build output directory.
+
+### Compatibility
+
+- All 12 public packages and internal dependency pins are aligned to 0.3.1.
+  There are no new package names, public APIs, or peer dependency changes.
+
 ## 0.3.0 (2026-10-04)
 
 ### 🚀 Features

@@ -1,5 +1,7 @@
 # @chakra-docs/react-router
 
+[Documentation](https://chakra-docs.dev/docs/react-router) · [Getting started](https://chakra-docs.dev/docs/installation) · [Examples](https://chakra-docs.dev/showcase) · [Issues](https://github.com/chakra-docs/chakra-docs/issues)
+
 React Router route helpers for Chakra Docs manifests.
 
 Created by [Ryan Hefner](https://www.ryanhefner.com) and [Commune Software](https://commune.software).

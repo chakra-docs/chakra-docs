@@ -1,8 +1,9 @@
 {
   "name": "@chakra-docs/react-router",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "React Router route helpers for Chakra Docs manifests.",
   "keywords": [
+    "chakra-docs",
     "chakra-ui",
     "documentation",
     "documentation-site",
@@ -61,7 +62,7 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@chakra-docs/core": "0.3.0",
+    "@chakra-docs/core": "0.3.1",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
@@ -83,7 +84,7 @@
   "bugs": {
     "url": "https://github.com/chakra-docs/chakra-docs/issues"
   },
-  "homepage": "https://chakra-docs.dev",
+  "homepage": "https://chakra-docs.dev/docs/react-router",
   "nx": {
     "tags": [
       "layer:adapter",

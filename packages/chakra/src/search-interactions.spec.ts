@@ -258,6 +258,66 @@ describe('DocsPageActions menu analytics', () => {
   });
 });
 
+describe('DocsPageActions nested selection', () => {
+  it.each(['pointer', 'keyboard'] as const)(
+    'closes both menu levels after %s selection',
+    async (interaction) => {
+      const onSelect = vi.fn();
+      await render(
+        createElement(
+          DocsPageActions.Root,
+          null,
+          createElement(
+            DocsPageActions.Menu,
+            { label: 'Actions' },
+            createElement(
+              DocsPageActions.Submenu,
+              { label: 'Nested' },
+              createElement(DocsPageActions.Item, {
+                label: 'Run action',
+                onSelect,
+              }),
+            ),
+          ),
+        ),
+      );
+      const trigger = button('Actions');
+      await act(async () => trigger.click());
+      const parentMenu = required(
+        document.querySelector<HTMLElement>('[role="menu"]'),
+      );
+      await press(parentMenu, 'ArrowDown');
+      await press(parentMenu, 'ArrowRight');
+      const item = required(
+        [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+          (element) => element.textContent === 'Run action',
+        ),
+      );
+      await vi.waitFor(() =>
+        expect(item.closest('[role="menu"]')?.getAttribute('data-state')).toBe(
+          'open',
+        ),
+      );
+      if (interaction === 'pointer') {
+        await act(async () => {
+          item.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+          item.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+          item.click();
+        });
+      } else {
+        await press(
+          required(item.closest<HTMLElement>('[role="menu"]')),
+          'Enter',
+        );
+      }
+      await vi.waitFor(() => expect(onSelect).toHaveBeenCalledOnce());
+      await vi.waitFor(() =>
+        expect(trigger.getAttribute('aria-expanded')).toBe('false'),
+      );
+    },
+  );
+});
+
 describe('DocsPageActions portal variables', () => {
   it('carries root inline variables through both portal levels and allows local overrides', async () => {
     await render(

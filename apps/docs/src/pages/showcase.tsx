@@ -17,6 +17,7 @@ import { SiteMetadata } from '../components/site-metadata';
 import { SiteDocsMobileControls } from '../components/site-docs-mobile-controls';
 import { SiteShell } from '../components/site-shell';
 import { StructuredData } from '../components/structured-data';
+import { getPublicSiteUrl } from '../lib/public-env';
 import { guides } from '../docs/guides';
 import {
   getRecommendedSearchResults,
@@ -48,6 +49,14 @@ export default function ShowcasePage(props: ShowcasePageProps) {
         path={page.route}
       />
       <StructuredData
+        items={guides.map((guide) => ({
+          name: guide.title,
+          description: guide.description,
+          url: new URL(
+            guide.href,
+            getPublicSiteUrl() ?? 'https://chakra-docs.dev',
+          ).href,
+        }))}
         path={page.route}
         title={page.title}
         description={page.description}
