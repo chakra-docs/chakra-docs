@@ -72,6 +72,7 @@ test('Nx tooling is aligned and known vulnerable transitive versions stay out of
     'next@16.3.8',
     'handlebars@4.7.9',
     'follow-redirects@1.16.0',
+    'follow-redirects@1.16.1',
     'body-parser@1.20.6',
     'launch-editor@2.14.1',
     'systeminformation@5.31.15',
